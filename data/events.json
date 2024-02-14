@@ -1,0 +1,213 @@
+[
+    {
+      "id": 1,
+      "name": "Crypto Conference Miami",
+      "image": "/assets/i1.jpg",
+      "description": "Join the biggest gathering of crypto enthusiasts in Miami!",
+      "location": "Miami, Florida",
+      "dates": "2024-03-25 to 2024-03-27",
+      "hotels": [
+        {
+          "name": "The Ritz-Carlton South Beach",
+          "price": 1000, 
+          "nftRequired": "CryptoConferenceNFT", 
+          "nftBenefits": [
+            "10% discount on booking",
+            "Priority access to exclusive events",
+            "VIP lounge access"
+          ]
+        },
+        {
+          "name": "W Miami",
+          "price": 800,
+          "nftRequired": "CryptoConferenceNFT:Diamond Pass", 
+          "nftBenefits": [
+            "20% discount on booking",
+            "Guaranteed room upgrade",
+            "Complimentary breakfast"
+          ]
+        }
+      ]
+    },
+    {
+        "id": 2,
+        "name": "Crypto Conference Miami",
+        "image": "/assets/i2.jpg",
+        "description": "Join the biggest gathering of crypto enthusiasts in Miami!",
+        "location": "Miami, Florida",
+        "dates": "2024-03-25 to 2024-03-27",
+        "hotels": [
+          {
+            "name": "The Ritz-Carlton South Beach",
+            "price": 1000, 
+            "nftRequired": "CryptoConferenceNFT", 
+            "nftBenefits": [
+              "10% discount on booking",
+              "Priority access to exclusive events",
+              "VIP lounge access"
+            ]
+          },
+          {
+            "name": "W Miami",
+            "price": 800,
+            "nftRequired": "CryptoConferenceNFT:Diamond Pass", 
+            "nftBenefits": [
+              "20% discount on booking",
+              "Guaranteed room upgrade",
+              "Complimentary breakfast"
+            ]
+          }
+        ]
+      },
+    {
+      "id": 3,
+      "name": "NFT Hackathon Berlin",
+      "image": "/assets/i3.jpg",
+      "description": "Build the future of Web3 with fellow developers!",
+      "location": "Berlin, Germany",
+      "dates": "2024-04-10 to 2024-04-12",
+      "hotels": [
+        {
+          "name": "Hotel Adlon Kempinski",
+          "price": 500,
+          "nftRequired": "NFTHackathonBadge", 
+          "nftBenefits": [
+            "Free access to workshops and talks",
+            "Networking opportunities with investors",
+            "Early access to project pitches"
+          ]
+        },
+        {
+          "name": "Michelberger Hotel",
+          "price": 300,
+          "nftRequired": null, 
+          "nftBenefits": [
+            "Discounted access to social events",
+            "Limited edition swag bag"
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 4,
+      "name": "NFT Hackathon Berlin",
+      "image": "/assets/i4.jpg",
+      "description": "Build the future of Web3 with fellow developers!",
+      "location": "Berlin, Germany",
+      "dates": "2024-04-10 to 2024-04-12",
+      "hotels": [
+        {
+          "name": "Hotel Adlon Kempinski",
+          "price": 500,
+          "nftRequired": "NFTHackathonBadge", 
+          "nftBenefits": [
+            "Free access to workshops and talks",
+            "Networking opportunities with investors",
+            "Early access to project pitches"
+          ]
+        },
+        {
+          "name": "Michelberger Hotel",
+          "price": 300,
+          "nftRequired": null, 
+          "nftBenefits": [
+            "Discounted access to social events",
+            "Limited edition swag bag"
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 5,
+      "name": "NFT Hackathon Berlin",
+      "image": "/assets/i5.jpg",
+      "description": "Build the future of Web3 with fellow developers!",
+      "location": "Berlin, Germany",
+      "dates": "2024-04-10 to 2024-04-12",
+      "hotels": [
+        {
+          "name": "Hotel Adlon Kempinski",
+          "price": 500,
+          "nftRequired": "NFTHackathonBadge", 
+          "nftBenefits": [
+            "Free access to workshops and talks",
+            "Networking opportunities with investors",
+            "Early access to project pitches"
+          ]
+        },
+        {
+          "name": "Michelberger Hotel",
+          "price": 300,
+          "nftRequired": null, 
+          "nftBenefits": [
+            "Discounted access to social events",
+            "Limited edition swag bag"
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": 6,
+      "name": "NFT Hackathon Berlin",
+      "image": "/assets/i6.jpg",
+      "description": "Build the future of Web3 with fellow developers!",
+      "location": "Berlin, Germany",
+      "dates": "2024-04-10 to 2024-04-12",
+      "hotels": [
+        {
+          "name": "Hotel Adlon Kempinski",
+          "price": 500,
+          "nftRequired": "NFTHackathonBadge", 
+          "nftBenefits": [
+            "Free access to workshops and talks",
+            "Networking opportunities with investors",
+            "Early access to project pitches"
+          ]
+        },
+        {
+          "name": "Michelberger Hotel",
+          "price": 300,
+          "nftRequired": null, 
+          "nftBenefits": [
+            "Discounted access to social events",
+            "Limited edition swag bag"
+          ]
+        }
+      ]
+    },
+    {
+        "id": 7,
+        "name": "NFT Hackathon Berlin",
+        "image": "/assets/i7.jpg",
+        "description": "Build the future of Web3 with fellow developers!",
+        "location": "Berlin, Germany",
+        "dates": "2024-04-10 to 2024-04-12",
+        "hotels": [
+          {
+            "name": "Hotel Adlon Kempinski",
+            "price": 500,
+            "nftRequired": "NFTHackathonBadge", 
+            "nftBenefits": [
+              "Free access to workshops and talks",
+              "Networking opportunities with investors",
+              "Early access to project pitches"
+            ]
+          },
+          {
+            "name": "Michelberger Hotel",
+            "price": 300,
+            "nftRequired": null, 
+            "nftBenefits": [
+              "Discounted access to social events",
+              "Limited edition swag bag"
+            ]
+          }
+        ]
+      }
+    
+       
+  ]
+  
