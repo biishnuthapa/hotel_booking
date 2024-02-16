@@ -5,7 +5,7 @@ import { faTwitter, faFacebook, faInstagram } from '@fortawesome/free-brands-svg
 const Information = () => {
   return (
     <footer className="bg-gray-100 text-gray-800 py-10 px-10 "> 
-      <div className="container mx-auto flex justify-between items-center">
+      <div className="container mx-auto flex flex-wrap justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold mb-4 text-green-600">Hospitality NFT</h1>
           <p className="text-lg mb-6">Marketplace for Tokenized Travel Assets</p>
