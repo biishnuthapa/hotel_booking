@@ -41,7 +41,7 @@ const FAQ = () => {
                 className="flex items-center justify-between bg-white w-full px-6 py-4 focus:outline-none"
                 onClick={() => handleToggle(index)}
               >
-                <h3 className="text-xl text-green-600 font-medium">{question.question}</h3>
+                <h3 className="text-xl text-black font-medium">{question.question}</h3>
                 <svg
                   className={`w-6 h-6 transition-transform transform ${
                     openIndex === index ? 'rotate-180' : 'rotate-0'

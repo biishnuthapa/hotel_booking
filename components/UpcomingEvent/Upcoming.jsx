@@ -20,7 +20,7 @@ const Upcoming = () => {
   };
 
   return (
-    <div className="flex justify-center items-center py-10  bg-slate-100 ">
+    <div className="flex flex-wrap  justify-center items-center py-10  bg-slate-100 ">
       <div className="w-1/3 flex flex-col justify-center items-center">
         <h2 className="text-2xl font-bold mb-4">Upcoming Events</h2>
         <h3>Secure Your Stay at Upcoming </h3>
@@ -40,8 +40,8 @@ const Upcoming = () => {
           </button>
         </div>
       </div>
-      <div className="w-2/3 px-10">
-        <div className="grid grid-cols-3 gap-4">
+     
+        <div className="px-10 grid grid-cols-3 gap-4">
           {events.slice(currentIndex, currentIndex + 3).map((event, index) => (
             <div key={index} className="bg-gray-100 border-2 border-green-700 px-10 py-10 rounded-lg shadow-md">
               <img
@@ -57,7 +57,6 @@ const Upcoming = () => {
           ))}
         </div>
       </div>
-    </div>
   );
 };
 
