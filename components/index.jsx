@@ -3,6 +3,7 @@ import Header from './Header/Header'
 import HeroSection from './SearchBar/HeroSection'
 import SearchBar from './SearchBar/SearchBar'
 import Filter from './Filter/Filter'
+import Background from './Background/Background'
 import ConnectBtn from './ConnectBtn'
 import Collection from './Collection'
 import ImageSlider from './ImageSlider'
@@ -25,6 +26,7 @@ import NFTWebsiteSteps from './Steps/NFTWebsiteSteps'
 export {
   Header,
   Filter,
+  Background,
   ConnectBtn,
   HeroSection,
   SearchBar,

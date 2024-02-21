@@ -4,8 +4,18 @@ import { Collection, Filter, HeroSection, Information, SearchBar } from '@/compo
 import Accordion from '../components/Questions/Questions'
 import UpcomingEvents from '../components/UpcomingEvent/Upcoming'
 import NFTWebsiteSteps from '../components/Steps/NFTWebsiteSteps'
+import Background from '@/components/Background/Background'
 
 export default function Home({ apartmentsData }) {
+  const images = [
+    '/assets/image1.jpg',
+    '/assets/image2.jpg',
+    '/assets/image3.jpg',
+    '/assets/image4.jpg',
+    '/assets/image5.jpg',
+
+    // Add more image paths here as needed
+  ]
   return (
     <div>
       <Head>
@@ -24,13 +34,15 @@ export default function Home({ apartmentsData }) {
 
         <section className="relative h-screen">
           {/* Background video */}
-          <video
+          {/* <video
             className="absolute inset-0 object-cover w-full h-full"
             src="/assets/video.mp4"
             autoPlay
             loop
             muted
-          />
+          /> */}
+
+          <Background images={images} />
 
           {/* Overlay */}
           <div className="absolute inset-0 bg-black opacity-60"></div>
