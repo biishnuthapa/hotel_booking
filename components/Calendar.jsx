@@ -19,7 +19,11 @@ const Calendar = ({ apartment, timestamps }) => {
     const end = moment(checkOutDate)
     const timestampArray = []
 
+<<<<<<< HEAD
     // handleDateSelection(checkInDate, checkOutDate);
+=======
+//    handleDateSelection(checkInDate, checkOutDate);
+>>>>>>> 4e032c2 (Fixed)
     
     while (start <= end) {
       timestampArray.push(start.valueOf())

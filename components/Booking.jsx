@@ -61,7 +61,11 @@ const Booking = ({ booking }) => {
 
 const TenantView = ({ booking, functions, owner }) => {
   return (
+<<<<<<< HEAD
     <div className="w-full flex justify-between items-center my-3 bg-[#BFCFE7] p-3">
+=======
+    <div className="w-full flex justify-between items-center my-3 bg-[#E1F0DA] p-3">
+>>>>>>> 4e032c2 (Fixed)
       <Link
         className="flex justify-start items-center
       space-x-2 font-medium"

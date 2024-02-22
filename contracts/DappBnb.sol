@@ -56,6 +56,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
     taxPercent = _taxPercent;
     securityFee = _securityFee;
   }
+ 
 
   function createAppartment(
     string memory name,
@@ -64,7 +65,8 @@ contract DappBnb is Ownable, ReentrancyGuard {
     string memory images,
     uint rooms,
     uint price
-  ) public {
+  ) public  {
+    require(msg.sender == owner());
     require(bytes(name).length > 0, 'Name cannot be empty');
     require(bytes(description).length > 0, 'Description cannot be empty');
     require(bytes(location).length > 0, 'Location cannot be empty');
@@ -293,3 +295,6 @@ contract DappBnb is Ownable, ReentrancyGuard {
     return (block.timestamp * 1000) + 1000;
   }
 }
+
+
+
