@@ -61,7 +61,7 @@ const Booking = ({ booking }) => {
 
 const TenantView = ({ booking, functions, owner }) => {
   return (
-    <div className="w-full flex justify-between items-center my-3 bg-[#004c1c] p-3">
+    <div className="w-full flex justify-between items-center my-3 bg-[#BFCFE7] p-3">
       <Link
         className="flex justify-start items-center
       space-x-2 font-medium"

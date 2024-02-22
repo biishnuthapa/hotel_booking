@@ -37,8 +37,8 @@ function HotelFilters() {
     <div className="flex flex-wrap justify-center gap-6">
       {filterOptions.map((filter, index) => (
         <div key={index} className="flex flex-col items-center cursor-pointer" onClick={() => toggleFilter(filter.name)}>
-          <FontAwesomeIcon icon={filter.icon} className="text-xl text-white" />
-          <span className={`text-sm font-medium ${selectedFilters.includes(filter.name) ? 'text-[#00773d]' : 'text-white'}`}>{filter.name}</span>
+          <FontAwesomeIcon icon={filter.icon} className="text-xl text-white"/>
+          <span className={`text-sm font-medium ${selectedFilters.includes(filter.name) ? 'text-[#836FFF]' : 'text-white'}`}>{filter.name}</span>
         </div>
       ))}
     </div>

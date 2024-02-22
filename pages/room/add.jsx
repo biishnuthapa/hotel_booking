@@ -113,7 +113,7 @@ export default function Add() {
               <button
                 onClick={addImage}
                 type="button"
-                className="p-2 bg-[#004c1c] text-white rounded-full text-sm"
+                className="p-2 bg-[#BFCFE7] text-white rounded-full text-sm"
               >
                 Add image link
               </button>

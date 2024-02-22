@@ -19,7 +19,7 @@ const Calendar = ({ apartment, timestamps }) => {
     const end = moment(checkOutDate)
     const timestampArray = []
 
-    handleDateSelection(checkInDate, checkOutDate);
+    // handleDateSelection(checkInDate, checkOutDate);
     
     while (start <= end) {
       timestampArray.push(start.valueOf())

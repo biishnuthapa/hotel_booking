@@ -80,7 +80,7 @@ function SearchBar() {
       {/* Ensure the SearchBar stays on top */}
       <div className="bg-transparent border-2 border-[#ccc] rounded-full shadow-lg p-3 mt-[24px] w-fit flex justify-center">
         <div className="flex items-center ">
-          <div className="flex flex-col mr-[10px] ml-[20px] border-r-2 border-[#ccc] ">
+          <div className="flex flex-col mr-[10px] ml-[20px] border-r-2 border-[#C7C6C1] ">
             <label htmlFor="location" className="mr-[5px]">
               Where
             </label>

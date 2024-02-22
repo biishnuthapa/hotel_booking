@@ -21,8 +21,8 @@ const Upcoming = () => {
 
   return (
     <div className="flex flex-wrap  justify-center items-center py-10  bg-slate-100 ">
-      <div className="w-1/3 flex flex-col justify-center items-center">
-        <h2 className="text-2xl font-bold mb-4">Upcoming Events</h2>
+      <div className="w-1/3 text-xl flex flex-col justify-center items-center">
+        <h2 className="text-4xl text-green-600 font-bold mb-4">Upcoming Events</h2>
         <h3>Secure Your Stay at Upcoming </h3>
         <h3>Blockchain and Tech Events.</h3>
         <div className="flex items-center py-5">
