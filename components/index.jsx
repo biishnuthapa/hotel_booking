@@ -2,6 +2,7 @@ import Card from './Card'
 import Header from './Header/Header'
 import HeroSection from './SearchBar/HeroSection'
 import SearchBar from './SearchBar/SearchBar'
+import ParentComponent from './SearchBar/ParentComponent'
 import Filter from './Filter/Filter'
 import Background from './Background/Background'
 import ConnectBtn from './ConnectBtn'
@@ -30,6 +31,7 @@ export {
   ConnectBtn,
   HeroSection,
   SearchBar,
+  ParentComponent,
   Card,
   Calendar,
   FAQ,

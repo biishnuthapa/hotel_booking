@@ -1,86 +1,82 @@
-import Image from 'next/image'
-import React, { useState, useRef, useEffect } from 'react'
-import SearchIcon from '../../public/assets'
-import Calendar from '../Calendar'
-import AddGuests from './AddGuests'
-import CountryList from './CountryList'
+import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import SearchIcon from '../../public/assets';
+import Calendar from '../Calendar';
+import AddGuests from './AddGuests';
+import CountryList from './CountryList';
 
-function SearchBar() {
+function SearchBar({ 
+  selectedLocation, 
+  setSelectedLocation, 
+  checkOutDate, 
+  setCheckOutDate, 
+  guests, 
+  setGuests, 
+  onSearch 
+}) {
   const toggleLocationDropdown = () => {
-    setIsLocationDropdownOpen(!isLocationDropdownOpen)
-  }
+    setIsLocationDropdownOpen(!isLocationDropdownOpen);
+  };
 
-  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false)
-  const [selectedLocation, setSelectedLocation] = useState('')
-
-  const [checkOutDate, setCheckOutDate] = useState(null)
-  const [isCheckOutCalendarOpen, setIsCheckOutCalendarOpen] = useState(false)
-
-  const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false)
-  const [guests, setGuests] = useState({
-    adults: 0,
-    children: 0,
-    infants: 0,
-    pets: 0,
-  })
-
-  const dropdownRef = useRef(null)
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [isCheckOutCalendarOpen, setIsCheckOutCalendarOpen] = useState(false);
+  const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsGuestsDropdownOpen(false)
+        setIsGuestsDropdownOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [dropdownRef])
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownRef]);
 
   const toggleGuestsDropdown = () => {
-    setIsGuestsDropdownOpen(!isGuestsDropdownOpen)
-  }
+    setIsGuestsDropdownOpen(!isGuestsDropdownOpen);
+  };
 
   const guestCountAdd = (category) => {
     setGuests((prevGuests) => ({
       ...prevGuests,
       [category]: prevGuests[category] + 1,
-    }))
-  }
+    }));
+  };
 
   const guestCountSub = (category) => {
     setGuests((prevGuests) => ({
       ...prevGuests,
       [category]: Math.max(prevGuests[category] - 1, 0),
-    }))
-  }
+    }));
+  };
 
-  const totalGuests = guests.adults + guests.children
-  const totalPets = guests.pets
-  const totalInfants = guests.infants
+  const totalGuests = guests.adults + guests.children;
+  const totalPets = guests.pets;
+  const totalInfants = guests.infants;
 
-  let whoText = 'Add guests'
+  let whoText = 'Add guests';
 
   if (totalGuests > 0) {
-    whoText = `${totalGuests} Guest${totalGuests !== 1 ? 's' : ''}`
+    whoText = `${totalGuests} Guest${totalGuests !== 1 ? 's' : ''}`;
   }
   if (totalInfants > 0) {
-    whoText += `, ${totalInfants} Infant${totalInfants !== 1 ? 's' : ''}`
+    whoText += `, ${totalInfants} Infant${totalInfants !== 1 ? 's' : ''}`;
   }
 
   if (totalPets > 0) {
-    whoText += `, ${totalPets} Pet${totalPets !== 1 ? 's' : ''}`
+    whoText += `, ${totalPets} Pet${totalPets !== 1 ? 's' : ''}`;
   }
 
   return (
     <div className="flex justify-center z-50">
-      {' '}
-      {/* Ensure the SearchBar stays on top */}
       <div className="bg-transparent border-2 border-[#ccc] rounded-full shadow-lg p-3 mt-[24px] w-fit flex justify-center">
-        <div className="flex items-center ">
-          <div className="flex flex-col mr-[10px] ml-[20px] border-r-2 border-[#C7C6C1] ">
+        <div className="flex items-center">
+          <div className="flex flex-col mr-[10px] ml-[20px] border-r-2 border-[#C7C6C1]">
+            {/* Where */}
             <label htmlFor="location" className="mr-[5px]">
               Where
             </label>
@@ -110,6 +106,7 @@ function SearchBar() {
               )}
             </div>
           </div>
+          {/* Entry & Exit */}
           <div className="flex flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
             <label htmlFor="check-out" className="mr-[5px]">
               Entry and Exit
@@ -124,18 +121,19 @@ function SearchBar() {
                 readOnly
               />
               {isCheckOutCalendarOpen && (
-                <div className="absolute z-10 bg-white p-4">
+                <div className="absolute z-10 bg-white text-black p-4">
                   <Calendar
                     onDateSelected={(date) => {
-                      setCheckOutDate(date)
-                      setIsCheckOutCalendarOpen(false)
-                    }}
+                      setCheckOutDate(date);
+                      setIsCheckOutCalendarOpen(false);
+                    }}                    
                     className="calendar-container"
                   />
                 </div>
               )}
             </div>
           </div>
+          {/* Who */}
           <div className="flex flex-col mr-[10px] ml-[20px] border-[#ccc] border-r-0">
             <label htmlFor="guests" className="mr-[5px]">
               Who
@@ -188,13 +186,17 @@ function SearchBar() {
               )}
             </div>
           </div>
-          <button className="bg-[#00773d] text-[#fff] border-0 py-[9px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]">
+          {/* Search Button */}
+          <button 
+            className="bg-[#00773d] text-[#fff] border-0 py-[9px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
+            onClick={onSearch}
+          >
             <Image src={SearchIcon} alt="search" />
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default SearchBar
+export default SearchBar;
