@@ -4,7 +4,7 @@ import { useState } from 'react';
 const AddGuests = ({guestsTitle, category, guestCountAdd, guestCountSub,guestCount}) => {
  
   return (
-    <div className="grid grid-cols-2 p-5 shadow-md items-center mb-2">
+    <div className="grid grid-cols-2 p-5 shadow-md items-center mr-5 mb-2">
       <label htmlFor={category} className="block text-sm font-medium text-gray-700 mr-4">
         {guestsTitle}
       </label>

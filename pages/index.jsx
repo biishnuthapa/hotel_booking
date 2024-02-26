@@ -50,7 +50,7 @@ export default function Home({ apartmentsData }) {
           {/* Content container */}
           <div className="absolute inset-0 flex flex-col justify-center items-center text-white z-10">
             {/* SearchBar */}
-            <div className="mb-20">
+            <div className="mb-20 ">
               <ParentComponent/>
             </div>
 

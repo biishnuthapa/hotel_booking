@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import SearchIcon from '../../public/assets';
-import Calendar from '../Calendar';
+import DatePicker from 'react-datepicker'; // Import DatePicker
+import 'react-datepicker/dist/react-datepicker.css'; // Import DatePicker styles
 import AddGuests from './AddGuests';
 import CountryList from './CountryList';
 
 function SearchBar({ 
   selectedLocation, 
   setSelectedLocation, 
+  checkInDate, 
+  setCheckInDate, 
   checkOutDate, 
   setCheckOutDate, 
   guests, 
@@ -19,7 +22,6 @@ function SearchBar({
   };
 
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
-  const [isCheckOutCalendarOpen, setIsCheckOutCalendarOpen] = useState(false);
   const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -71,6 +73,9 @@ function SearchBar({
     whoText += `, ${totalPets} Pet${totalPets !== 1 ? 's' : ''}`;
   }
 
+  // Get current date
+  const currentDate = new Date();
+
   return (
     <div className="flex justify-center z-50">
       <div className="bg-transparent border-2 border-[#ccc] rounded-full shadow-lg p-3 mt-[24px] w-fit flex justify-center">
@@ -106,31 +111,40 @@ function SearchBar({
               )}
             </div>
           </div>
-          {/* Entry & Exit */}
+          {/* Check-in */}
           <div className="flex flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
-            <label htmlFor="check-out" className="mr-[5px]">
-              Entry and Exit
+            <label htmlFor="check-in" className="mr-[5px]">
+              Check-in
             </label>
             <div className="relative">
-              <input
-                type="text"
+              <DatePicker
+                autoComplete='off'
+                selected={checkInDate}
+                onChange={(date) => setCheckInDate(date)}
+                placeholderText="YYYY-MM-DD (Check In)"
+                dateFormat="yyyy-MM-dd"
+                minDate={currentDate} // Set minDate to currentDate
+                required
                 className="outline-none bg-transparent"
-                value={checkOutDate ? checkOutDate.toString() : ''}
-                placeholder="Register"
-                onClick={() => setIsCheckOutCalendarOpen(!isCheckOutCalendarOpen)}
-                readOnly
               />
-              {isCheckOutCalendarOpen && (
-                <div className="absolute z-10 bg-white text-black p-4">
-                  <Calendar
-                    onDateSelected={(date) => {
-                      setCheckOutDate(date);
-                      setIsCheckOutCalendarOpen(false);
-                    }}                    
-                    className="calendar-container"
-                  />
-                </div>
-              )}
+            </div>
+          </div>
+          {/* Check-out */}
+          <div className="flex flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
+            <label htmlFor="check-out" className="mr-[5px]">
+              Check-out
+            </label>
+            <div className="relative">
+              <DatePicker
+                autoComplete='off'
+                selected={checkOutDate}
+                onChange={(date) => setCheckOutDate(date)}
+                placeholderText="YYYY-MM-DD (Check out)"
+                dateFormat="yyyy-MM-dd"
+                minDate={checkInDate || currentDate} // Set minDate to checkInDate or currentDate
+                required
+                className="outline-none bg-transparent"
+              />
             </div>
           </div>
           {/* Who */}
@@ -140,7 +154,7 @@ function SearchBar({
             </label>
             <div className="relative">
               <input
-                className="w-[300px] outline-none bg-transparent"
+                className="w-[200px] outline-none bg-transparent"
                 type="text"
                 id="guests"
                 placeholder={whoText}

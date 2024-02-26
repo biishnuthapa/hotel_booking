@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTwitter, faFacebook, faInstagram } from '@fortawesome/free-brands-svg-icons';
 
@@ -20,6 +21,13 @@ const Information = () => {
           <p className="text-xl mb-2">Rem.work, Kamalpokhari, Nepal</p>
           <p className="text-xl mb-2">admin@koion.tech</p>
           <p className="text-xl">123-456-7890</p>
+        </div>
+
+        <div>
+          <h1 className="text-2xl font-semibold mb-4 text-green-600">Quick link</h1>
+          <Link href="/Team">  {/* This line is changed */}
+            Team
+          </Link>
         </div>
 
         <div>

@@ -26,7 +26,7 @@ export default function Add() {
       description,
       location,
       rooms,
-      images: links.slice(0, 3).join(','),
+      images: links.slice(0, 5).join(','),
       price,
     }
 
@@ -113,7 +113,7 @@ export default function Add() {
               <button
                 onClick={addImage}
                 type="button"
-                className="p-2 bg-[#BFCFE7] text-white rounded-full text-sm"
+                className="p-2 bg-[#00773d] text-white rounded-full text-sm"
               >
                 Add image link
               </button>
@@ -127,8 +127,8 @@ export default function Add() {
             {links.map((link, i) => (
               <div
                 key={i}
-                className="p-2 rounded-full text-gray-500 bg-[#004c1c] font-semibold
-                flex items-center w-max cursor-pointer active:bg-[#004c1c]
+                className="p-2 rounded-full text-gray-500 bg-gray-200 font-semibold
+                flex items-center w-max cursor-pointer active:bg-gray-300
                 transition duration-300 ease space-x-2 text-xs"
               >
                 <span>{truncate(link, 4, 4, 11)}</span>
@@ -197,11 +197,11 @@ export default function Add() {
           <button
             type="submit"
             className={`flex flex-row justify-center items-center
-            w-full text-white text-md bg-[#004c1c]
+            w-full text-white text-md bg-[#00773d]
             py-2 px-5 rounded-full drop-shadow-xl hover:bg-white
             border-transparent border
-            hover:hover:text-[#004c1c]
-            hover:border-[#004c1c]
+            hover:hover:text-[#00773d]
+            hover:border-[#00773d]
             mt-5 transition-all duration-500 ease-in-out ${
               !address ? 'opacity-50 cursor-not-allowed' : ''
             }`}

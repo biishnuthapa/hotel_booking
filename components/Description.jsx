@@ -1,5 +1,5 @@
-import { BiMedal, BiBookOpen } from 'react-icons/bi'
-import { FiCalendar } from 'react-icons/fi'
+import { BiBookOpen } from 'react-icons/bi'
+import { FiCalendar, FiMapPin } from 'react-icons/fi'
 
 const Description = ({ apartment }) => {
   return (
@@ -7,14 +7,21 @@ const Description = ({ apartment }) => {
       <h1 className="text-xl font-semibold">Description</h1>
       <p className="text-slate-500 text-lg w-full sm:w-4/5">{apartment?.description}</p>
 
-      <div className=" flex space-x-4 ">
+      <div className="flex space-x-4">
         <BiBookOpen className="text-4xl" />
+        <div>
+          <h1 className="text-xl font-semibold">Booking Open 24 Hrs</h1>
+        </div>
+      </div>
+
+      <div className=" flex space-x-4 ">
+        <FiMapPin className="text-4xl" />
         <div>
           <h1 className="text-xl font-semibold">Location</h1>
           <p className="cursor-pointer">{apartment?.location}</p>
         </div>
       </div>
-      <div className=" flex space-x-4">
+      {/* <div className=" flex space-x-4">
         <BiMedal className="text-4xl" />
         <div>
           <h1 className="text-xl font-semibold">Kathmandu Agantuk Hotel</h1>
@@ -22,7 +29,7 @@ const Description = ({ apartment }) => {
             Kathmandu Agantuk Hotel provides air-conditioned rooms with free wifi, free private parking and room service.
           </p>
         </div>
-      </div>
+      </div> */}
       <div className=" flex space-x-4">
         <FiCalendar className="text-4xl" />
         <div>

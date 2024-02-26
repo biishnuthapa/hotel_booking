@@ -3,11 +3,8 @@ import { RainbowKitSiweNextAuthProvider } from '@rainbow-me/rainbowkit-siwe-next
 import { WagmiConfig, configureChains, createConfig } from 'wagmi'
 import { RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me/rainbowkit'
 import {
-  metaMaskWallet,
-  trustWallet,
-  coinbaseWallet,
-  rainbowWallet,
-} from '@rainbow-me/rainbowkit/wallets'
+  metaMaskWallet
+  } from '@rainbow-me/rainbowkit/wallets'
 import { mainnet, hardhat } from 'wagmi/chains'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
@@ -65,10 +62,7 @@ const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
     wallets: [
-      metaMaskWallet({ projectId, chains }),
-      trustWallet({ projectId, chains }),
-      coinbaseWallet({ appName: 'Coinbase', chains }),
-      rainbowWallet({ projectId, chains }),
+      metaMaskWallet({ projectId, chains })    
     ],
   },
 ]);

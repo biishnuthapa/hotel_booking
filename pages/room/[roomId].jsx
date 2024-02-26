@@ -3,7 +3,9 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { globalActions } from '@/store/globalSlices'
 import { useDispatch, useSelector } from 'react-redux'
-import { Title, ImageGrid, Description, Calendar, Actions, Review, AddReview, MapComponent} from '@/components'
+import { Title, ImageGrid, Description, Calendar, Actions, Review, AddReview } from '@/components'
+import MapComponent from '../../components/MapComponent/MapComponent'
+
 import {
   getReviews,
   getApartment,
@@ -70,7 +72,7 @@ export default function Room({
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
         <Actions apartment={apartment} />
-          
+
         <MapComponent/>
 
         <div className="flex flex-col justify-between flex-wrap space-y-2">
@@ -78,7 +80,7 @@ export default function Room({
             <h1 className="text-xl font-semibold">Reviews</h1>
             {qualifiedReviewers?.includes(address) && (
               <button
-                className="cursor-pointer text-pink-500 hover:text-[#004c1c]"
+                className="cursor-pointer text-[#00773d] hover:text-[#00773d]"
                 onClick={handleReviewOpen}
               >
                 Drop your review

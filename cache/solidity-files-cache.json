@@ -6,10 +6,10 @@
       "contentHash": "8348340a9122f482c0f7557214abc608",
       "sourceName": "contracts/DappBnb.sol",
       "solcConfig": {
-        "version": "0.8.19",
+        "version": "0.8.4",
         "settings": {
           "optimizer": {
-            "enabled": true,
+            "enabled": false,
             "runs": 200
           },
           "outputSelection": {
@@ -41,14 +41,14 @@
       ]
     },
     "/home/oem/Documents/hotel_booking/node_modules/@openzeppelin/contracts/access/Ownable.sol": {
-      "lastModificationDate": 1708491950647,
+      "lastModificationDate": 1708924435690,
       "contentHash": "5a20b2cad87ddb61c7a3a6af21289e28",
       "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
       "solcConfig": {
-        "version": "0.8.19",
+        "version": "0.8.4",
         "settings": {
           "optimizer": {
-            "enabled": true,
+            "enabled": false,
             "runs": 200
           },
           "outputSelection": {
@@ -78,14 +78,14 @@
       ]
     },
     "/home/oem/Documents/hotel_booking/node_modules/@openzeppelin/contracts/utils/Counters.sol": {
-      "lastModificationDate": 1708491950683,
+      "lastModificationDate": 1708924435722,
       "contentHash": "74654e3ae5d7f39555055dfe244dab7a",
       "sourceName": "@openzeppelin/contracts/utils/Counters.sol",
       "solcConfig": {
-        "version": "0.8.19",
+        "version": "0.8.4",
         "settings": {
           "optimizer": {
-            "enabled": true,
+            "enabled": false,
             "runs": 200
           },
           "outputSelection": {
@@ -113,14 +113,14 @@
       ]
     },
     "/home/oem/Documents/hotel_booking/node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol": {
-      "lastModificationDate": 1708491950675,
+      "lastModificationDate": 1708924435694,
       "contentHash": "1535f8c0c68463f8c1b5239f7584e71f",
       "sourceName": "@openzeppelin/contracts/security/ReentrancyGuard.sol",
       "solcConfig": {
-        "version": "0.8.19",
+        "version": "0.8.4",
         "settings": {
           "optimizer": {
-            "enabled": true,
+            "enabled": false,
             "runs": 200
           },
           "outputSelection": {
@@ -148,14 +148,14 @@
       ]
     },
     "/home/oem/Documents/hotel_booking/node_modules/@openzeppelin/contracts/utils/Context.sol": {
-      "lastModificationDate": 1708491950679,
+      "lastModificationDate": 1708924435722,
       "contentHash": "5f2c5c4b6af2dd4551027144797bc8be",
       "sourceName": "@openzeppelin/contracts/utils/Context.sol",
       "solcConfig": {
-        "version": "0.8.19",
+        "version": "0.8.4",
         "settings": {
           "optimizer": {
-            "enabled": true,
+            "enabled": false,
             "runs": 200
           },
           "outputSelection": {

@@ -4,6 +4,7 @@ import SearchBar from './SearchBar';
 function ParentComponent() {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [checkOutDate, setCheckOutDate] = useState(null);
+  const [checkInDate, setCheckInDate] = useState(null);
   const [guests, setGuests] = useState({
     adults: 0,
     children: 0,
@@ -29,6 +30,8 @@ function ParentComponent() {
         setSelectedLocation={setSelectedLocation}
         checkOutDate={checkOutDate}
         setCheckOutDate={setCheckOutDate}
+        checkInDate={checkInDate}
+        setCheckInDate={setCheckInDate}
         guests={guests}
         setGuests={setGuests}
         onSearch={handleSearch}
