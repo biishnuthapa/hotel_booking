@@ -25,9 +25,7 @@ const Information = () => {
 
         <div>
           <h1 className="text-2xl font-semibold mb-4 text-green-600">Quick link</h1>
-          <Link href="/Team">  {/* This line is changed */}
-            Team
-          </Link>
+          <Link href="/Team">Team</Link>
         </div>
 
         <div>
