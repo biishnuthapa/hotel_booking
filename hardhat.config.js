@@ -1,29 +1,11 @@
+require('dotenv').config()
 require('@nomicfoundation/hardhat-toolbox')
 module.exports = {
-  defaultNetwork: 'localhost',
+  solidity: '0.8.4', // Or any other version
   networks: {
-    hardhat: {},
-    localhost: {
-      url: 'http://127.0.0.1:8545',
+    mumbai: {
+      url: 'https://polygon-mumbai.g.alchemy.com/v2/YOem_tciIfjXY-qDfFpUFYUxgsgMr8MN',
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
     },
-    // bitfinity: {
-    //   url: 'https://testnet.bitfinity.network',
-    //   accounts: [''],
-    //   chainId: 355113,
-    //   timeout: 120000,
-    //   gasPrice: 10 * 10**9,
-    // },
-  },
-  solidity: {
-    version: '0.8.19',
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 200,
-      },
-    },
-  },
-  mocha: {
-    timeout: 40000,
   },
 }
