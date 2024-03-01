@@ -1,6 +1,6 @@
 import Head from 'next/head'
 import { getApartments } from '@/services/blockchain'
-import { Collection, Filter, HeroSection, Information, ParentComponent} from '@/components'
+import { Collection, Filter, HeroSection, Information,ParentComponent} from '@/components'
 import Accordion from '../components/Questions/Questions'
 import UpcomingEvents from '../components/UpcomingEvent/Upcoming'
 import NFTWebsiteSteps from '../components/Steps/NFTWebsiteSteps'

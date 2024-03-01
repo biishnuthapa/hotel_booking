@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import { globalActions } from '@/store/globalSlices'
 import { useDispatch, useSelector } from 'react-redux'
 import { Title, ImageGrid, Description, Calendar, Actions, Review, AddReview } from '@/components'
-import MapComponent from '../../components/MapComponent/MapComponent'
 
 import {
   getReviews,
@@ -72,8 +71,6 @@ export default function Room({
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
         <Actions apartment={apartment} />
-
-        <MapComponent/>
 
         <div className="flex flex-col justify-between flex-wrap space-y-2">
           <div className="flex justify-start items-center space-x-2">

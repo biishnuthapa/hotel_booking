@@ -1,11 +1,36 @@
-import React from 'react'
+import React, { useState, useEffect } from "react";
+import { Map, Marker, GoogleApiWrapper } from "google-maps-react";
 
-function MapComponent() {
-  return (
-    <div><iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3531.994859991658!2d85.30857657525416!3d27.71744497617672!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x39eb19dc0e696de9%3A0xa0f52874f50a7be0!2sKathmandu%20Aagantuk%20Hotel!5e0!3m2!1sen!2snp!4v1707238731523!5m2!1sen!2snp" 
-    width="1300" height="500"  allowfullscreen
-    loading="lazy" referrerPolicy="no-referrer-when-downgrade"></iframe></div>
-  )
+function MapComponent({ location, google, setHighLight }) { // Change props to accept location instead of locations
+    const [center, setCenter] = useState();
+
+    useEffect(() => {
+        if (location) { // Check if location is provided
+            setCenter({ lat: location.lat, lng: location.lng }); // Set center to provided location
+        }
+    }, [location]); // Update dependency array to watch for changes in location
+
+    return (
+        <>
+            {center && (
+                <Map
+                    google={google}
+                    initialCenter={center}
+                    zoom={13}
+                    disableDefaultUI={true}
+                >
+                    {location && ( // Check if location is provided
+                        <Marker
+                            position={location}
+                            onClick={() => setHighLight(0)} // Assuming you're setting highlight for the single marker
+                        />
+                    )}
+                </Map>
+            )}
+        </>
+    );
 }
 
-export default MapComponent
+export default GoogleApiWrapper({
+    apiKey: process.env.REACT_APP_API_KEY,
+})(MapComponent);
