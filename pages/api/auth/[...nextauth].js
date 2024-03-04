@@ -25,10 +25,10 @@ export default async function auth(req, res) {
           const nextAuthUrl = new URL(process.env.NEXTAUTH_URL)
 
           const result = await siwe.verify({
-            signature: credentials?.signature || '',
+            signature: credentials?.signature || "",
             domain: nextAuthUrl.host,
             nonce: await getCsrfToken({ req: { headers: req.headers } }),
-          })
+          });
 
           if (result.success) {
             return {
