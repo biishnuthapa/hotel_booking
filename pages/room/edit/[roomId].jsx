@@ -200,11 +200,11 @@ export default function Edit({ apartment }) {
           <button
             type="submit"
             className={`flex flex-row justify-center items-center
-            w-full text-white text-md bg-[#ff385c]
+            w-full text-white text-md bg-[#00773d]
             py-2 px-5 rounded-full drop-shadow-xl hover:bg-white
             border-transparent border
-            hover:hover:text-[#ff385c]
-            hover:border-[#ff385c]
+            hover:hover:text-[#00773d]
+            hover:border-[#00773d]
             mt-5 transition-all duration-500 ease-in-out ${
               !address ? 'opacity-50 cursor-not-allowed' : ''
             }`}
