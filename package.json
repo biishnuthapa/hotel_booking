@@ -42,6 +42,8 @@
     "framer-motion": "11.0.5",
     "google-maps-react": "2.0.6",
     "leaflet": "1.9.4",
+    "react-image-lightbox": "5.1.4",
+    "react-modal-image": "2.6.0",
     "lokijs": "^1.5.12",
     "moment": "^2.29.4",
     "next": "13.4.19",
