@@ -1,7 +1,15 @@
 require('dotenv').config()
 require('@nomicfoundation/hardhat-toolbox')
 module.exports = {
-  solidity: '0.8.4', // Or any other version
+  solidity: {
+    version: '0.8.4',
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
   networks: {
     mumbai: {
       url: 'https://polygon-mumbai.g.alchemy.com/v2/YOem_tciIfjXY-qDfFpUFYUxgsgMr8MN',
