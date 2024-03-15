@@ -3,7 +3,8 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { globalActions } from '@/store/globalSlices'
 import { useDispatch, useSelector } from 'react-redux'
-import { Title, ImageGrid, Description, Calendar, Actions, Review, AddReview } from '@/components'
+import { Title, ImageGrid, Description, Calendar, Actions, Review, AddReview, Features } from '@/components'
+// import {Features} from '@components/Features/Features'
 
 import {
   getReviews,
@@ -67,6 +68,7 @@ export default function Room({
           forth={apartment?.images[3]}
           fifth={apartment?.images[4]}
         />
+        <Features />
 
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />

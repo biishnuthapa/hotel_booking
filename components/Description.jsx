@@ -2,6 +2,19 @@ import { BiBookOpen } from 'react-icons/bi'
 import { FiCalendar, FiMapPin } from 'react-icons/fi'
 
 const Description = ({ apartment }) => {
+  // Get the current date
+  const currentDate = new Date()
+  // Add 2 days to the current date
+  const cancellationDate = new Date(currentDate)
+  cancellationDate.setDate(cancellationDate.getDate() + 2)
+
+  // Format the cancellation date as "Month Day, Year"
+  const formattedCancellationDate = cancellationDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
   return (
     <div className="py-5 border-b-2 border-b-slate-200 space-y-4">
       <h1 className="text-xl font-semibold">Description</h1>
@@ -21,19 +34,14 @@ const Description = ({ apartment }) => {
           <p className="cursor-pointer">{apartment?.location}</p>
         </div>
       </div>
-      {/* <div className=" flex space-x-4">
-        <BiMedal className="text-4xl" />
-        <div>
-          <h1 className="text-xl font-semibold">Kathmandu Agantuk Hotel</h1>
-          <p>
-            Kathmandu Agantuk Hotel provides air-conditioned rooms with free wifi, free private parking and room service.
-          </p>
-        </div>
-      </div> */}
+
       <div className=" flex space-x-4">
         <FiCalendar className="text-4xl" />
         <div>
-          <h1 className="text-xl font-semibold">Free cancellation before Feb 5.</h1>
+          {/* Display dynamic cancellation date */}
+          <h1 className="text-xl font-semibold">
+            Free cancellation before {formattedCancellationDate}
+          </h1>
         </div>
       </div>
     </div>

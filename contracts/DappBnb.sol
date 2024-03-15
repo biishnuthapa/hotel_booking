@@ -105,8 +105,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory location,
     string memory images,
     uint rooms,
-    uint price,
-    string memory pinataJsonLink
+    uint price
 
   ) public {
     require(appartmentExist[id] == true, 'Appartment not found');
@@ -117,7 +116,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     require(bytes(images).length > 0, 'Images cannot be empty');
     require(rooms > 0, 'Rooms cannot be zero');
     require(price > 0 ether, 'Price cannot be zero');
-    require(bytes(pinataJsonLink).length > 0, 'Give the link for Metadata');
 
     ApartmentStruct memory lodge = apartments[id];
     lodge.name = name;
@@ -126,7 +124,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
-    lodge.pinataJsonLink = pinataJsonLink;
 
     apartments[id] = lodge;
   }

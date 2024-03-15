@@ -23,6 +23,7 @@ import Team from '../pages/Team'
 import Footer from './Footer/Footer'
 import AddReview from './AddReview'
 import NFTWebsiteSteps from './Steps/NFTWebsiteSteps'
+import Features from './Features'
 
 export {
   Header,
@@ -50,4 +51,5 @@ export {
   Footer,
   AddReview,
   NFTWebsiteSteps,
+  Features
 }

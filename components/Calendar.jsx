@@ -1,6 +1,6 @@
 import moment from 'moment'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { useSelector } from 'react-redux'
 import DatePicker from 'react-datepicker'
@@ -10,18 +10,34 @@ import { bookApartment } from '@/services/blockchain'
 const Calendar = ({ apartment, timestamps }) => {
   const [checkInDate, setCheckInDate] = useState(null)
   const [checkOutDate, setCheckOutDate] = useState(null)
+  const [totalDays, setTotalDays] = useState(0)
   const { securityFee } = useSelector((states) => states.globalStates)
+
+  useEffect(() => {
+    if (checkInDate && checkOutDate) {
+      const days = moment(checkOutDate).diff(moment(checkInDate), 'days')
+      setTotalDays(days)
+    }
+  }, [checkInDate, checkOutDate])
+
+  const handleDateChange = (date, type) => {
+    if (type === 'checkin') {
+      setCheckInDate(date)
+    } else if (type === 'checkout') {
+      setCheckOutDate(date)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!checkInDate || !checkOutDate) return
+
     const start = moment(checkInDate)
     const end = moment(checkOutDate)
     const timestampArray = []
 
-    // handleDateSelection(checkInDate, checkOutDate);
-    
-    while (start <= end) {
+    while (start < end) {
+      // Change <= to <
       timestampArray.push(start.valueOf())
       start.add(1, 'days')
     }
@@ -54,10 +70,11 @@ const Calendar = ({ apartment, timestamps }) => {
   const resetForm = () => {
     setCheckInDate(null)
     setCheckOutDate(null)
+    setTotalDays(0)
   }
 
   return (
-    <div className='flex'>
+    <div className="flex">
       <form
         onSubmit={handleSubmit}
         className="sm:w-[25rem] border-[0.1px] p-6
@@ -71,12 +88,13 @@ const Calendar = ({ apartment, timestamps }) => {
               {apartment?.price} <small>per night</small>
             </span>
           </div>
+          <div className="text-gray-500">Total Days: {totalDays}</div>
         </div>
         <DatePicker
           id="checkInDate"
           selected={checkInDate}
-          autoComplete='off'
-          onChange={setCheckInDate}
+          autoComplete="off"
+          onChange={(date) => handleDateChange(date, 'checkin')}
           placeholderText="YYYY-MM-DD (Check In)"
           dateFormat="yyyy-MM-dd"
           minDate={new Date()}
@@ -87,11 +105,11 @@ const Calendar = ({ apartment, timestamps }) => {
         <DatePicker
           id="checkOutDate"
           selected={checkOutDate}
-          autoComplete='off'
-          onChange={setCheckOutDate}
+          autoComplete="off"
+          onChange={(date) => handleDateChange(date, 'checkout')}
           placeholderText="YYYY-MM-DD (Check out)"
           dateFormat="yyyy-MM-dd"
-          minDate={checkInDate}
+          minDate={moment(checkInDate).add(1, 'day').toDate()} 
           excludeDates={timestamps}
           required
           className="rounded-lg w-full border border-gray-400 p-2"
@@ -107,7 +125,6 @@ const Calendar = ({ apartment, timestamps }) => {
           Check your bookings
         </Link>
       </form>
-      
     </div>
   )
 }
