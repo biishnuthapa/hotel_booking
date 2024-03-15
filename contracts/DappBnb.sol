@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.7.0 <0.9.0;
-
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
-contract DappBnb is Ownable, ReentrancyGuard {
+
+contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
   using Counters for Counters.Counter;
   Counters.Counter private _totalAppartments;
+  Counters.Counter private _totalTokens;
 
   struct ApartmentStruct {
     uint id;
@@ -21,6 +24,8 @@ contract DappBnb is Ownable, ReentrancyGuard {
     bool booked;
     bool deleted;
     uint timestamp;
+    string pinataJsonLink;
+    
   }
 
   struct BookingStruct {
@@ -52,7 +57,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
   mapping(uint => mapping(uint => bool)) isDateBooked;
   mapping(address => mapping(uint => bool)) hasBooked;
 
-  constructor(uint _taxPercent, uint _securityFee) {
+  constructor(uint _taxPercent, uint _securityFee) ERC721('Hospitality', 'NFT') {
     taxPercent = _taxPercent;
     securityFee = _securityFee;
   }
@@ -64,13 +69,15 @@ contract DappBnb is Ownable, ReentrancyGuard {
     string memory location,
     string memory images,
     uint rooms,
-    uint price
+    uint price,
+    string memory pinataJsonLink
   ) public  {
-    require(msg.sender == owner());
+    require(msg.sender == owner(), 'Please submit the form to add new appartment');
     require(bytes(name).length > 0, 'Name cannot be empty');
     require(bytes(description).length > 0, 'Description cannot be empty');
     require(bytes(location).length > 0, 'Location cannot be empty');
     require(bytes(images).length > 0, 'Images cannot be empty');
+    require(bytes(pinataJsonLink).length > 0, 'Give the link for Metadata');
     require(rooms > 0, 'Rooms cannot be zero');
     require(price > 0 ether, 'Price cannot be zero');
 
@@ -85,6 +92,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
     lodge.price = price;
     lodge.owner = msg.sender;
     lodge.timestamp = currentTime();
+    lodge.pinataJsonLink = pinataJsonLink;
 
     appartmentExist[lodge.id] = true;
     apartments[_totalAppartments.current()] = lodge;
@@ -97,7 +105,9 @@ contract DappBnb is Ownable, ReentrancyGuard {
     string memory location,
     string memory images,
     uint rooms,
-    uint price
+    uint price,
+    string memory pinataJsonLink
+
   ) public {
     require(appartmentExist[id] == true, 'Appartment not found');
     require(msg.sender == apartments[id].owner, 'Unauthorized personnel, owner only');
@@ -107,6 +117,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
     require(bytes(images).length > 0, 'Images cannot be empty');
     require(rooms > 0, 'Rooms cannot be zero');
     require(price > 0 ether, 'Price cannot be zero');
+    require(bytes(pinataJsonLink).length > 0, 'Give the link for Metadata');
 
     ApartmentStruct memory lodge = apartments[id];
     lodge.name = name;
@@ -115,6 +126,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
+    lodge.pinataJsonLink = pinataJsonLink;
 
     apartments[id] = lodge;
   }
@@ -184,6 +196,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
     BookingStruct memory booking = bookingsOf[aid][bookingId];
     require(msg.sender == booking.tenant, 'Unauthorized tenant!');
     require(!booking.checked, 'Apartment already checked on this date!');
+    require(mintTickets(aid), 'failed to mint');
 
     bookingsOf[aid][bookingId].checked = true;
     uint tax = (booking.price * taxPercent) / 100;
@@ -193,7 +206,7 @@ contract DappBnb is Ownable, ReentrancyGuard {
 
     payTo(apartments[aid].owner, (booking.price - tax));
     payTo(owner(), tax);
-    payTo(msg.sender, fee);
+    payTo(msg.sender, fee);   
   }
 
   function claimFunds(uint aid, uint bookingId) public {
@@ -294,7 +307,13 @@ contract DappBnb is Ownable, ReentrancyGuard {
   function currentTime() internal view returns (uint256) {
     return (block.timestamp * 1000) + 1000;
   }
+
+function mintTickets(uint id) internal returns (bool) {
+    _totalTokens.increment();
+    _mint(msg.sender, _totalTokens.current());
+    _setTokenURI(_totalTokens.current(), apartments[id].pinataJsonLink);
+
+    return true;
 }
 
-
-
+}

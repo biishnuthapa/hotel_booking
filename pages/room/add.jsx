@@ -15,11 +15,21 @@ export default function Add() {
   const [images, setImages] = useState('')
   const [price, setPrice] = useState('')
   const [links, setLinks] = useState([])
+  const [pinataJsonLink, setPinataJsonLink] = useState('')
   const navigate = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!name || !location || !description || !rooms || links.length != 5 || !price) return
+    if (
+      !name ||
+      !location ||
+      !description ||
+      !rooms ||
+      links.length != 5 ||
+      !price ||
+      !pinataJsonLink
+    )
+      return
 
     const params = {
       name,
@@ -28,6 +38,7 @@ export default function Add() {
       rooms,
       images: links.slice(0, 5).join(','),
       price,
+      pinataJsonLink: pinataJsonLink,
     }
 
     await toast.promise(
@@ -192,6 +203,23 @@ export default function Add() {
               value={description}
               required
             ></textarea>
+          </div>
+
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <input
+              className="block w-full text-sm
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0"
+              type="url" // Change input type to "url"
+              name="pinataJsonLink"
+              placeholder="Pinata JSON Link"
+              onChange={(e) => setPinataJsonLink(e.target.value)}
+              value={pinataJsonLink}
+              required
+            />
           </div>
 
           <button
