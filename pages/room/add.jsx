@@ -11,6 +11,8 @@ export default function Add() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [rooms, setRooms] = useState('')
   const [images, setImages] = useState('')
   const [price, setPrice] = useState('')
@@ -23,6 +25,8 @@ export default function Add() {
     if (
       !name ||
       !location ||
+      !latitude ||
+      !longitude ||
       !description ||
       !rooms ||
       links.length != 5 ||
@@ -35,6 +39,8 @@ export default function Add() {
       name,
       description,
       location,
+      latitude,
+      longitude,
       rooms,
       images: links.slice(0, 5).join(','),
       price,
@@ -170,6 +176,41 @@ export default function Add() {
               required
             />
           </div>
+
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <input
+              className="block w-full text-sm
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0"
+              type="text"
+              name="latitude"
+              placeholder="Latitude"
+              onChange={(e) => setLatitude(e.target.value)}
+              value={latitude}
+              required
+            />
+          </div>
+
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <input
+              className="block w-full text-sm
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0"
+              type="text"
+              name="longitude"
+              placeholder="Longitude"
+              onChange={(e) => setLongitude(e.target.value)}
+              value={longitude}
+              required
+            />
+          </div>
+
 
           <div
             className="flex flex-row justify-between items-center

@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import { globalActions } from '@/store/globalSlices'
 import { useDispatch, useSelector } from 'react-redux'
 import { Title, ImageGrid, Description, Calendar, Actions, Review, AddReview, Features } from '@/components'
-// import {Features} from '@components/Features/Features'
 
 import {
   getReviews,
@@ -14,6 +13,8 @@ import {
   getQualifiedReviewers,
 } from '@/services/blockchain'
 import { useAccount } from 'wagmi'
+import CustomGoogleMap from '../../components/Map/CustomGoogleMap.jsx'
+
 
 export default function Room({
   apartmentData,
@@ -51,6 +52,12 @@ export default function Room({
     dispatch(setReviewModal('scale-100'))
   }
 
+  const center={
+    lat : 40.7128,
+   lng : -74.0060,
+ 
+   }
+
   return (
     <>
       <Head>
@@ -73,6 +80,13 @@ export default function Room({
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
         <Actions apartment={apartment} />
+
+        <CustomGoogleMap
+        center={center} // Pass center coordinates as a prop
+        zoom={11} // Pass zoom level as a prop
+        apiKey={process.env.NEXT_PUBLIC_API_KEY}// Pass your API key as a prop
+      />
+
 
         <div className="flex flex-col justify-between flex-wrap space-y-2">
           <div className="flex justify-start items-center space-x-2">
