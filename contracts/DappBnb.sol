@@ -16,9 +16,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     uint id;
     string name;
     string description;
-    string location;
-    string latitude,
-    string longitude,
+    string longitude;
     string images;
     uint rooms;
     uint price;
@@ -26,6 +24,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     bool booked;
     bool deleted;
     uint timestamp;
+    string location;
+    string latitude;
     string pinataJsonLink;
     
   }
@@ -69,11 +69,11 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory name,
     string memory description,
     string memory location,
-      string memory latitude,
-    string memory longitude,
     string memory images,
     uint rooms,
     uint price,
+    string memory latitude,
+    string memory longitude,
     string memory pinataJsonLink
   ) public  {
     require(msg.sender == owner(), 'Please submit the form to add new appartment');
@@ -91,13 +91,13 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.name = name;
     lodge.description = description;
     lodge.location = location;
-    lodge.latitude = latitude; 
-    lodge.longitude = longitude; 
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
     lodge.owner = msg.sender;
     lodge.timestamp = currentTime();
+    lodge.latitude = latitude; 
+    lodge.longitude = longitude; 
     lodge.pinataJsonLink = pinataJsonLink;
 
     appartmentExist[lodge.id] = true;

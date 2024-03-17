@@ -89,6 +89,8 @@ const createApartment = async (apartment) => {
       apartment.images,
       apartment.rooms,
       toWei(apartment.price),
+      apartment.latitude,
+      apartment.longitude,
       apartment.pinataJsonLink
     )
     await tx.wait()
@@ -243,6 +245,8 @@ const structureAppartments = (appartments) =>
     rooms: Number(appartment.rooms),
     timestamp: Number(appartment.timestamp),
     booked: appartment.booked,
+    latitude: appartment.latitude,
+    longitude: appartment.longitude,
     pinataJsonLink: appartment.pinataJsonLink,
   }))
 
