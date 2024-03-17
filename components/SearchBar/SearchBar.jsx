@@ -77,10 +77,10 @@ function SearchBar({
   const currentDate = new Date();
 
   return (
-    <div className="flex justify-center z-50">
+    <div className="flex flex-wrap justify-center z-50">
       <div className="bg-transparent border-2 border-[#ccc] rounded-full shadow-lg p-3 mt-[24px] w-fit flex justify-center">
-        <div className="flex items-center">
-          <div className="flex flex-col mr-[10px] ml-[20px] border-r-2 border-[#C7C6C1]">
+        <div className="flex flex-wrap items-center">
+          <div className="flex flex-wrap flex-col mr-[10px] ml-[20px] border-r-2 border-[#C7C6C1]">
             {/* Where */}
             <label htmlFor="location" className="mr-[5px]">
               Where
@@ -112,7 +112,7 @@ function SearchBar({
             </div>
           </div>
           {/* Check-in */}
-          <div className="flex flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
+          <div className="flex flex-wrap flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
             <label htmlFor="check-in" className="mr-[5px]">
               Check-in
             </label>
@@ -130,7 +130,7 @@ function SearchBar({
             </div>
           </div>
           {/* Check-out */}
-          <div className="flex flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
+          <div className="flex flex-wrap flex-col mr-[10px] ml-[20px]  border-r-2 border-[#ccc]">
             <label htmlFor="check-out" className="mr-[5px]">
               Check-out
             </label>
@@ -148,7 +148,7 @@ function SearchBar({
             </div>
           </div>
           {/* Who */}
-          <div className="flex flex-col mr-[10px] ml-[20px] border-[#ccc] border-r-0">
+          <div className="flex flex-wrap flex-col mr-[10px] ml-[20px] border-[#ccc] border-r-0">
             <label htmlFor="guests" className="mr-[5px]">
               Who
             </label>
@@ -202,7 +202,7 @@ function SearchBar({
           </div>
           {/* Search Button */}
           <button 
-            className="bg-[#00773d] text-[#fff] border-0 py-[9px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
+            className="bg-[#00773d] flex flex-wrap text-[#fff] border-0 py-[9px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
             onClick={onSearch}
           >
             <Image src={SearchIcon} alt="search" />

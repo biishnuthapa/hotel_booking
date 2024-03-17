@@ -17,6 +17,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string name;
     string description;
     string location;
+    string latitude,
+    string longitude,
     string images;
     uint rooms;
     uint price;
@@ -67,6 +69,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory name,
     string memory description,
     string memory location,
+    string memory latitude,
+    string memory longitude,
     string memory images,
     uint rooms,
     uint price,
@@ -87,6 +91,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.name = name;
     lodge.description = description;
     lodge.location = location;
+    lodge.latitude = latitude; 
+    lodge.longitude = longitude; 
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
@@ -103,6 +109,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory name,
     string memory description,
     string memory location,
+    string memory latitude,
+    string memory longitude,
     string memory images,
     uint rooms,
     uint price

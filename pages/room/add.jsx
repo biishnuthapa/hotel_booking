@@ -10,35 +10,28 @@ export default function Add() {
   const { address } = useAccount()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [location, setLocation] = useState('')
+  const [location,setLocation]=useState('');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [rooms, setRooms] = useState('')
   const [images, setImages] = useState('')
   const [price, setPrice] = useState('')
   const [links, setLinks] = useState([])
-  const [pinataJsonLink, setPinataJsonLink] = useState('')
   const navigate = useRouter()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (
-      !name ||
-      !location ||
-      !description ||
-      !rooms ||
-      links.length != 5 ||
-      !price ||
-      !pinataJsonLink
-    )
-      return
+    if (!name || !location || !latitude || !longitude || !description || !rooms || links.length != 5 || !price) return
 
     const params = {
       name,
       description,
       location,
+      latitude,
+      longitude,
       rooms,
       images: links.slice(0, 5).join(','),
       price,
-      pinataJsonLink: pinataJsonLink,
     }
 
     await toast.promise(
@@ -171,6 +164,41 @@ export default function Add() {
             />
           </div>
 
+
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <input
+              className="block w-full text-sm
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0"
+              type="text"
+              name="latitude"
+              placeholder="Latitude"
+              onChange={(e) => setLatitude(e.target.value)}
+              value={latitude}
+              required
+            />
+          </div>
+
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <input
+              className="block w-full text-sm
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0"
+              type="text"
+              name="longitude"
+              placeholder="Longitude"
+              onChange={(e) => setLongitude(e.target.value)}
+              value={longitude}
+              required
+            />
+          </div>
+
           <div
             className="flex flex-row justify-between items-center
           border border-gray-300 p-2 rounded-xl mt-5"
@@ -203,23 +231,6 @@ export default function Add() {
               value={description}
               required
             ></textarea>
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="url" // Change input type to "url"
-              name="pinataJsonLink"
-              placeholder="Pinata JSON Link"
-              onChange={(e) => setPinataJsonLink(e.target.value)}
-              value={pinataJsonLink}
-              required
-            />
           </div>
 
           <button
