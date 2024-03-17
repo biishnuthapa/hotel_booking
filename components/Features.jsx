@@ -4,7 +4,7 @@ const Features = () => {
   return (
     <div className="mt-8 flex rounded-2xl">
       <div className="grid max-w-sm gap-2 sm:max-w-none sm:grid-cols-2 lg:gap-4 lg:grid-cols-5">
-        <div className="flex flex-row items-center space-y-1 border border-gray-300 rounded-lg py-2 pl-4 pr-4">
+        <div className="flex -+flex-row items-center space-y-1 border border-gray-300 rounded-lg py-2 pl-4 pr-4">
           <img
             src="/assets/flati_icon/cityview.png"
             alt="City view"
