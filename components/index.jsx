@@ -23,6 +23,8 @@ import Footer from './Footer/Footer'
 import AddReview from './AddReview'
 import NFTWebsiteSteps from './Steps/NFTWebsiteSteps'
 import Features from './Features'
+import RoomTypes from './CreateRoomType'
+import RoomList from './RoomList'
 
 export {
   Header,
@@ -49,5 +51,7 @@ export {
   Footer,
   AddReview,
   NFTWebsiteSteps,
-  Features
+  Features,
+  RoomTypes,
+  RoomList
 }

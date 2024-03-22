@@ -1,0 +1,5 @@
+const getRoomTypes = async (apartmentId) => {
+  const contract = await getEthereumContracts();
+  const roomTypes = await contract.getRoomTypes(apartmentId); // Assuming there's a function in your smart contract to get room types for an apartment
+  return structureRoomTypes(roomTypes);
+};

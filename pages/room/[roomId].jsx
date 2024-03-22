@@ -23,6 +23,7 @@ import {
 } from '@/services/blockchain'
 import { useAccount } from 'wagmi'
 import CustomGoogleMap from '../../components/Map/CustomGoogleMap.jsx'
+import RoomList from '../../components/RoomList.jsx'
 
 export default function Room({
   apartmentData,
@@ -74,7 +75,6 @@ export default function Room({
 
       <div className="py-8 px-10 sm:px-20 md:px-32 space-y-8">
         <Title apartment={apartment} />
-
         <ImageGrid
           first={apartment?.images[0]}
           second={apartment?.images[1]}
@@ -82,18 +82,16 @@ export default function Room({
           forth={apartment?.images[3]}
           fifth={apartment?.images[4]}
         />
+        <RoomList apartmentId={roomId} />
         <Features />
-
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
         <Actions apartment={apartment} />
-
         <CustomGoogleMap
           center={center} // Pass center coordinates as a prop
           zoom={11} // Pass zoom level as a prop
           apiKey={process.env.NEXT_PUBLIC_API_KEY} // Pass your API key as a prop
         />
-
         <div className="flex flex-col justify-between flex-wrap space-y-2">
           <div className="flex justify-start items-center space-x-2">
             <h1 className="text-xl font-semibold">Reviews</h1>
@@ -126,6 +124,7 @@ export const getServerSideProps = async (context) => {
   const qualifiedReviewers = await getQualifiedReviewers(roomId)
   const reviewsData = await getReviews(roomId)
   const securityFee = await getSecurityFee()
+  // const roomTypesData = []
 
   return {
     props: {
@@ -134,6 +133,7 @@ export const getServerSideProps = async (context) => {
       reviewsData: JSON.parse(JSON.stringify(reviewsData)),
       qualifiedReviewers: JSON.parse(JSON.stringify(qualifiedReviewers)),
       securityFee: JSON.parse(JSON.stringify(securityFee)),
+      // roomTypesData: JSON.parse(JSON.stringify(roomTypesData)), // Pass roomTypesData as props
     },
   }
 }

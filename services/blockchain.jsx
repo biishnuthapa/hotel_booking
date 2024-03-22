@@ -232,6 +232,45 @@ const addReview = async (aid, comment) => {
   }
 }
 
+const addRoomTypeToApartment = async (apartmentId, name, description, price, images, capacity) => {
+  if (!ethereum) {
+    reportError('Please install a browser provider')
+    return Promise.reject(new Error('Browser provider not installed'))
+  }
+
+  try {
+    const contract = await getEthereumContracts()
+    const tx = await contract.addRoomTypeToApartment(
+      apartmentId,
+      name,
+      description,
+      price,
+      images,
+      capacity
+    ) // Including the capacity parameter
+    await tx.wait()
+
+    return Promise.resolve(tx)
+  } catch (error) {
+    reportError(error)
+    return Promise.reject(error)
+  }
+}
+
+const getRooms = async (apartmentId) => {
+  const contract = await getEthereumContracts()
+  const rooms = await contract.getRooms(apartmentId)
+  return structureRoomTypes(rooms)
+}
+const structureRoomTypes = (roomTypes) =>
+  roomTypes.map((roomType) => ({
+    name: roomType.name,
+    description: roomType.description,
+    price: fromWei(roomType.price),
+    images: roomType.images.split(','),
+    capacity: Number(roomType.capacity),
+  }))
+
 const structureAppartments = (appartments) =>
   appartments.map((appartment) => ({
     id: Number(appartment.id),
@@ -285,4 +324,6 @@ export {
   getReviews,
   getQualifiedReviewers,
   getSecurityFee,
+  addRoomTypeToApartment,
+  getRooms,
 }

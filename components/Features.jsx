@@ -13,7 +13,7 @@ const Features = () => {
   }, [])
 
   return (
-    <div className="mt-8 flex rounded-2xl">
+    <div className="my-8 bg-white shadow rounded-md overflow-hidden">
       <div className="grid max-w-sm gap-2 sm:max-w-none sm:grid-cols-2 lg:gap-4 lg:grid-cols-5">
         {features.map(
           (feature, index) =>

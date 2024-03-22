@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import Link from 'next/link'
 import { useAccount } from 'wagmi'
 import { useRouter } from 'next/router'
@@ -5,10 +6,12 @@ import { CiEdit } from 'react-icons/ci'
 import { MdDeleteOutline } from 'react-icons/md'
 import { deleteApartment } from '@/services/blockchain'
 import { toast } from 'react-toastify'
+import CreateRoomType from '@/components/CreateRoomType' // Import the CreateRoomType component
 
 const Actions = ({ apartment }) => {
   const navigate = useRouter()
   const { address } = useAccount()
+  const [showCreateRoomModal, setShowCreateRoomModal] = useState(false)
 
   const handleDelete = async () => {
     if (confirm(`Are you sure you want to delete Apartment ${apartment?.id}?`)) {
@@ -52,6 +55,23 @@ const Actions = ({ apartment }) => {
             <MdDeleteOutline size={15} />
             <small>Delete</small>
           </button>
+          <button
+            className="p-2 rounded-md shadow-lg border-[0.1px]
+              border-blue-500 flex justify-start items-center space-x-1
+              bg-[#0073e6] hover:bg-transparent hover:text-blue-500 text-white"
+            onClick={() => setShowCreateRoomModal(true)}
+          >
+            <span className="text-lg">+</span>
+            <small>Add Rooms</small>
+          </button>
+          {showCreateRoomModal && (
+            <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+              <CreateRoomType
+                apartmentId={apartment.id}
+                onClose={() => setShowCreateRoomModal(false)}
+              />
+            </div>
+          )}
         </>
       )}
     </div>

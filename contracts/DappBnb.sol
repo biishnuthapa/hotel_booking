@@ -29,6 +29,13 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string pinataJsonLink;
     
   }
+  struct RoomType {
+        string name;
+        string description;
+        uint256 price;
+        string images;
+        uint capacity;
+ }
 
   struct BookingStruct {
     uint id;
@@ -58,6 +65,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
   mapping(uint => uint[]) bookedDates;
   mapping(uint => mapping(uint => bool)) isDateBooked;
   mapping(address => mapping(uint => bool)) hasBooked;
+  mapping(uint256 => RoomType[]) roomTypes;
 
   constructor(uint _taxPercent, uint _securityFee) ERC721('Hospitality', 'NFT') {
     taxPercent = _taxPercent;
@@ -132,11 +140,36 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
+    lodge.latitude = latitude; 
+    lodge.longitude = longitude; 
 
     apartments[id] = lodge;
   }
+function addRoomTypeToApartment(
+    uint256 _apartmentId,
+    string memory _name,
+    string memory _description,
+    uint256 _price,
+    string memory _images,
+    uint256 _capacity
+) public onlyOwner {
+    require(appartmentExist[_apartmentId], "Apartment does not exist");
+    
+    RoomType memory newRoomType;
+    newRoomType.name = _name;
+    newRoomType.description = _description;
+    newRoomType.price = _price;
+    newRoomType.images = _images;
+    newRoomType.capacity =_capacity;
 
-  function deleteAppartment(uint id) public {
+    roomTypes[_apartmentId].push(newRoomType);
+}
+function getRooms(uint256 _apartmentId) public view returns (RoomType[] memory) {
+    require(appartmentExist[_apartmentId], "Apartment does not exist");
+    return roomTypes[_apartmentId];
+}
+
+function deleteAppartment(uint id) public {
     require(appartmentExist[id] == true, 'Appartment not found');
     require(apartments[id].owner == msg.sender, 'Unauthorized entity');
 
