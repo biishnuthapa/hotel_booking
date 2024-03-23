@@ -18,7 +18,7 @@ const Bookings = ({ apartmentData, bookingsData }) => {
     dispatch(setApartment(apartmentData))
     dispatch(setBookings(bookingsData))
   }, [dispatch, setApartment, apartmentData, setBookings, bookingsData])
-  console.log('bookings', bookings)
+
   return (
     <div className="w-full sm:w-3/5 mx-auto mt-8">
       <h1 className="text-center text-3xl text-black font-bold">Bookings</h1>
