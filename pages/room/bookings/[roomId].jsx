@@ -18,6 +18,8 @@ const Bookings = ({ apartmentData, bookingsData }) => {
   index === self.findIndex((b) => b.timestamp === booking.timestamp)
 );
 
+console.log("Booking",bookings)
+
   useEffect(() => {
     dispatch(setApartment(apartmentData))
     dispatch(setBookings(bookingsData))
