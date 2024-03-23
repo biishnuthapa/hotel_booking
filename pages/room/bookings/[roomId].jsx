@@ -14,17 +14,22 @@ const Bookings = ({ apartmentData, bookingsData }) => {
   const { setApartment, setBookings } = globalActions
   const { apartment, bookings } = useSelector((states) => states.globalStates)
 
+  const newBookings=bookings?.filter((booking, index, self) =>
+  index === self.findIndex((b) => b.timestamp === booking.timestamp)
+);
+
   useEffect(() => {
     dispatch(setApartment(apartmentData))
     dispatch(setBookings(bookingsData))
   }, [dispatch, setApartment, apartmentData, setBookings, bookingsData])
-  console.log('bookings', bookings)
+
+  console.log('bookings', newBookings)
   return (
     <div className="w-full sm:w-3/5 mx-auto mt-8">
       <h1 className="text-center text-3xl text-black font-bold">Bookings</h1>
-      {bookings.length < 1 && <div>No bookings for this apartment yet</div>}
+      {newBookings.length < 1 && <div>No bookings for this apartment yet</div>}
 
-      {bookings.map((booking, i) => (
+      {newBookings.map((booking, i) => (
         <Booking key={i} id={roomId} booking={booking} apartment={apartment} />
       ))}
     </div>
