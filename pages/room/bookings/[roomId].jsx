@@ -18,6 +18,22 @@ const Bookings = ({ apartmentData, bookingsData }) => {
   index === self.findIndex((b) => b.timestamp === booking.timestamp)
 );
 
+const getMaxDateForTimestamp = (timestamp) => {
+  const bookingsWithSameTimestamp = bookings.filter(
+    (b) => b.timestamp === timestamp
+  )
+  const maxDateBooking = bookingsWithSameTimestamp.reduce((prev, current) =>
+    new Date(prev.date) > new Date(current.date) ? prev : current
+  )
+
+  // Add one day to the max date
+  const maxDate = new Date(maxDateBooking.date)
+  maxDate.setDate(maxDate.getDate() + 1)
+
+  return maxDate.getTime() // Return the timestamp of the modified max date
+}
+
+
 console.log("Booking",bookings)
 
   useEffect(() => {
@@ -30,7 +46,7 @@ console.log("Booking",bookings)
       {newBookings.length < 1 && <div>No bookings for this apartment yet</div>}
 
       {newBookings.map((booking, i) => (
-        <Booking key={i} id={roomId} booking={booking} apartment={apartment} />
+        <Booking key={i} id={roomId} booking={booking} apartment={apartment} maxDateOut={getMaxDateForTimestamp(booking.timestamp)}/>
       ))}
     </div>
   )

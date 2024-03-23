@@ -5,7 +5,7 @@ import Identicon from 'react-identicons'
 import { formatDate, truncate } from '@/utils/helper'
 import { checkInApartment, refundBooking } from '@/services/blockchain'
 
-const Booking = ({ booking }) => {
+const Booking = ({ booking, maxDateOut }) => {
   const { address } = useAccount()
 
   const handleCheckIn = async () => {
@@ -25,6 +25,8 @@ const Booking = ({ booking }) => {
       }
     )
   }
+
+  console.log("maxDateOut",maxDateOut)
 
   const handleRefund = async () => {
     await toast.promise(
@@ -56,10 +58,10 @@ const Booking = ({ booking }) => {
     handleRefund,
   }
   
-  return <TenantView booking={booking} functions={functions} owner={address} />
+  return <TenantView booking={booking} functions={functions} owner={address} maxDateOut={maxDateOut} />
 } 
 
-const TenantView = ({ booking, functions, owner }) => {
+const TenantView = ({ booking, functions, owner,maxDateOut }) => {
 
   return (
     <div className="w-full flex justify-between items-center my-3 bg-[#bfcfe7] p-3">
@@ -74,7 +76,7 @@ const TenantView = ({ booking, functions, owner }) => {
           className="rounded-full shadow-gray-500 shadow-sm"
         />
         <div className="flex flex-col">
-          <span>{formatDate(booking.date)}</span>
+          <span>{formatDate(booking.date)} - {formatDate(maxDateOut)}</span>
           <span className="text-gray-500 text-sm">{truncate(booking.tenant, 4, 4, 11)}</span>
         </div>
       </Link>
