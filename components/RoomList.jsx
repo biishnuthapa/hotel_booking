@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import React, { useState, useEffect } from 'react'
 import { getRooms } from '@/services/blockchain'
+import RoomDetails from '@/components/RoomDetails' // Import RoomDetails component
 
 const RoomList = ({ apartmentId }) => {
   const [rooms, setRooms] = useState([])
-  const [selectedRoomImages, setSelectedRoomImages] = useState([])
+  const [selectedRoomId, setSelectedRoomId] = useState(null) // State for selected room
+  const [showModal, setShowModal] = useState(false) // State for modal visibility
 
   useEffect(() => {
     const fetchRoomsData = async () => {
@@ -19,9 +20,14 @@ const RoomList = ({ apartmentId }) => {
     fetchRoomsData()
   }, [apartmentId])
 
-  const handleRoomClick = (roomImages) => {
-    setSelectedRoomImages(roomImages)
-    // Open modal or popup here to display images
+  const handleRoomClick = (roomId) => {
+    setSelectedRoomId(roomId)
+    setShowModal(true) // Open modal on room click
+  }
+
+  const handleCloseModal = () => {
+    setSelectedRoomId(null)
+    setShowModal(false) // Close modal on close button click
   }
 
   return (
@@ -74,8 +80,8 @@ const RoomList = ({ apartmentId }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{room.capacity}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{room.description}</div>
+                <td className="px-6 py-4">
+                  <div className="text-sm text-gray-900 break-words">{room.description}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">{room.price}</div>
@@ -83,9 +89,9 @@ const RoomList = ({ apartmentId }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
-                    onClick={() => handleRoomClick(room.images[0])}
+                    onClick={() => handleRoomClick(room.id)} // Pass room ID to handleRoomClick
                   >
-                    Show Prices
+                    View Details
                   </button>
                 </td>
               </tr>
@@ -93,6 +99,15 @@ const RoomList = ({ apartmentId }) => {
           </tbody>
         </table>
       </div>
+
+      {/* Conditional rendering of RoomDetails modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
+          <div className="bg-white p-8 rounded-md">
+            <RoomDetails onClose={handleCloseModal} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

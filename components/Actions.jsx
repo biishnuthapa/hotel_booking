@@ -6,7 +6,7 @@ import { CiEdit } from 'react-icons/ci'
 import { MdDeleteOutline } from 'react-icons/md'
 import { deleteApartment } from '@/services/blockchain'
 import { toast } from 'react-toastify'
-import CreateRoomType from '@/components/CreateRoomType' // Import the CreateRoomType component
+import CreateRoomType from '@/components/CreateRoomType' 
 
 const Actions = ({ apartment }) => {
   const navigate = useRouter()

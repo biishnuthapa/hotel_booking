@@ -25,6 +25,7 @@ import NFTWebsiteSteps from './Steps/NFTWebsiteSteps'
 import Features from './Features'
 import RoomTypes from './CreateRoomType'
 import RoomList from './RoomList'
+import ImageModal from './ImageModal'
 
 export {
   Header,
@@ -53,5 +54,6 @@ export {
   NFTWebsiteSteps,
   Features,
   RoomTypes,
-  RoomList
+  RoomList,
+  ImageModal
 }

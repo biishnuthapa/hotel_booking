@@ -7,4 +7,6 @@ export const globalStates = {
   bookings: [],
   booking: null,
   timestamps: [],
+  rooms:[],
+  room: null
 }

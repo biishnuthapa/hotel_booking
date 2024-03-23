@@ -6,7 +6,7 @@ import { useRouter } from 'next/router'
 import { useAccount } from 'wagmi'
 import { addRoomTypeToApartment } from '@/services/blockchain'
 
-export default function AddRoomType(apartmentId) {
+export default function AddRoomType() {
   const { address } = useAccount()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
