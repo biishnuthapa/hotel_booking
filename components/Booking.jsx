@@ -55,11 +55,12 @@ const Booking = ({ booking }) => {
     handleCheckIn,
     handleRefund,
   }
-
+  
   return <TenantView booking={booking} functions={functions} owner={address} />
-}
+} 
 
 const TenantView = ({ booking, functions, owner }) => {
+
   return (
     <div className="w-full flex justify-between items-center my-3 bg-[#bfcfe7] p-3">
       <Link
