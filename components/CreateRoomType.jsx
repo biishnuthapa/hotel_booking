@@ -1,194 +1,114 @@
-import { useState } from 'react'
-import { FaTimes } from 'react-icons/fa'
-import { truncate } from '@/utils/helper'
-import { toast } from 'react-toastify'
-import { useRouter } from 'next/router'
-import { useAccount } from 'wagmi'
+import React, { useState } from 'react'
 import { addRoomTypeToApartment } from '@/services/blockchain'
+import { toast } from 'react-toastify'
 
-export default function AddRoomType(apartmentId) {
-  const { address } = useAccount()
+const CreateRoomType = ({ apartmentId, onClose }) => {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [images, setImages] = useState('')
   const [capacity, setCapacity] = useState('')
-  const [links, setLinks] = useState([])
-  const navigate = useRouter()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!name || !description || !price || !images || !capacity || links.length !== 5) return
-
-    const params = {
-      name,
-      description,
-      price,
-      images: links.slice(0, 5).join(','),
-      capacity,
-    }
-
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await addRoomTypeToApartment(apartmentId, params)
-          .then(async () => {
-            navigate.push('/')
-            resolve()
-          })
-          .catch(() => reject())
-      }),
-      {
-        pending: 'Approve transaction...',
-        success: 'Room type added successfully 👌',
-        error: 'Encountered error 🤯',
+  const handleCreateRoomType = async () => {
+    try {
+      // Validate input fields
+      if (!name || !description || !price || !images || !capacity) {
+        throw new Error('All fields are required')
       }
-    )
-  }
 
-  const addImage = () => {
-    if (links.length !== 5) {
-      setLinks((prevState) => [...prevState, images])
+      // Display pending toast
+      toast.info('Approve transaction...')
+
+      // Call the function to create a room type
+      await addRoomTypeToApartment(apartmentId, name, description, price, images, capacity)
+
+      // Clear input fields after successfully creating the room type
+      setName('')
+      setDescription('')
+      setPrice('')
+      setImages('')
+      setCapacity('')
+
+      toast.success('RoomType submitted successfully 👌')
+    } catch (error) {
+      toast.error('Encountered error 🤯')
+      console.error('Error creating room type:', error.message)
     }
-    setImages('')
-  }
-
-  const removeImage = (index) => {
-    links.splice(index, 1)
-    setLinks(() => [...links])
   }
 
   return (
-    <div className="h-screen flex justify-center mx-auto">
-      <div className="w-11/12 md:w-2/5 h-7/12 p-6">
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="flex justify-center items-center">
-            <p className="font-semibold text-black">Add Room Type</p>
-          </div>
-
-          <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="text"
-              name="name"
-              placeholder="Room Type Name "
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-              required
-            />
-          </div>
-
-          <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="number"
-              step={0.01}
-              min={0.01}
-              name="price"
-              placeholder="Price (ETH)"
-              onChange={(e) => setPrice(e.target.value)}
-              value={price}
-              required
-            />
-          </div>
-
-          <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
-            <input
-              className="block flex-1 text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="url"
-              name="images"
-              placeholder="Images"
-              onChange={(e) => setImages(e.target.value)}
-              value={images}
-            />
-
-            {links.length !== 5 && (
-              <button
-                onClick={addImage}
-                type="button"
-                className="p-2 bg-[#00773d] text-white rounded-full text-sm"
-              >
-                Add image link
-              </button>
-            )}
-          </div>
-
-          <div
-            className="flex flex-row justify-start items-center
-          rounded-xl mt-5 space-x-1 flex-wrap"
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <span className="absolute top-0 right-0 cursor-pointer" onClick={onClose}>
+          <svg
+            className="h-6 w-6 text-gray-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            {links.map((link, i) => (
-              <div
-                key={i}
-                className="p-2 rounded-full text-gray-500 bg-gray-200 font-semibold
-                flex items-center w-max cursor-pointer active:bg-gray-300
-                transition duration-300 ease space-x-2 text-xs"
-              >
-                <span>{truncate(link, 4, 4, 11)}</span>
-                <button
-                  onClick={() => removeImage(i)}
-                  type="button"
-                  className="bg-transparent hover focus:outline-none"
-                >
-                  <FaTimes />
-                </button>
-              </div>
-            ))}
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="text"
-              name="description"
-              placeholder="Room Type Description"
-              onChange={(e) => setDescription(e.target.value)}
-              value={description}
-              required
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
             />
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="number"
-              name="capacity"
-              placeholder="Capacity"
-              onChange={(e) => setCapacity(e.target.value)}
-              value={capacity}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className={`flex flex-row justify-center items-center
-            w-full text-white text-md bg-[#00773d]
-            py-2 px-5 rounded-full drop-shadow-xl hover:bg-white
-            border-transparent border
-            hover:hover:text-[#00773d]
-            hover:border-[#00773d]
-            mt-5 transition-all duration-500 ease-in-out `}
-          >
-            Add Room Type
-          </button>
-        </form>
+          </svg>
+        </span>
+        <h3 className="text-lg font-semibold mb-4">Create Room Type</h3>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Name:</label>
+          <input
+            type="text"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Description:</label>
+          <input
+            type="text"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Price:</label>
+          <input
+            type="number"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Images:</label>
+          <input
+            type="text"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={images}
+            onChange={(e) => setImages(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Capacity:</label>
+          <input
+            type="number"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={capacity}
+            onChange={(e) => setCapacity(e.target.value)}
+          />
+        </div>
+        <button
+          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+          onClick={handleCreateRoomType}
+        >
+          Create Room Type
+        </button>
       </div>
     </div>
   )
 }
+
+export default CreateRoomType
