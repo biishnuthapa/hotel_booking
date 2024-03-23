@@ -45,6 +45,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     uint price;
     bool checked;
     bool cancelled;
+    uint timestamp;
   }
 
   struct ReviewStruct {
@@ -169,6 +170,7 @@ function getRooms(uint256 _apartmentId) public view returns (RoomType[] memory) 
     return roomTypes[_apartmentId];
 }
 
+
 function deleteAppartment(uint id) public {
     require(appartmentExist[id] == true, 'Appartment not found');
     require(apartments[id].owner == msg.sender, 'Unauthorized entity');
@@ -205,7 +207,6 @@ function deleteAppartment(uint id) public {
           (((apartments[aid].price * dates.length) * securityFee) / 100),
       'Insufficient fund!'
     );
-    require(datesAreCleared(aid, dates), 'Booked date found among dates!');
 
     for (uint i = 0; i < dates.length; i++) {
       BookingStruct memory booking;
@@ -214,21 +215,14 @@ function deleteAppartment(uint id) public {
       booking.tenant = msg.sender;
       booking.date = dates[i];
       booking.price = apartments[aid].price;
+      booking.timestamp = currentTime();
       bookingsOf[aid].push(booking);
       isDateBooked[aid][dates[i]] = true;
       bookedDates[aid].push(dates[i]);
     }
   }
 
-  function datesAreCleared(uint aid, uint[] memory dates) internal view returns (bool) {
-    bool lastCheck = true;
-    for (uint i = 0; i < dates.length; i++) {
-      for (uint j = 0; j < bookedDates[aid].length; j++) {
-        if (dates[i] == bookedDates[aid][j]) lastCheck = false;
-      }
-    }
-    return lastCheck;
-  }
+
 
   function checkInApartment(uint aid, uint bookingId) public {
     BookingStruct memory booking = bookingsOf[aid][bookingId];

@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { getRooms } from '@/services/blockchain'
-import RoomDetails from '@/components/RoomDetails' // Import RoomDetails component
+import RoomDetails from '@/components/RoomDetails' 
 
 const RoomList = ({ apartmentId }) => {
   const [rooms, setRooms] = useState([])
-  const [selectedRoomId, setSelectedRoomId] = useState(null) // State for selected room
-  const [showModal, setShowModal] = useState(false) // State for modal visibility
+  const [selectedRoomId, setSelectedRoomId] = useState(null) 
+  const [showModal, setShowModal] = useState(false) 
 
   useEffect(() => {
     const fetchRoomsData = async () => {

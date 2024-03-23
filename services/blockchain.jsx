@@ -298,6 +298,7 @@ const structuredBookings = (bookings) =>
     price: fromWei(booking.price),
     checked: booking.checked,
     cancelled: booking.cancelled,
+    timestamp: Number(booking.timestamp),
   }))
 
 const structuredReviews = (reviews) =>

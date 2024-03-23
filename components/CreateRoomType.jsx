@@ -11,18 +11,14 @@ const CreateRoomType = ({ apartmentId, onClose }) => {
 
   const handleCreateRoomType = async () => {
     try {
-      // Validate input fields
       if (!name || !description || !price || !images || !capacity) {
         throw new Error('All fields are required')
       }
 
-      // Display pending toast
       toast.info('Approve transaction...')
 
-      // Call the function to create a room type
       await addRoomTypeToApartment(apartmentId, name, description, price, images, capacity)
 
-      // Clear input fields after successfully creating the room type
       setName('')
       setDescription('')
       setPrice('')
@@ -39,21 +35,7 @@ const CreateRoomType = ({ apartmentId, onClose }) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <span className="absolute top-0 right-0 cursor-pointer" onClick={onClose}>
-          <svg
-            className="h-6 w-6 text-gray-600"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </span>
+       
         <h3 className="text-lg font-semibold mb-4">Create Room Type</h3>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Name:</label>
