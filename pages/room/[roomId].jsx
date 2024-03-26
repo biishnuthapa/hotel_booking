@@ -17,7 +17,6 @@ import {
 import {
   getReviews,
   getApartment,
-  getBookedDates,
   getSecurityFee,
   getQualifiedReviewers,
 } from '@/services/blockchain'
@@ -120,20 +119,16 @@ export default function Room({
 export const getServerSideProps = async (context) => {
   const { roomId } = context.query
   const apartmentData = await getApartment(roomId)
-  const timestampsData = await getBookedDates(roomId)
   const qualifiedReviewers = await getQualifiedReviewers(roomId)
   const reviewsData = await getReviews(roomId)
   const securityFee = await getSecurityFee()
-  // const roomTypesData = []
 
   return {
     props: {
       apartmentData: JSON.parse(JSON.stringify(apartmentData)),
-      timestampsData: JSON.parse(JSON.stringify(timestampsData)),
       reviewsData: JSON.parse(JSON.stringify(reviewsData)),
       qualifiedReviewers: JSON.parse(JSON.stringify(qualifiedReviewers)),
       securityFee: JSON.parse(JSON.stringify(securityFee)),
-      // roomTypesData: JSON.parse(JSON.stringify(roomTypesData)), // Pass roomTypesData as props
     },
   }
 }

@@ -61,13 +61,6 @@ const getReviews = async (id) => {
   return structuredReviews(reviewers)
 }
 
-const getBookedDates = async (id) => {
-  const contract = await getEthereumContracts()
-  const bookings = await contract.getUnavailableDates(id)
-  const timestamps = bookings.map((timestamp) => Number(timestamp))
-  return timestamps
-}
-
 const getSecurityFee = async () => {
   const contract = await getEthereumContracts()
   const fee = await contract.securityFee()
@@ -159,9 +152,7 @@ const bookApartment = async ({ aid, timestamps, amount }) => {
     })
 
     await tx.wait()
-    const bookedDates = await getBookedDates(aid)
 
-    store.dispatch(setTimestamps(bookedDates))
     return Promise.resolve(tx)
   } catch (error) {
     reportError(error)
@@ -314,7 +305,6 @@ export {
   getApartments,
   getApartment,
   getBookings,
-  getBookedDates,
   createApartment,
   updateApartment,
   deleteApartment,

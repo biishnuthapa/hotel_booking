@@ -64,7 +64,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
   mapping(uint => ReviewStruct[]) reviewsOf;
   mapping(uint => bool) appartmentExist;
   mapping(uint => uint[]) bookedDates;
-  mapping(uint => mapping(uint => bool)) isDateBooked;
   mapping(address => mapping(uint => bool)) hasBooked;
   mapping(uint256 => RoomType[]) roomTypes;
 
@@ -217,7 +216,6 @@ function deleteAppartment(uint id) public {
       booking.price = apartments[aid].price;
       booking.timestamp = currentTime();
       bookingsOf[aid].push(booking);
-      isDateBooked[aid][dates[i]] = true;
       bookedDates[aid].push(dates[i]);
     }
   }
@@ -256,7 +254,6 @@ function deleteAppartment(uint id) public {
   function refundBooking(uint aid, uint bookingId) public nonReentrant {
     BookingStruct memory booking = bookingsOf[aid][bookingId];
     require(!booking.checked, 'Apartment already checked on this date!');
-    require(isDateBooked[aid][booking.date], 'Did not book on this date!');
 
     if (msg.sender != owner()) {
       require(msg.sender == booking.tenant, 'Unauthorized tenant!');
@@ -264,7 +261,6 @@ function deleteAppartment(uint id) public {
     }
 
     bookingsOf[aid][bookingId].cancelled = true;
-    isDateBooked[aid][booking.date] = false;
 
     uint lastIndex = bookedDates[aid].length - 1;
     uint lastBookingId = bookedDates[aid][lastIndex];
@@ -277,10 +273,6 @@ function deleteAppartment(uint id) public {
     payTo(apartments[aid].owner, collateral);
     payTo(owner(), collateral);
     payTo(msg.sender, booking.price);
-  }
-
-  function getUnavailableDates(uint aid) public view returns (uint[] memory) {
-    return bookedDates[aid];
   }
 
   function getBookings(uint aid) public view returns (BookingStruct[] memory) {

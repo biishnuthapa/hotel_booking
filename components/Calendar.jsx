@@ -57,7 +57,6 @@ const Calendar = ({ apartment, timestamps }) => {
     const timestampArray = []
 
     while (start < end) {
-      // Change <= to <
       timestampArray.push(start.valueOf())
       start.add(1, 'days')
     }
