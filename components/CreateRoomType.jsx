@@ -32,11 +32,14 @@ const CreateRoomType = ({ apartmentId, onClose }) => {
     }
   }
 
-  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-lg relative p-6">
-      <button className="p-1 absolute top-0 right-0" onClick={onClose}><span aria-hidden="true" style={{fontSize: '1.5rem'}}>&times;</span></button>
+        <button className="p-1 absolute top-0 right-0" onClick={onClose}>
+          <span aria-hidden="true" style={{ fontSize: '1.5rem' }}>
+            &times;
+          </span>
+        </button>
         <h3 className="text-lg font-semibold mb-4">Create Room Type</h3>
         <div className="mb-4">
           <label className="block text-sm font-medium mb-1">Name:</label>
