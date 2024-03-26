@@ -63,13 +63,15 @@ const CreateRoomType = ({ apartmentId, onClose }) => {
           <label className="block text-sm font-medium mb-1">Price:</label>
           <input
             type="number"
+            step={0.01}
+            min={0.01}
             className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
           />
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Images:</label>
+          <label className="block text-sm font-medium mb-1">Details:</label>
           <input
             type="text"
             className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
@@ -78,7 +80,7 @@ const CreateRoomType = ({ apartmentId, onClose }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Capacity:</label>
+          <label className="block text-sm font-medium mb-1">Total Guest:</label>
           <input
             type="number"
             className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"

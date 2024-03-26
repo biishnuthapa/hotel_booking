@@ -235,7 +235,7 @@ const addRoomTypeToApartment = async (apartmentId, name, description, price, ima
       apartmentId,
       name,
       description,
-      price,
+      toWei(price),
       images,
       capacity
     ) // Including the capacity parameter

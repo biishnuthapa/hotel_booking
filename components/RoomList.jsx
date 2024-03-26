@@ -49,7 +49,7 @@ const RoomList = ({ apartmentId }) => {
                 scope="col"
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
               >
-                Capacity
+                Number of Guest
               </th>
               <th
                 scope="col"
@@ -89,7 +89,7 @@ const RoomList = ({ apartmentId }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
-                    onClick={() => handleRoomClick(room.id)} // Pass room ID to handleRoomClick
+                    onClick={() => handleRoomClick(room.id)} 
                   >
                     View Details
                   </button>

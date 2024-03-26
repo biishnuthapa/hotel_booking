@@ -81,10 +81,10 @@ export default function Room({
           forth={apartment?.images[3]}
           fifth={apartment?.images[4]}
         />
-        <RoomList apartmentId={roomId} />
         <Features />
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
+        <RoomList apartmentId={roomId} />
         <Actions apartment={apartment} />
         <CustomGoogleMap
           center={center} // Pass center coordinates as a prop
