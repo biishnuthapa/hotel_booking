@@ -26,31 +26,36 @@ const RoomDetails = ({ onClose }) => {
     sharedBathroom: ['Free toiletries', 'Toilet', 'Shower'],
     facilities: ['Air conditioning', 'Heating', 'Desk'],
     smoking: false,
-    mainImageUrl: '',
+    mainImageUrl: 'https://images.pexels.com/photos/2062431/pexels-photo-2062431.jpeg',
     otherImageUrls: [
-      'https://images.pexels.com/photos/16821924/pexels-photo-16821924/free-photo-of-pretty-blonde-wearing-a-black-bustier.jpeg',
-      'https://images.pexels.com/photos/18127596/pexels-photo-18127596/free-photo-of-portrait-of-a-pretty-brunette-standing-outdoors-with-raised-arms.jpeg',
+      'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg',
+      'https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg',
       'https://via.placeholder.com/100x100',
     ],
   }
   roomData.mainImageUrl = roomData.otherImageUrls[currentImageIndex]
 
   return (
-    <div className='relative'>
-      <div className='absolute top-[0px] right-[0px]'><button onClick={onClose}> <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-6"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M6 18L18 6M6 6l12 12"
-        />
-      </svg></button></div>
+    <div className="relative">
+      <div className="absolute top-[0px] right-[0px]">
+        <button onClick={onClose}>
+          {' '}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
 
       <div className="flex max-w-4xl mx-auto">
         <div className="flex flex-col w-2/3">

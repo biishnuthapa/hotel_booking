@@ -33,7 +33,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
         string name;
         string description;
         uint256 price;
-        string images;
+        string details;
         uint capacity;
  }
 
@@ -150,7 +150,7 @@ function addRoomTypeToApartment(
     string memory _name,
     string memory _description,
     uint256 _price,
-    string memory _images,
+    string memory _details,
     uint256 _capacity
 ) public onlyOwner {
     require(appartmentExist[_apartmentId], "Apartment does not exist");
@@ -159,7 +159,7 @@ function addRoomTypeToApartment(
     newRoomType.name = _name;
     newRoomType.description = _description;
     newRoomType.price = _price;
-    newRoomType.images = _images;
+    newRoomType.details = _details;
     newRoomType.capacity =_capacity;
 
     roomTypes[_apartmentId].push(newRoomType);

@@ -223,7 +223,7 @@ const addReview = async (aid, comment) => {
   }
 }
 
-const addRoomTypeToApartment = async (apartmentId, name, description, price, images, capacity) => {
+const addRoomTypeToApartment = async (apartmentId, name, description, price, details, capacity) => {
   if (!ethereum) {
     reportError('Please install a browser provider')
     return Promise.reject(new Error('Browser provider not installed'))
@@ -236,9 +236,9 @@ const addRoomTypeToApartment = async (apartmentId, name, description, price, ima
       name,
       description,
       toWei(price),
-      images,
+      details,
       capacity
-    ) // Including the capacity parameter
+    ) 
     await tx.wait()
 
     return Promise.resolve(tx)
@@ -258,7 +258,7 @@ const structureRoomTypes = (roomTypes) =>
     name: roomType.name,
     description: roomType.description,
     price: fromWei(roomType.price),
-    images: roomType.images.split(','),
+    details: roomType.details.split(','),
     capacity: Number(roomType.capacity),
   }))
 
