@@ -13,12 +13,12 @@ const Actions = ({ apartment }) => {
   const { address } = useAccount()
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false)
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (confirm(`Are you sure you want to delete Apartment ${apartment?.id}?`)) {
-      await toast.promise(
-        new Promise(async (resolve, reject) => {
-          await deleteApartment(apartment?.id)
-            .then(async () => {
+      toast.promise(
+        new Promise((resolve, reject) => {
+           deleteApartment(apartment?.id)
+            .then(() => {
               navigate.push('/')
               resolve()
             })

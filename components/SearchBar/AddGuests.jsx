@@ -1,5 +1,4 @@
-import React from 'react'
-import { useState } from 'react';
+import React from 'react';
 
 const AddGuests = ({guestsTitle, category, guestCountAdd, guestCountSub,guestCount}) => {
  

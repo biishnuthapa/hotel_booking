@@ -8,11 +8,11 @@ import { checkInApartment, refundBooking } from '@/services/blockchain'
 const Booking = ({ booking, maxDateOut }) => {
   const { address } = useAccount()
 
-  const handleCheckIn = async () => {
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await checkInApartment(booking.aid, booking.id)
-          .then(async (tx) => {
+  const handleCheckIn = () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        checkInApartment(booking.aid, booking.id)
+          .then((tx) => {
             console.log(tx)
             resolve(tx)
           })
@@ -28,11 +28,11 @@ const Booking = ({ booking, maxDateOut }) => {
 
   console.log("maxDateOut",maxDateOut)
 
-  const handleRefund = async () => {
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await refundBooking(booking.aid, booking.id)
-          .then(async () => {
+  const handleRefund = () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        refundBooking(booking.aid, booking.id)
+          .then(() => {
             resolve()
           })
           .catch(() => reject())

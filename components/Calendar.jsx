@@ -35,11 +35,6 @@ const Calendar = ({ apartment, timestamps }) => {
     }
   }, [checkInDate, checkOutDate])
 
-  const getRoomsData = async () => {
-    const rooms = await getRooms(apartment?.id)
-    setRoomList(rooms)
-  }
-
   const handleDateChange = (date, type) => {
     if (type === 'checkin') {
       setCheckInDate(date)
@@ -71,9 +66,9 @@ const Calendar = ({ apartment, timestamps }) => {
     }
 
     await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await bookApartment(params)
-          .then(async () => {
+      new Promise((resolve, reject) => {
+        bookApartment(params)
+          .then(() => {
             resetForm()
             resolve()
           })

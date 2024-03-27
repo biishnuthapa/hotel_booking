@@ -1,8 +1,6 @@
+// eslintrc.js
 module.exports = {
   extends: ['alloy', 'alloy/react', 'alloy/typescript', 'next'],
-  // use next/core-web-vitals to error on a number of rules
-  // that are warnings by default if they affect Core Web Vitals
-  // extends: ['next', 'next/core-web-vitals'],
   env: {
     node: true,
     browser: true,
@@ -13,4 +11,13 @@ module.exports = {
   rules: {
     'import/no-anonymous-default-export': 'off',
   },
-}
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 2021,
+    sourceType: 'module',
+    project: ['./tsconfig.json', "tsconfig.nextauth.json"],
+  },
+  ignorePatterns: ['pages/room/bookings/[roomId].jsx', "pages/api/auth/[...nextauth].js"], // Add this line to exclude the file
+  plugins: ['@typescript-eslint'],
+  extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
+};

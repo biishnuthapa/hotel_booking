@@ -202,7 +202,7 @@ function SearchBar({
           </div>
           {/* Search Button */}
           <button 
-            className="bg-[#00773d] flex flex-wrap text-[#fff] border-0 py-[9px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
+            className="bg-[#00773d] flex flex-wrap text-[#fff] border-0 py-[16px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
             onClick={onSearch}
           >
             <Image src={SearchIcon} alt="search" />

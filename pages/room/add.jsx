@@ -20,7 +20,7 @@ export default function Add() {
   const [pinataJsonLink, setPinataJsonLink] = useState('')
   const navigate = useRouter()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit =(e) => {
     e.preventDefault()
     if (
       !name ||
@@ -47,10 +47,10 @@ export default function Add() {
       pinataJsonLink: pinataJsonLink,
     }
 
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await createApartment(params)
-          .then(async () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        createApartment(params)
+          .then(() => {
             navigate.push('/')
             resolve()
           })

@@ -1,13 +1,11 @@
 import { useState } from 'react'
+import { toast } from 'react-toastify'
 import { FaTimes } from 'react-icons/fa'
 import { truncate } from '@/utils/helper'
-import { toast } from 'react-toastify'
 import { useRouter } from 'next/router'
-import { useAccount } from 'wagmi'
 import { addRoomTypeToApartment } from '@/services/blockchain'
 
 export default function AddRoomType() {
-  const { address } = useAccount()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
@@ -16,7 +14,7 @@ export default function AddRoomType() {
   const [links, setLinks] = useState([])
   const navigate = useRouter()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit =(e) => {
     e.preventDefault()
     if (!name || !description || !price || !images || !capacity || links.length !== 5) return
 
@@ -28,10 +26,13 @@ export default function AddRoomType() {
       capacity,
     }
 
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await addRoomTypeToApartment(apartmentId, params)
-          .then(async () => {
+    const apartmentId = 'your_apartment_id' // Define your apartmentId here
+
+
+    toast.promise(
+      new Promise((resolve, reject) => {
+        addRoomTypeToApartment(apartmentId, params)
+          .then(() => {
             navigate.push('/')
             resolve()
           })

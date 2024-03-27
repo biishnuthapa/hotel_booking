@@ -17,7 +17,7 @@ export default function Edit({ apartment }) {
   const [links, setLinks] = useState(apartment.images)
   const navigate = useRouter()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     if (!name || !location || !description || !rooms || links.length != 5 || !price) return
 
@@ -31,10 +31,10 @@ export default function Edit({ apartment }) {
       price,
     }
 
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await updateApartment(params)
-          .then(async () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        updateApartment(params)
+          .then(() => {
             navigate.push('/room/' + apartment.id)
             resolve()
           })

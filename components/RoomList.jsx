@@ -4,7 +4,6 @@ import RoomDetails from '@/components/RoomDetails'
 
 const RoomList = ({ apartmentId }) => {
   const [rooms, setRooms] = useState([])
-  const [selectedRoomId, setSelectedRoomId] = useState(null) 
   const [showModal, setShowModal] = useState(false) 
 
   useEffect(() => {
@@ -20,13 +19,11 @@ const RoomList = ({ apartmentId }) => {
     fetchRoomsData()
   }, [apartmentId])
 
-  const handleRoomClick = (roomId) => {
-    setSelectedRoomId(roomId)
+  const handleRoomClick = () => {
     setShowModal(true) // Open modal on room click
   }
 
   const handleCloseModal = () => {
-    setSelectedRoomId(null)
     setShowModal(false) // Close modal on close button click
   }
 
@@ -89,7 +86,7 @@ const RoomList = ({ apartmentId }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
-                    onClick={() => handleRoomClick(room.id)} 
+                    onClick={handleRoomClick} 
                   >
                     View Details
                   </button>
