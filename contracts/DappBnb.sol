@@ -16,9 +16,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     uint id;
     string name;
     string description;
-    string location;
-    string latitude,
-    string longitude,
+    string longitude;
     string images;
     uint rooms;
     uint price;
@@ -26,9 +24,18 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     bool booked;
     bool deleted;
     uint timestamp;
+    string location;
+    string latitude;
     string pinataJsonLink;
     
   }
+  struct RoomType {
+        string name;
+        string description;
+        uint256 price;
+        string details;
+        uint capacity;
+ }
 
   struct BookingStruct {
     uint id;
@@ -38,6 +45,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     uint price;
     bool checked;
     bool cancelled;
+    uint timestamp;
   }
 
   struct ReviewStruct {
@@ -56,8 +64,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
   mapping(uint => ReviewStruct[]) reviewsOf;
   mapping(uint => bool) appartmentExist;
   mapping(uint => uint[]) bookedDates;
-  mapping(uint => mapping(uint => bool)) isDateBooked;
   mapping(address => mapping(uint => bool)) hasBooked;
+  mapping(uint256 => RoomType[]) roomTypes;
 
   constructor(uint _taxPercent, uint _securityFee) ERC721('Hospitality', 'NFT') {
     taxPercent = _taxPercent;
@@ -69,11 +77,11 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory name,
     string memory description,
     string memory location,
-    string memory latitude,
-    string memory longitude,
     string memory images,
     uint rooms,
     uint price,
+    string memory latitude,
+    string memory longitude,
     string memory pinataJsonLink
   ) public  {
     require(msg.sender == owner(), 'Please submit the form to add new appartment');
@@ -91,13 +99,13 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.name = name;
     lodge.description = description;
     lodge.location = location;
-    lodge.latitude = latitude; 
-    lodge.longitude = longitude; 
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
     lodge.owner = msg.sender;
     lodge.timestamp = currentTime();
+    lodge.latitude = latitude; 
+    lodge.longitude = longitude; 
     lodge.pinataJsonLink = pinataJsonLink;
 
     appartmentExist[lodge.id] = true;
@@ -132,11 +140,37 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
+    lodge.latitude = latitude; 
+    lodge.longitude = longitude; 
 
     apartments[id] = lodge;
   }
+function addRoomTypeToApartment(
+    uint256 _apartmentId,
+    string memory _name,
+    string memory _description,
+    uint256 _price,
+    string memory _details,
+    uint256 _capacity
+) public onlyOwner {
+    require(appartmentExist[_apartmentId], "Apartment does not exist");
+    
+    RoomType memory newRoomType;
+    newRoomType.name = _name;
+    newRoomType.description = _description;
+    newRoomType.price = _price;
+    newRoomType.details = _details;
+    newRoomType.capacity =_capacity;
 
-  function deleteAppartment(uint id) public {
+    roomTypes[_apartmentId].push(newRoomType);
+}
+function getRooms(uint256 _apartmentId) public view returns (RoomType[] memory) {
+    require(appartmentExist[_apartmentId], "Apartment does not exist");
+    return roomTypes[_apartmentId];
+}
+
+
+function deleteAppartment(uint id) public {
     require(appartmentExist[id] == true, 'Appartment not found');
     require(apartments[id].owner == msg.sender, 'Unauthorized entity');
 
@@ -172,7 +206,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
           (((apartments[aid].price * dates.length) * securityFee) / 100),
       'Insufficient fund!'
     );
-    require(datesAreCleared(aid, dates), 'Booked date found among dates!');
 
     for (uint i = 0; i < dates.length; i++) {
       BookingStruct memory booking;
@@ -181,21 +214,13 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
       booking.tenant = msg.sender;
       booking.date = dates[i];
       booking.price = apartments[aid].price;
+      booking.timestamp = currentTime();
       bookingsOf[aid].push(booking);
-      isDateBooked[aid][dates[i]] = true;
       bookedDates[aid].push(dates[i]);
     }
   }
 
-  function datesAreCleared(uint aid, uint[] memory dates) internal view returns (bool) {
-    bool lastCheck = true;
-    for (uint i = 0; i < dates.length; i++) {
-      for (uint j = 0; j < bookedDates[aid].length; j++) {
-        if (dates[i] == bookedDates[aid][j]) lastCheck = false;
-      }
-    }
-    return lastCheck;
-  }
+
 
   function checkInApartment(uint aid, uint bookingId) public {
     BookingStruct memory booking = bookingsOf[aid][bookingId];
@@ -229,7 +254,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
   function refundBooking(uint aid, uint bookingId) public nonReentrant {
     BookingStruct memory booking = bookingsOf[aid][bookingId];
     require(!booking.checked, 'Apartment already checked on this date!');
-    require(isDateBooked[aid][booking.date], 'Did not book on this date!');
 
     if (msg.sender != owner()) {
       require(msg.sender == booking.tenant, 'Unauthorized tenant!');
@@ -237,7 +261,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     }
 
     bookingsOf[aid][bookingId].cancelled = true;
-    isDateBooked[aid][booking.date] = false;
 
     uint lastIndex = bookedDates[aid].length - 1;
     uint lastBookingId = bookedDates[aid][lastIndex];
@@ -250,10 +273,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     payTo(apartments[aid].owner, collateral);
     payTo(owner(), collateral);
     payTo(msg.sender, booking.price);
-  }
-
-  function getUnavailableDates(uint aid) public view returns (uint[] memory) {
-    return bookedDates[aid];
   }
 
   function getBookings(uint aid) public view returns (BookingStruct[] memory) {

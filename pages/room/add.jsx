@@ -10,34 +10,47 @@ export default function Add() {
   const { address } = useAccount()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [location,setLocation]=useState('');
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const [location, setLocation] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
   const [rooms, setRooms] = useState('')
   const [images, setImages] = useState('')
   const [price, setPrice] = useState('')
   const [links, setLinks] = useState([])
+  const [pinataJsonLink, setPinataJsonLink] = useState('')
   const navigate = useRouter()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    if (!name || !location || !latitude || !longitude || !description || !rooms || links.length != 5 || !price) return
+    if (
+      !name ||
+      !location ||
+      !description ||
+      !rooms ||
+      links.length != 5 ||
+      !price ||
+      !pinataJsonLink ||
+      !latitude ||
+      !longitude
+    )
+      return
 
     const params = {
       name,
       description,
       location,
-      latitude,
-      longitude,
       rooms,
       images: links.slice(0, 5).join(','),
       price,
+      latitude,
+      longitude,
+      pinataJsonLink: pinataJsonLink,
     }
 
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await createApartment(params)
-          .then(async () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        createApartment(params)
+          .then(() => {
             navigate.push('/')
             resolve()
           })
@@ -164,7 +177,39 @@ export default function Add() {
             />
           </div>
 
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <input
+              className="block w-full text-sm
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0"
+              type="text"
+              name="rooms"
+              placeholder="Number of room"
+              onChange={(e) => setRooms(e.target.value)}
+              value={rooms}
+              required
+            />
+          </div>
 
+          <div
+            className="flex flex-row justify-between items-center
+          border border-gray-300 p-2 rounded-xl mt-5"
+          >
+            <textarea
+              className="block w-full text-sm resize-none
+                text-slate-500 bg-transparent border-0
+                focus:outline-none focus:ring-0 h-20"
+              type="text"
+              name="description"
+              placeholder="Room Description"
+              onChange={(e) => setDescription(e.target.value)}
+              value={description}
+              required
+            ></textarea>
+          </div>
           <div
             className="flex flex-row justify-between items-center
           border border-gray-300 p-2 rounded-xl mt-5"
@@ -207,30 +252,13 @@ export default function Add() {
               className="block w-full text-sm
                 text-slate-500 bg-transparent border-0
                 focus:outline-none focus:ring-0"
-              type="text"
-              name="rooms"
-              placeholder="Number of room"
-              onChange={(e) => setRooms(e.target.value)}
-              value={rooms}
+              type="url" // Change input type to "url"
+              name="pinataJsonLink"
+              placeholder="Pinata JSON Link"
+              onChange={(e) => setPinataJsonLink(e.target.value)}
+              value={pinataJsonLink}
               required
             />
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <textarea
-              className="block w-full text-sm resize-none
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0 h-20"
-              type="text"
-              name="description"
-              placeholder="Room Description"
-              onChange={(e) => setDescription(e.target.value)}
-              value={description}
-              required
-            ></textarea>
           </div>
 
           <button

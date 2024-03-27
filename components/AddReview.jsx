@@ -16,14 +16,14 @@ const AddReview = ({ roomId }) => {
     setReviewText('')
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
 
     if (!reviewText) return
 
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await addReview(roomId, reviewText)
+    toast.promise(
+      new Promise((resolve, reject) => {
+        addReview(roomId, reviewText)
           .then(async (tx) => {
             dispatch(setReviewModal('scale-0'))
             resetForm()

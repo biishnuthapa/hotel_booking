@@ -1,63 +1,59 @@
 import { useState } from 'react'
-import { truncate } from '@/utils/helper'
-import { useAccount } from 'wagmi'
 import { toast } from 'react-toastify'
-import { useRouter } from 'next/router'
 import { FaTimes } from 'react-icons/fa'
-import { getApartment, updateApartment } from '@/services/blockchain'
+import { truncate } from '@/utils/helper'
+import { useRouter } from 'next/router'
+import { addRoomTypeToApartment } from '@/services/blockchain'
 
-export default function Edit({ apartment }) {
-  const { address } = useAccount()
-  const [name, setName] = useState(apartment.name)
-  const [description, setDescription] = useState(apartment.description)
-  const [location, setLocation] = useState(apartment.location)
-  const [rooms, setRooms] = useState(apartment.rooms)
+export default function AddRoomType() {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [price, setPrice] = useState('')
   const [images, setImages] = useState('')
-  const [price, setPrice] = useState(apartment.price)
-  const [links, setLinks] = useState(apartment.images)
+  const [capacity, setCapacity] = useState('')
+  const [links, setLinks] = useState([])
   const navigate = useRouter()
 
-  const handleSubmit = (e) => {
+  const handleSubmit =(e) => {
     e.preventDefault()
-    if (!name || !location || !description || !rooms || links.length != 5 || !price) return
+    if (!name || !description || !price || !images || !capacity || links.length !== 5) return
 
     const params = {
-      ...apartment,
       name,
       description,
-      location,
-      rooms,
-      images: links.slice(0, 5).join(','),
       price,
+      images: links.slice(0, 5).join(','),
+      capacity,
     }
+
+    const apartmentId = 'your_apartment_id' // Define your apartmentId here
+
 
     toast.promise(
       new Promise((resolve, reject) => {
-        updateApartment(params)
+        addRoomTypeToApartment(apartmentId, params)
           .then(() => {
-            navigate.push('/room/' + apartment.id)
+            navigate.push('/')
             resolve()
           })
           .catch(() => reject())
       }),
       {
         pending: 'Approve transaction...',
-        success: 'Apartment updated successfully 👌',
+        success: 'Room type added successfully 👌',
         error: 'Encountered error 🤯',
       }
     )
   }
 
-  const addImage = (e) => {
-    e.preventDefault()
-    if (links.length != 5) {
+  const addImage = () => {
+    if (links.length !== 5) {
       setLinks((prevState) => [...prevState, images])
     }
     setImages('')
   }
 
-  const removeImage = (e, index) => {
-    e.preventDefault()
+  const removeImage = (index) => {
     links.splice(index, 1)
     setLinks(() => [...links])
   }
@@ -67,7 +63,7 @@ export default function Edit({ apartment }) {
       <div className="w-11/12 md:w-2/5 h-7/12 p-6">
         <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="flex justify-center items-center">
-            <p className="font-semibold text-black">Edit Room</p>
+            <p className="font-semibold text-black">Add Room Type</p>
           </div>
 
           <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
@@ -77,7 +73,7 @@ export default function Edit({ apartment }) {
                 focus:outline-none focus:ring-0"
               type="text"
               name="name"
-              placeholder="Room Name "
+              placeholder="Room Type Name "
               onChange={(e) => setName(e.target.value)}
               value={name}
               required
@@ -112,11 +108,11 @@ export default function Edit({ apartment }) {
               value={images}
             />
 
-            {links.length != 5 && (
+            {links.length !== 5 && (
               <button
-                onClick={(e) => addImage(e)}
+                onClick={addImage}
                 type="button"
-                className="p-2 bg-[#ff385c] text-white rounded-full text-sm"
+                className="p-2 bg-[#00773d] text-white rounded-full text-sm"
               >
                 Add image link
               </button>
@@ -136,7 +132,7 @@ export default function Edit({ apartment }) {
               >
                 <span>{truncate(link, 4, 4, 11)}</span>
                 <button
-                  onClick={(e) => removeImage(e, i)}
+                  onClick={() => removeImage(i)}
                   type="button"
                   className="bg-transparent hover focus:outline-none"
                 >
@@ -155,10 +151,10 @@ export default function Edit({ apartment }) {
                 text-slate-500 bg-transparent border-0
                 focus:outline-none focus:ring-0"
               type="text"
-              name="location"
-              placeholder="Location"
-              onChange={(e) => setLocation(e.target.value)}
-              value={location}
+              name="description"
+              placeholder="Room Type Description"
+              onChange={(e) => setDescription(e.target.value)}
+              value={description}
               required
             />
           </div>
@@ -171,30 +167,13 @@ export default function Edit({ apartment }) {
               className="block w-full text-sm
                 text-slate-500 bg-transparent border-0
                 focus:outline-none focus:ring-0"
-              type="text"
-              name="rooms"
-              placeholder="Number of room"
-              onChange={(e) => setRooms(e.target.value)}
-              value={rooms}
+              type="number"
+              name="capacity"
+              placeholder="Capacity"
+              onChange={(e) => setCapacity(e.target.value)}
+              value={capacity}
               required
             />
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <textarea
-              className="block w-full text-sm resize-none
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0 h-20"
-              type="text"
-              name="description"
-              placeholder="Room Description"
-              onChange={(e) => setDescription(e.target.value)}
-              value={description}
-              required
-            ></textarea>
           </div>
 
           <button
@@ -205,25 +184,12 @@ export default function Edit({ apartment }) {
             border-transparent border
             hover:hover:text-[#00773d]
             hover:border-[#00773d]
-            mt-5 transition-all duration-500 ease-in-out ${
-              !address ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-            disabled={!address}
+            mt-5 transition-all duration-500 ease-in-out `}
           >
-            Update Apartment
+            Add Room Type
           </button>
         </form>
       </div>
     </div>
   )
-}
-
-export const getServerSideProps = async (context) => {
-  const { roomId } = context.query
-  const apartment = await getApartment(roomId)
-  return {
-    props: {
-      apartment: JSON.parse(JSON.stringify(apartment)),
-    },
-  }
 }

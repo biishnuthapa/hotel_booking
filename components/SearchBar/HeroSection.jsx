@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 const HeroSection = () => {
    return (
     <div className="relative z-0">
       <div className="container mx-auto px-6 relative z-10 flex items-center justify-center h-full ">
-        <div className={`max-w-4xl text-center`}>
+        <div className="max-w-4xl text-center">
           <h1 className="md:text-4xl font-bold text-white mb-2 only:leading-tight">
             Unlock Your Stay: Book with Blockchain & NFTs!
           </h1>
@@ -18,5 +18,4 @@ const HeroSection = () => {
 };
 
 export default HeroSection;
-
 

@@ -14,18 +14,39 @@ const Bookings = ({ apartmentData, bookingsData }) => {
   const { setApartment, setBookings } = globalActions
   const { apartment, bookings } = useSelector((states) => states.globalStates)
 
+  const newBookings=bookings?.filter((booking, index, self) =>
+  index === self.findIndex((b) => b.timestamp === booking.timestamp)
+);
+
+const getMaxDateForTimestamp = (timestamp) => {
+  const bookingsWithSameTimestamp = bookings.filter(
+    (b) => b.timestamp === timestamp
+  )
+  const maxDateBooking = bookingsWithSameTimestamp.reduce((prev, current) =>
+    new Date(prev.date) > new Date(current.date) ? prev : current
+  )
+
+  // Add one day to the max date
+  const maxDate = new Date(maxDateBooking.date)
+  maxDate.setDate(maxDate.getDate() + 1)
+
+  return maxDate.getTime() // Return the timestamp of the modified max date
+}
+
+
+console.log("Booking",bookings)
+
   useEffect(() => {
     dispatch(setApartment(apartmentData))
     dispatch(setBookings(bookingsData))
   }, [dispatch, setApartment, apartmentData, setBookings, bookingsData])
-
-  return (
+   return (
     <div className="w-full sm:w-3/5 mx-auto mt-8">
       <h1 className="text-center text-3xl text-black font-bold">Bookings</h1>
-      {bookings.length < 1 && <div>No bookings for this apartment yet</div>}
+      {newBookings.length < 1 && <div>No bookings for this apartment yet</div>}
 
-      {bookings.map((booking, i) => (
-        <Booking key={i} id={roomId} booking={booking} apartment={apartment} />
+      {newBookings.map((booking, i) => (
+        <Booking key={i} id={roomId} booking={booking} apartment={apartment} maxDateOut={getMaxDateForTimestamp(booking.timestamp)}/>
       ))}
     </div>
   )

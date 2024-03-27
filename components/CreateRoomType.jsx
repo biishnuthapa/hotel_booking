@@ -1,0 +1,102 @@
+import React, { useState } from 'react'
+import { addRoomTypeToApartment } from '@/services/blockchain'
+import { toast } from 'react-toastify'
+
+const CreateRoomType = ({ apartmentId, onClose }) => {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [price, setPrice] = useState('')
+  const [images, setImages] = useState('')
+  const [capacity, setCapacity] = useState('')
+
+  const handleCreateRoomType = async () => {
+    try {
+      if (!name || !description || !price || !images || !capacity) {
+        throw new Error('All fields are required')
+      }
+
+      toast.info('Approve transaction...')
+
+      await addRoomTypeToApartment(apartmentId, name, description, price, images, capacity)
+
+      setName('')
+      setDescription('')
+      setPrice('')
+      setImages('')
+      setCapacity('')
+
+      toast.success('RoomType submitted successfully 👌')
+    } catch (error) {
+      toast.error('Encountered error 🤯')
+      console.error('Error creating room type:', error.message)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-auto bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg shadow-lg relative p-6">
+        <button className="p-1 absolute top-0 right-0" onClick={onClose}>
+          <span aria-hidden="true" style={{ fontSize: '1.5rem' }}>
+            &times;
+          </span>
+        </button>
+        <h3 className="text-lg font-semibold mb-4">Create Room Type</h3>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Name:</label>
+          <input
+            type="text"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Description:</label>
+          <input
+            type="text"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Price:</label>
+          <input
+            type="number"
+            step={0.01}
+            min={0.01}
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Details:</label>
+          <input
+            type="text"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={images}
+            onChange={(e) => setImages(e.target.value)}
+          />
+        </div>
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">Total Guest:</label>
+          <input
+            type="number"
+            className="w-full border-gray-300 rounded-md p-2 focus:outline-none focus:ring focus:border-blue-300"
+            value={capacity}
+            onChange={(e) => setCapacity(e.target.value)}
+          />
+        </div>
+        <button
+          className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:border-blue-300"
+          onClick={handleCreateRoomType}
+        >
+          Create Room Type
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default CreateRoomType

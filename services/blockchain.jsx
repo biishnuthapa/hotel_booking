@@ -61,13 +61,6 @@ const getReviews = async (id) => {
   return structuredReviews(reviewers)
 }
 
-const getBookedDates = async (id) => {
-  const contract = await getEthereumContracts()
-  const bookings = await contract.getUnavailableDates(id)
-  const timestamps = bookings.map((timestamp) => Number(timestamp))
-  return timestamps
-}
-
 const getSecurityFee = async () => {
   const contract = await getEthereumContracts()
   const fee = await contract.securityFee()
@@ -89,6 +82,8 @@ const createApartment = async (apartment) => {
       apartment.images,
       apartment.rooms,
       toWei(apartment.price),
+      apartment.latitude,
+      apartment.longitude,
       apartment.pinataJsonLink
     )
     await tx.wait()
@@ -157,9 +152,7 @@ const bookApartment = async ({ aid, timestamps, amount }) => {
     })
 
     await tx.wait()
-    const bookedDates = await getBookedDates(aid)
 
-    store.dispatch(setTimestamps(bookedDates))
     return Promise.resolve(tx)
   } catch (error) {
     reportError(error)
@@ -230,6 +223,45 @@ const addReview = async (aid, comment) => {
   }
 }
 
+const addRoomTypeToApartment = async (apartmentId, name, description, price, details, capacity) => {
+  if (!ethereum) {
+    reportError('Please install a browser provider')
+    return Promise.reject(new Error('Browser provider not installed'))
+  }
+
+  try {
+    const contract = await getEthereumContracts()
+    const tx = await contract.addRoomTypeToApartment(
+      apartmentId,
+      name,
+      description,
+      toWei(price),
+      details,
+      capacity
+    ) 
+    await tx.wait()
+
+    return Promise.resolve(tx)
+  } catch (error) {
+    reportError(error)
+    return Promise.reject(error)
+  }
+}
+
+const getRooms = async (apartmentId) => {
+  const contract = await getEthereumContracts()
+  const rooms = await contract.getRooms(apartmentId)
+  return structureRoomTypes(rooms)
+}
+const structureRoomTypes = (roomTypes) =>
+  roomTypes.map((roomType) => ({
+    name: roomType.name,
+    description: roomType.description,
+    price: fromWei(roomType.price),
+    details: roomType.details.split(','),
+    capacity: Number(roomType.capacity),
+  }))
+
 const structureAppartments = (appartments) =>
   appartments.map((appartment) => ({
     id: Number(appartment.id),
@@ -243,6 +275,8 @@ const structureAppartments = (appartments) =>
     rooms: Number(appartment.rooms),
     timestamp: Number(appartment.timestamp),
     booked: appartment.booked,
+    latitude: appartment.latitude,
+    longitude: appartment.longitude,
     pinataJsonLink: appartment.pinataJsonLink,
   }))
 
@@ -255,6 +289,7 @@ const structuredBookings = (bookings) =>
     price: fromWei(booking.price),
     checked: booking.checked,
     cancelled: booking.cancelled,
+    timestamp: Number(booking.timestamp),
   }))
 
 const structuredReviews = (reviews) =>
@@ -270,7 +305,6 @@ export {
   getApartments,
   getApartment,
   getBookings,
-  getBookedDates,
   createApartment,
   updateApartment,
   deleteApartment,
@@ -281,4 +315,6 @@ export {
   getReviews,
   getQualifiedReviewers,
   getSecurityFee,
+  addRoomTypeToApartment,
+  getRooms,
 }

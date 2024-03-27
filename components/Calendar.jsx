@@ -5,13 +5,28 @@ import { toast } from 'react-toastify'
 import { useSelector } from 'react-redux'
 import DatePicker from 'react-datepicker'
 import { FaEthereum } from 'react-icons/fa'
-import { bookApartment } from '@/services/blockchain'
+import { bookApartment, getRooms } from '@/services/blockchain'
 
 const Calendar = ({ apartment, timestamps }) => {
   const [checkInDate, setCheckInDate] = useState(null)
   const [checkOutDate, setCheckOutDate] = useState(null)
   const [totalDays, setTotalDays] = useState(0)
+  const [selectedRoom, setSelectedRoom] = useState('')
   const { securityFee } = useSelector((states) => states.globalStates)
+  const [roomList, setRoomList] = useState([])
+
+  useEffect(() => {
+    const fetchRoomsData = async () => {
+      try {
+        const roomData = await getRooms(apartment?.id)
+        setRoomList(roomData)
+      } catch (error) {
+        console.error('Error fetching rooms:', error)
+      }
+    }
+
+    fetchRoomsData()
+  }, [apartment?.id])
 
   useEffect(() => {
     if (checkInDate && checkOutDate) {
@@ -30,14 +45,13 @@ const Calendar = ({ apartment, timestamps }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!checkInDate || !checkOutDate) return
+    if (!checkInDate || !checkOutDate || !selectedRoom) return
 
     const start = moment(checkInDate)
     const end = moment(checkOutDate)
     const timestampArray = []
 
     while (start < end) {
-      // Change <= to <
       timestampArray.push(start.valueOf())
       start.add(1, 'days')
     }
@@ -48,12 +62,13 @@ const Calendar = ({ apartment, timestamps }) => {
       amount:
         apartment?.price * timestampArray.length +
         (apartment?.price * timestampArray.length * securityFee) / 100,
+      room: selectedRoom,
     }
 
     await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await bookApartment(params)
-          .then(async () => {
+      new Promise((resolve, reject) => {
+        bookApartment(params)
+          .then(() => {
             resetForm()
             resolve()
           })
@@ -71,6 +86,7 @@ const Calendar = ({ apartment, timestamps }) => {
     setCheckInDate(null)
     setCheckOutDate(null)
     setTotalDays(0)
+    setSelectedRoom('')
   }
 
   return (
@@ -109,11 +125,25 @@ const Calendar = ({ apartment, timestamps }) => {
           onChange={(date) => handleDateChange(date, 'checkout')}
           placeholderText="YYYY-MM-DD (Check out)"
           dateFormat="yyyy-MM-dd"
-          minDate={moment(checkInDate).add(1, 'day').toDate()} 
+          minDate={moment(checkInDate).add(1, 'day').toDate()}
           excludeDates={timestamps}
           required
           className="rounded-lg w-full border border-gray-400 p-2"
         />
+        <select
+          id="roomName"
+          value={selectedRoom}
+          onChange={(e) => setSelectedRoom(e.target.value)}
+          className="rounded-lg w-full border border-gray-400 p-2"
+          required
+        >
+          <option value="">Select Room</option>
+          {roomList.map((room) => (
+            <option key={room.id} value={room.name}>
+              {room.name}
+            </option>
+          ))}
+        </select>
         <button
           className="p-2 border-none bg-gradient-to-l from-[#00773d]
           to-[#00773d] text-white w-full rounded-md focus:outline-none

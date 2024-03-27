@@ -5,14 +5,14 @@ import Identicon from 'react-identicons'
 import { formatDate, truncate } from '@/utils/helper'
 import { checkInApartment, refundBooking } from '@/services/blockchain'
 
-const Booking = ({ booking }) => {
+const Booking = ({ booking, maxDateOut }) => {
   const { address } = useAccount()
 
-  const handleCheckIn = async () => {
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await checkInApartment(booking.aid, booking.id)
-          .then(async (tx) => {
+  const handleCheckIn = () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        checkInApartment(booking.aid, booking.id)
+          .then((tx) => {
             console.log(tx)
             resolve(tx)
           })
@@ -26,11 +26,13 @@ const Booking = ({ booking }) => {
     )
   }
 
-  const handleRefund = async () => {
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await refundBooking(booking.aid, booking.id)
-          .then(async () => {
+  console.log("maxDateOut",maxDateOut)
+
+  const handleRefund = () => {
+    toast.promise(
+      new Promise((resolve, reject) => {
+        refundBooking(booking.aid, booking.id)
+          .then(() => {
             resolve()
           })
           .catch(() => reject())
@@ -55,11 +57,12 @@ const Booking = ({ booking }) => {
     handleCheckIn,
     handleRefund,
   }
+  
+  return <TenantView booking={booking} functions={functions} owner={address} maxDateOut={maxDateOut} />
+} 
 
-  return <TenantView booking={booking} functions={functions} owner={address} />
-}
+const TenantView = ({ booking, functions, owner,maxDateOut }) => {
 
-const TenantView = ({ booking, functions, owner }) => {
   return (
     <div className="w-full flex justify-between items-center my-3 bg-[#bfcfe7] p-3">
       <Link
@@ -73,7 +76,7 @@ const TenantView = ({ booking, functions, owner }) => {
           className="rounded-full shadow-gray-500 shadow-sm"
         />
         <div className="flex flex-col">
-          <span>{formatDate(booking.date)}</span>
+          <span>{formatDate(booking.date)} - {formatDate(maxDateOut)}</span>
           <span className="text-gray-500 text-sm">{truncate(booking.tenant, 4, 4, 11)}</span>
         </div>
       </Link>

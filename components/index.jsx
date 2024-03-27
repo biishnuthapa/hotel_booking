@@ -16,7 +16,6 @@ import Actions from './Actions'
 import Title from './Title'
 import UpcomingEvent from './UpcomingEvent/Upcoming'
 import FAQ from './Questions/Questions'
-import MapComponent from './MapComponent/MapComponent'
 import Booking from './Booking'
 import Information from './Footer/Information'
 import Team from '../pages/Team'
@@ -24,6 +23,9 @@ import Footer from './Footer/Footer'
 import AddReview from './AddReview'
 import NFTWebsiteSteps from './Steps/NFTWebsiteSteps'
 import Features from './Features'
+import RoomTypes from './CreateRoomType'
+import RoomList from './RoomList'
+import ImageModal from './ImageModal'
 
 export {
   Header,
@@ -44,12 +46,14 @@ export {
   Actions,
   Title,
   UpcomingEvent,
-  MapComponent,
   Booking,
   Team,
   Information,
   Footer,
   AddReview,
   NFTWebsiteSteps,
-  Features
+  Features,
+  RoomTypes,
+  RoomList,
+  ImageModal
 }

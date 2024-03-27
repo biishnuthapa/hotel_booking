@@ -1,80 +1,80 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
-import SearchIcon from '../../public/assets';
-import DatePicker from 'react-datepicker'; // Import DatePicker
-import 'react-datepicker/dist/react-datepicker.css'; // Import DatePicker styles
-import AddGuests from './AddGuests';
-import CountryList from './CountryList';
+import React, { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
+import SearchIcon from '../../public/assets'
+import DatePicker from 'react-datepicker' // Import DatePicker
+import 'react-datepicker/dist/react-datepicker.css' // Import DatePicker styles
+import AddGuests from './AddGuests'
+import CountryList from './CountryList'
 
-function SearchBar({ 
-  selectedLocation, 
-  setSelectedLocation, 
-  checkInDate, 
-  setCheckInDate, 
-  checkOutDate, 
-  setCheckOutDate, 
-  guests, 
-  setGuests, 
-  onSearch 
+function SearchBar({
+  selectedLocation,
+  setSelectedLocation,
+  checkInDate,
+  setCheckInDate,
+  checkOutDate,
+  setCheckOutDate,
+  guests,
+  setGuests,
+  onSearch,
 }) {
   const toggleLocationDropdown = () => {
-    setIsLocationDropdownOpen(!isLocationDropdownOpen);
-  };
+    setIsLocationDropdownOpen(!isLocationDropdownOpen)
+  }
 
-  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
-  const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false)
+  const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false)
+  const dropdownRef = useRef(null)
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsGuestsDropdownOpen(false);
+        setIsGuestsDropdownOpen(false)
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside)
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [dropdownRef]);
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [dropdownRef])
 
   const toggleGuestsDropdown = () => {
-    setIsGuestsDropdownOpen(!isGuestsDropdownOpen);
-  };
+    setIsGuestsDropdownOpen(!isGuestsDropdownOpen)
+  }
 
   const guestCountAdd = (category) => {
     setGuests((prevGuests) => ({
       ...prevGuests,
       [category]: prevGuests[category] + 1,
-    }));
-  };
+    }))
+  }
 
   const guestCountSub = (category) => {
     setGuests((prevGuests) => ({
       ...prevGuests,
       [category]: Math.max(prevGuests[category] - 1, 0),
-    }));
-  };
+    }))
+  }
 
-  const totalGuests = guests.adults + guests.children;
-  const totalPets = guests.pets;
-  const totalInfants = guests.infants;
+  const totalGuests = guests.adults + guests.children
+  const totalPets = guests.pets
+  const totalInfants = guests.infants
 
-  let whoText = 'Add guests';
+  let whoText = 'Add guests'
 
   if (totalGuests > 0) {
-    whoText = `${totalGuests} Guest${totalGuests !== 1 ? 's' : ''}`;
+    whoText = `${totalGuests} Guest${totalGuests !== 1 ? 's' : ''}`
   }
   if (totalInfants > 0) {
-    whoText += `, ${totalInfants} Infant${totalInfants !== 1 ? 's' : ''}`;
+    whoText += `, ${totalInfants} Infant${totalInfants !== 1 ? 's' : ''}`
   }
 
   if (totalPets > 0) {
-    whoText += `, ${totalPets} Pet${totalPets !== 1 ? 's' : ''}`;
+    whoText += `, ${totalPets} Pet${totalPets !== 1 ? 's' : ''}`
   }
 
   // Get current date
-  const currentDate = new Date();
+  const currentDate = new Date()
 
   return (
     <div className="flex flex-wrap justify-center z-50">
@@ -118,7 +118,7 @@ function SearchBar({
             </label>
             <div className="relative">
               <DatePicker
-                autoComplete='off'
+                autoComplete="off"
                 selected={checkInDate}
                 onChange={(date) => setCheckInDate(date)}
                 placeholderText="YYYY-MM-DD (Check In)"
@@ -136,7 +136,7 @@ function SearchBar({
             </label>
             <div className="relative">
               <DatePicker
-                autoComplete='off'
+                autoComplete="off"
                 selected={checkOutDate}
                 onChange={(date) => setCheckOutDate(date)}
                 placeholderText="YYYY-MM-DD (Check out)"
@@ -201,8 +201,8 @@ function SearchBar({
             </div>
           </div>
           {/* Search Button */}
-          <button 
-            className="bg-[#00773d] flex flex-wrap text-[#fff] border-0 py-[9px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
+          <button
+            className="bg-[#00773d] flex flex-wrap text-[#fff] border-0 py-[16px] px-[17px] rounded-full cursor-pointer w-[50px] h-[50px]"
             onClick={onSearch}
           >
             <Image src={SearchIcon} alt="search" />
@@ -210,7 +210,7 @@ function SearchBar({
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default SearchBar;
+export default SearchBar
