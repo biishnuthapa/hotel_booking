@@ -23,6 +23,7 @@ import {
 import { useAccount } from 'wagmi'
 import CustomGoogleMap from '../../components/Map/CustomGoogleMap.jsx'
 import RoomList from '../../components/RoomList.jsx'
+import Amenities from '@/components/Amenities/Amenities.jsx'
 
 export default function Room({
   apartmentData,
@@ -86,6 +87,7 @@ export default function Room({
         <Calendar apartment={apartment} timestamps={timestamps} />
         <RoomList apartmentId={roomId} />
         <Actions apartment={apartment} />
+        <Amenities/>
         <CustomGoogleMap
           center={center} // Pass center coordinates as a prop
           zoom={11} // Pass zoom level as a prop
@@ -93,7 +95,7 @@ export default function Room({
         />
         <div className="flex flex-col justify-between flex-wrap space-y-2">
           <div className="flex justify-start items-center space-x-2">
-            <h1 className="text-xl font-semibold">Reviews</h1>
+            <h1 className="text-xl font-semibold">Guest Reviews</h1>
             {qualifiedReviewers?.includes(address) && (
               <button
                 className="cursor-pointer text-[#00773d] hover:text-[#00773d]"
