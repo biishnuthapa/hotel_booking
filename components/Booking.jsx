@@ -20,13 +20,14 @@ const Booking = ({ booking, maxDateOut }) => {
       }),
       {
         pending: 'Approve transaction...',
-        success: 'Checked In successfully 👌',
+        success:
+          'Congratulation!! Your Booking has been confirmed and NFT has been sent to Your wallet 👌',
         error: 'Encountered error 🤯',
       }
     )
   }
 
-  console.log("maxDateOut",maxDateOut)
+  console.log('maxDateOut', maxDateOut)
 
   const handleRefund = () => {
     toast.promise(
@@ -57,12 +58,13 @@ const Booking = ({ booking, maxDateOut }) => {
     handleCheckIn,
     handleRefund,
   }
-  
-  return <TenantView booking={booking} functions={functions} owner={address} maxDateOut={maxDateOut} />
-} 
 
-const TenantView = ({ booking, functions, owner,maxDateOut }) => {
+  return (
+    <TenantView booking={booking} functions={functions} owner={address} maxDateOut={maxDateOut} />
+  )
+}
 
+const TenantView = ({ booking, functions, owner, maxDateOut }) => {
   return (
     <div className="w-full flex justify-between items-center my-3 bg-[#bfcfe7] p-3">
       <Link
@@ -76,7 +78,9 @@ const TenantView = ({ booking, functions, owner,maxDateOut }) => {
           className="rounded-full shadow-gray-500 shadow-sm"
         />
         <div className="flex flex-col">
-          <span>{formatDate(booking.date)} - {formatDate(maxDateOut)}</span>
+          <span>
+            {formatDate(booking.date)} - {formatDate(maxDateOut)}
+          </span>
           <span className="text-gray-500 text-sm">{truncate(booking.tenant, 4, 4, 11)}</span>
         </div>
       </Link>

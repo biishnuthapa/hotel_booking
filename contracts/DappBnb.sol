@@ -84,7 +84,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory longitude,
     string memory pinataJsonLink
   ) public  {
-    require(msg.sender == owner(), 'Please submit the form to add new appartment');
     require(bytes(name).length > 0, 'Name cannot be empty');
     require(bytes(description).length > 0, 'Description cannot be empty');
     require(bytes(location).length > 0, 'Location cannot be empty');
@@ -152,7 +151,7 @@ function addRoomTypeToApartment(
     uint256 _price,
     string memory _details,
     uint256 _capacity
-) public onlyOwner {
+) public  {
     require(appartmentExist[_apartmentId], "Apartment does not exist");
     
     RoomType memory newRoomType;

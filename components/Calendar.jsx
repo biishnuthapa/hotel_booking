@@ -12,8 +12,10 @@ const Calendar = ({ apartment, timestamps }) => {
   const [checkOutDate, setCheckOutDate] = useState(null)
   const [totalDays, setTotalDays] = useState(0)
   const [selectedRoom, setSelectedRoom] = useState('')
-  const { securityFee } = useSelector((states) => states.globalStates)
   const [roomList, setRoomList] = useState([])
+  const [breakfastIncluded, setBreakfastIncluded] = useState(false) // Added state for breakfast
+
+  const { securityFee } = useSelector((states) => states.globalStates)
 
   useEffect(() => {
     const fetchRoomsData = async () => {
@@ -63,12 +65,13 @@ const Calendar = ({ apartment, timestamps }) => {
         apartment?.price * timestampArray.length +
         (apartment?.price * timestampArray.length * securityFee) / 100,
       room: selectedRoom,
+      breakfastIncluded, // Include breakfast in the params
     }
 
     await toast.promise(
-      new Promise((resolve, reject) => {
-        bookApartment(params)
-          .then(() => {
+      new Promise(async (resolve, reject) => {
+        await bookApartment(params)
+          .then(async () => {
             resetForm()
             resolve()
           })
@@ -87,6 +90,7 @@ const Calendar = ({ apartment, timestamps }) => {
     setCheckOutDate(null)
     setTotalDays(0)
     setSelectedRoom('')
+    setBreakfastIncluded(false) // Reset breakfast inclusion state
   }
 
   return (
@@ -144,6 +148,20 @@ const Calendar = ({ apartment, timestamps }) => {
             </option>
           ))}
         </select>
+        <div className="flex items-center">
+          <label htmlFor="breakfastIncluded" className="mr-2">
+            Breakfast Included:
+          </label>
+          <select
+            id="breakfastIncluded"
+            value={breakfastIncluded}
+            onChange={(e) => setBreakfastIncluded(e.target.value === 'true')}
+            className="rounded-lg border border-gray-400 p-2"
+          >
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </div>
         <button
           className="p-2 border-none bg-gradient-to-l from-[#00773d]
           to-[#00773d] text-white w-full rounded-md focus:outline-none
