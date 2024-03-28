@@ -45,7 +45,7 @@ const Calendar = ({ apartment, timestamps }) => {
     }
   }
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
     if (!checkInDate || !checkOutDate || !selectedRoom) return
 
@@ -68,10 +68,10 @@ const Calendar = ({ apartment, timestamps }) => {
       breakfastIncluded, // Include breakfast in the params
     }
 
-    await toast.promise(
-      new Promise(async (resolve, reject) => {
-        await bookApartment(params)
-          .then(async () => {
+     toast.promise(
+      new Promise( (resolve, reject) => {
+         bookApartment(params)
+          .then( () => {
             resetForm()
             resolve()
           })
