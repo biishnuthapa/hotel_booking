@@ -7,12 +7,13 @@ import { mainnet, hardhat } from 'wagmi/chains'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 import { SessionProvider } from 'next-auth/react'
+import { polygonAmoy } from 'wagmi/chains'
 
-const polygonMumbai = {
-  id: 80001,
-  name: 'Polygon Mumbai',
-  network: 'polygonMumbai',
-  iconUrl: 'https://altcoinsbox.com/wp-content/uploads/2023/03/matic-logo.webp',
+const polygonAmoy = {
+  id: 80002, // Polygon Amoy testnet chain ID
+  name: 'Polygon Amoy',
+  network: 'polygonAmoy',
+  iconUrl: 'https://polygon.technology/assets/images/polygon-ecosystem/amoy.svg', // Polygon Amoy icon
   iconBackground: '#282c34',
   nativeCurrency: {
     decimals: 18,
@@ -20,37 +21,16 @@ const polygonMumbai = {
     symbol: 'MATIC',
   },
   rpcUrls: {
-    public: { http: ['https://rpc-mumbai.maticvigil.com/'] },
-    default: { http: ['https://rpc-mumbai.maticvigil.com/'] },
+    default: { http: ['https://rpc-amoy.matic.network/'] }, // Polygon Amoy RPC URL
   },
   blockExplorers: {
-    default: { name: 'Polygonscan', url: 'https://mumbai.polygonscan.com/' },
-  },
-  testnet: true,
-}
-const komodoTestnet = {
-  id: 14963, // Replace with actual Komodo Testnet chain ID
-  name: 'Komodo Testnet',
-  network: 'komodoTestnet',
-  iconUrl: 'https://komodoplatform.com/wp-content/uploads/2021/04/Komodo-Logo-Color.png', // Replace with Komodo logo
-  iconBackground: '#000',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Komodo',
-    symbol: 'KMD',
-  },
-  rpcUrls: {
-    public: { http: ['https://testnet.komodod.com/'] }, // Replace with Komodo Testnet RPC URL
-    default: { http: ['https://testnet.komodod.com/'] }, // Replace with Komodo Testnet RPC URL
-  },
-  blockExplorers: {
-    default: { name: 'Komodo Explorer', url: 'https://explorer.testnet.komodod.com/' }, // Replace with Komodo Testnet block explorer URL
+    default: { name: 'Polygonscan', url: 'https://www.oklink.com/amoy' }, 
   },
   testnet: true,
 }
 
 const { chains, publicClient } = configureChains(
-  [mainnet, hardhat, polygonMumbai, komodoTestnet],
+  [mainnet, hardhat, polygonAmoy],
   [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID }), publicProvider()]
 )
 
