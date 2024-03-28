@@ -18,9 +18,9 @@ const Calendar = ({ apartment, timestamps }) => {
   const { securityFee } = useSelector((states) => states.globalStates)
 
   useEffect(() => {
-    const fetchRoomsData = async () => {
+    const fetchRoomsData =() => {
       try {
-        const roomData = await getRooms(apartment?.id)
+        const roomData =getRooms(apartment?.id)
         setRoomList(roomData)
       } catch (error) {
         console.error('Error fetching rooms:', error)
