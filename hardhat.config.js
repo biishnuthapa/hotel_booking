@@ -12,7 +12,7 @@ module.exports = {
   },
   networks: {
     mumbai: {
-      url: 'https://polygon-mumbai.g.alchemy.com/v2/YOem_tciIfjXY-qDfFpUFYUxgsgMr8MN',
+      url: 'https://polygon-amoy.g.alchemy.com/v2/mwYAzy0HL3Vnxos255Iqbf5GCLtE54Kn',
       accounts: [`0x${process.env.PRIVATE_KEY}`],
     },
   },
