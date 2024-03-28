@@ -7,7 +7,6 @@ import { mainnet, hardhat } from 'wagmi/chains'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 import { SessionProvider } from 'next-auth/react'
-import { polygonAmoy } from 'wagmi/chains'
 
 const polygonAmoy = {
   id: 80002, // Polygon Amoy testnet chain ID
