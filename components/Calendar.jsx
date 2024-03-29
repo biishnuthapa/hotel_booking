@@ -1,3 +1,4 @@
+
 import moment from 'moment'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -12,15 +13,15 @@ const Calendar = ({ apartment, timestamps }) => {
   const [checkOutDate, setCheckOutDate] = useState(null)
   const [totalDays, setTotalDays] = useState(0)
   const [selectedRoom, setSelectedRoom] = useState('')
+  const { securityFee } = useSelector((states) => states.globalStates)
   const [roomList, setRoomList] = useState([])
   const [breakfastIncluded, setBreakfastIncluded] = useState(false) // Added state for breakfast
 
-  const { securityFee } = useSelector((states) => states.globalStates)
 
   useEffect(() => {
-    const fetchRoomsData =() => {
+    const fetchRoomsData = async () => {
       try {
-        const roomData =getRooms(apartment?.id)
+        const roomData = await getRooms(apartment?.id)
         setRoomList(roomData)
       } catch (error) {
         console.error('Error fetching rooms:', error)
@@ -69,9 +70,9 @@ const Calendar = ({ apartment, timestamps }) => {
     }
 
      toast.promise(
-      new Promise( (resolve, reject) => {
-         bookApartment(params)
-          .then( () => {
+      new Promise((resolve, reject) => {
+        bookApartment(params)
+          .then(() => {
             resetForm()
             resolve()
           })
