@@ -12,7 +12,7 @@ module.exports = {
   },
   networks: {
     mumbai: {
-      url: 'https://polygon-mumbai.g.alchemy.com/v2/YOem_tciIfjXY-qDfFpUFYUxgsgMr8MN',
+      url: 'https://testnet.bitfinity.network',
       accounts: [`0x${process.env.PRIVATE_KEY}`],
     },
   },
