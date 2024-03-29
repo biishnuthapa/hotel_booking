@@ -1,4 +1,3 @@
-
 import moment from 'moment'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
@@ -13,10 +12,10 @@ const Calendar = ({ apartment, timestamps }) => {
   const [checkOutDate, setCheckOutDate] = useState(null)
   const [totalDays, setTotalDays] = useState(0)
   const [selectedRoom, setSelectedRoom] = useState('')
-  const { securityFee } = useSelector((states) => states.globalStates)
   const [roomList, setRoomList] = useState([])
   const [breakfastIncluded, setBreakfastIncluded] = useState(false) // Added state for breakfast
 
+  const { securityFee } = useSelector((states) => states.globalStates)
 
   useEffect(() => {
     const fetchRoomsData = async () => {
@@ -69,10 +68,10 @@ const Calendar = ({ apartment, timestamps }) => {
       breakfastIncluded, // Include breakfast in the params
     }
 
-     toast.promise(
+    toast.promise(
       new Promise((resolve, reject) => {
         bookApartment(params)
-          .then(() => {
+          .then(async () => {
             resetForm()
             resolve()
           })
