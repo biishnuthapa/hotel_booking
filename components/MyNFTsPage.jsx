@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { getOwnedTokens } from '@/services/blockchain'
+import { useAccount } from 'wagmi'
 
 const NFTList = () => {
   const [tokens, setTokens] = useState([])
-  const walletAddress = '0x913e361e6945beEe78dD01a53E1df920C47E1357'
+  const { address: walletAddress } = useAccount()
 
   useEffect(() => {
     const fetchTokens = async () => {
@@ -29,7 +30,7 @@ const NFTList = () => {
     }
 
     fetchTokens()
-  }, [])
+  }, [walletAddress])
 
   return (
     <div>
