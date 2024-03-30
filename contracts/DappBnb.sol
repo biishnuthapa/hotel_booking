@@ -338,5 +338,31 @@ function mintTickets(uint id) internal returns (bool) {
 
     return true;
 }
+struct TokenData {
+    uint id;
+    string metadataUri;
+}
+
+function getOwnedTokens(address owner) public view returns (TokenData[] memory) {
+    TokenData[] memory ownedTokens = new TokenData[](_totalTokens.current());
+    uint count = 0;
+
+    for (uint i = 1; i <= _totalTokens.current(); i++) {
+        if (ownerOf(i) == owner) {
+            ownedTokens[count] = TokenData(i, tokenURI(i));
+            count++;
+        }
+    }
+
+    TokenData[] memory result = new TokenData[](count);
+    for (uint i = 0; i < count; i++) {
+        result[i] = ownedTokens[i];
+    }
+
+    return result;
+}
+function getTotalTokens() public view returns (uint256) {
+    return _totalTokens.current();
+}
 
 }

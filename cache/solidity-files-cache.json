@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/oem/Desktop/hotel_booking/contracts/DappBnb.sol": {
-      "lastModificationDate": 1711596556293,
-      "contentHash": "8dd6406f39181bca95d0e4aa71861e2b",
+      "lastModificationDate": 1711820678190,
+      "contentHash": "a39702ea31af63c24f3d67df2630890d",
       "sourceName": "contracts/DappBnb.sol",
       "solcConfig": {
         "version": "0.8.4",

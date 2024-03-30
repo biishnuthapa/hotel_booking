@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { useAccount } from 'wagmi'
 import { toast } from 'react-toastify'
 import Identicon from 'react-identicons'
@@ -6,6 +7,7 @@ import { formatDate, truncate } from '@/utils/helper'
 import { checkInApartment, refundBooking } from '@/services/blockchain'
 
 const Booking = ({ booking, maxDateOut }) => {
+  const router = useRouter()
   const { address } = useAccount()
 
   const handleCheckIn = () => {
@@ -15,6 +17,7 @@ const Booking = ({ booking, maxDateOut }) => {
           .then((tx) => {
             console.log(tx)
             resolve(tx)
+            router.push('/NFTList')
           })
           .catch((error) => reject(error))
       }),

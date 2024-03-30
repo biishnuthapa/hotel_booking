@@ -1,21 +1,23 @@
+import React from 'react'
 import Head from 'next/head'
 import { getApartments } from '@/services/blockchain'
-import { Collection, Filter, HeroSection, Information,ParentComponent} from '@/components'
+import { Collection, Filter, HeroSection, Information, ParentComponent } from '@/components'
 import Accordion from '../components/Questions/Questions'
 import UpcomingEvents from '../components/UpcomingEvent/Upcoming'
 import NFTWebsiteSteps from '../components/Steps/NFTWebsiteSteps'
 import Background from '@/components/Background/Background'
 
-export default function Home({ apartmentsData }) {
+const Home = ({ apartmentsData }) => {
+
   const images = [
     '/assets/image1.jpg',
     '/assets/image2.jpg',
     '/assets/image3.jpg',
     '/assets/image4.jpg',
     '/assets/image5.jpg',
-
     // Add more image paths here as needed
   ]
+
   return (
     <div>
       <Head>
@@ -51,7 +53,7 @@ export default function Home({ apartmentsData }) {
           <div className="absolute inset-0 flex flex-col justify-center items-center text-white z-10">
             {/* SearchBar */}
             <div className="mb-20 ">
-              <ParentComponent/>
+              <ParentComponent />
             </div>
 
             {/* HotelFilters */}
@@ -75,6 +77,8 @@ export default function Home({ apartmentsData }) {
     </div>
   )
 }
+
+export default Home
 
 export const getServerSideProps = async () => {
   const apartmentsData = await getApartments()

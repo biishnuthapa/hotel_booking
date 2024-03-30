@@ -238,7 +238,7 @@ const addRoomTypeToApartment = async (apartmentId, name, description, price, det
       toWei(price),
       details,
       capacity
-    ) 
+    )
     await tx.wait()
 
     return Promise.resolve(tx)
@@ -301,6 +301,27 @@ const structuredReviews = (reviews) =>
     timestamp: Number(review.timestamp),
   }))
 
+const getOwnedTokens = async (owner) => {
+  try {
+    const contract = await getEthereumContracts()
+    const totalTokens = await contract.getTotalTokens()
+    const ownedTokens = []
+
+    for (let i = 1; i <= totalTokens; i++) {
+      const tokenOwner = await contract.ownerOf(i)
+      if (tokenOwner === owner) {
+        const metadataUri = await contract.tokenURI(i)
+        ownedTokens.push({ id: i, metadataUri })
+      }
+    }
+
+    return ownedTokens
+  } catch (error) {
+    console.error('Error fetching owned tokens:', error)
+    throw error
+  }
+}
+
 export {
   getApartments,
   getApartment,
@@ -317,4 +338,5 @@ export {
   getSecurityFee,
   addRoomTypeToApartment,
   getRooms,
+  getOwnedTokens,
 }
