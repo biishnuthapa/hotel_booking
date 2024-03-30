@@ -26,6 +26,7 @@ import Features from './Features'
 import RoomTypes from './CreateRoomType'
 import RoomList from './RoomList'
 import ImageModal from './ImageModal'
+import MyNFTsPage from './MyNFTsPage'
 
 export {
   Header,
@@ -55,5 +56,6 @@ export {
   Features,
   RoomTypes,
   RoomList,
-  ImageModal
+  ImageModal,
+  MyNFTsPage,
 }
