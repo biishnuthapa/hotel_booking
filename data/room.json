@@ -8,10 +8,10 @@
   "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
   "facilities": ["Air conditioning", "Heating", "Desk"],
   "smoking": false,
-  "mainImageUrl": "",
+  "mainImageUrl": "https://images.pexels.com/photos/2062431/pexels-photo-2062431.jpeg",
   "otherImageUrls": [
-    "https://images.pexels.com/photos/16821924/pexels-photo-16821924/free-photo-of-pretty-blonde-wearing-a-black-bustier.jpeg",
-    "https://images.pexels.com/photos/18127596/pexels-photo-18127596/free-photo-of-portrait-of-a-pretty-brunette-standing-outdoors-with-raised-arms.jpeg",
-    "https://via.placeholder.com/100x100"
+    "https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg",
+    "https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg",
+    "https://images.pexels.com/photos/261041/pexels-photo-261041.jpeg"
   ]
 }

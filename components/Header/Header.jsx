@@ -33,7 +33,7 @@ const ButtonGroup = () => {
               type="button"
               className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
             >
-              Add Rooms
+              Add Hotels
             </button>
           </Link>
         )}
