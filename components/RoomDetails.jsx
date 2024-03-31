@@ -1,7 +1,22 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 
-const RoomDetails = ({ onClose }) => {
+const RoomDetails = ({ onClose, jsonLink }) => {
+  const [roomData, setRoomData] = useState(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  useEffect(() => {
+    const fetchRoomData = async () => {
+      try {
+        const response = await fetch(jsonLink)
+        const data = await response.json()
+        setRoomData(data)
+      } catch (error) {
+        console.error('Error fetching room data:', error)
+      }
+    }
+
+    fetchRoomData()
+  }, [jsonLink])
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prevIndex) =>
@@ -15,24 +30,10 @@ const RoomDetails = ({ onClose }) => {
     )
   }
 
-  const roomData = {
-    name: 'Example Room',
-    size: '20 m²',
-    views: ['Mountain view', 'City view'],
-    amenities: ['Free WiFi', 'Air conditioning', 'TV'],
-    reviews: '4.5/5 - Based on 100 reviews',
-    description:
-      'This is a description of the room. Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    sharedBathroom: ['Free toiletries', 'Toilet', 'Shower'],
-    facilities: ['Air conditioning', 'Heating', 'Desk'],
-    smoking: false,
-    mainImageUrl: 'https://images.pexels.com/photos/2062431/pexels-photo-2062431.jpeg',
-    otherImageUrls: [
-      'https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg',
-      'https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg',
-      'https://via.placeholder.com/100x100',
-    ],
+  if (!roomData) {
+    return <div>Loading...</div>
   }
+
   roomData.mainImageUrl = roomData.otherImageUrls[currentImageIndex]
 
   return (

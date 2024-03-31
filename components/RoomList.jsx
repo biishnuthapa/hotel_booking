@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { getRooms } from '@/services/blockchain'
-import RoomDetails from '@/components/RoomDetails' 
+import RoomDetails from '@/components/RoomDetails'
 
 const RoomList = ({ apartmentId }) => {
   const [rooms, setRooms] = useState([])
-  const [showModal, setShowModal] = useState(false) 
+  const [showModal, setShowModal] = useState(false)
+  const [selectedRoom, setSelectedRoom] = useState(null)
 
   useEffect(() => {
     const fetchRoomsData = async () => {
@@ -19,12 +20,14 @@ const RoomList = ({ apartmentId }) => {
     fetchRoomsData()
   }, [apartmentId])
 
-  const handleRoomClick = () => {
-    setShowModal(true) // Open modal on room click
+  const handleRoomClick = (room) => {
+    setSelectedRoom(room)
+    setShowModal(true)
   }
 
   const handleCloseModal = () => {
-    setShowModal(false) // Close modal on close button click
+    setSelectedRoom(null)
+    setShowModal(false)
   }
 
   return (
@@ -86,7 +89,7 @@ const RoomList = ({ apartmentId }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <button
                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
-                    onClick={handleRoomClick} 
+                    onClick={() => handleRoomClick(room)}
                   >
                     View Details
                   </button>
@@ -101,7 +104,7 @@ const RoomList = ({ apartmentId }) => {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
           <div className="bg-white p-8 rounded-md">
-            <RoomDetails onClose={handleCloseModal} />
+            <RoomDetails onClose={handleCloseModal} jsonLink={selectedRoom?.details} />
           </div>
         </div>
       )}
