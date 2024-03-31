@@ -35,6 +35,7 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
         uint256 price;
         string details;
         uint capacity;
+        bool deleted;
  }
 
   struct BookingStruct {
@@ -116,8 +117,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     string memory name,
     string memory description,
     string memory location,
-    string memory latitude,
-    string memory longitude,
     string memory images,
     uint rooms,
     uint price
@@ -126,8 +125,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     require(appartmentExist[id] == true, 'Appartment not found');
     require(msg.sender == apartments[id].owner, 'Unauthorized personnel, owner only');
     require(bytes(name).length > 0, 'Name cannot be empty');
-    require(bytes(description).length > 0, 'Description cannot be empty');
-    require(bytes(location).length > 0, 'Location cannot be empty');
+ await contract.deleteRoomType(apartmentId, roomId)
+      |                          ^length > 0, 'Location cannot be empty');
     require(bytes(images).length > 0, 'Images cannot be empty');
     require(rooms > 0, 'Rooms cannot be zero');
     require(price > 0 ether, 'Price cannot be zero');
@@ -139,8 +138,6 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     lodge.images = images;
     lodge.rooms = rooms;
     lodge.price = price;
-    lodge.latitude = latitude; 
-    lodge.longitude = longitude; 
 
     apartments[id] = lodge;
   }
@@ -160,6 +157,7 @@ function addRoomTypeToApartment(
     newRoomType.price = _price;
     newRoomType.details = _details;
     newRoomType.capacity =_capacity;
+    newRoomType.deleted = false;
 
     roomTypes[_apartmentId].push(newRoomType);
 }
@@ -167,7 +165,12 @@ function getRooms(uint256 _apartmentId) public view returns (RoomType[] memory) 
     require(appartmentExist[_apartmentId], "Apartment does not exist");
     return roomTypes[_apartmentId];
 }
+function deleteRoomType(uint256 _apartmentId, uint256 _index) public {
+        require(appartmentExist[_apartmentId], "Apartment does not exist");
+        require(_index < roomTypes[_apartmentId].length, "Invalid room index");
 
+        roomTypes[_apartmentId][_index].deleted = true;
+     }
 
 function deleteAppartment(uint id) public {
     require(appartmentExist[id] == true, 'Appartment not found');
