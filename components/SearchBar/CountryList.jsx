@@ -1,26 +1,10 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
-import apiInstance from '../../services/apiServices/apiInstances';
+import hotelData from '../../data/CountryList.json';
 
 function CountryList({ setSelectedLocation, setIsLocationDropdownOpen }) {
-    const [isLoading, setIsLoading] = useState(true);
-    const [location, setLocation] = useState([]);
 
-    useEffect(() => {
-        const fetchLocation = async () => {
-            setIsLoading(true);
-            try {
-                const response = await apiInstance.get('users/?limit=10');
-                setLocation(response.data.users);
-            } catch (error) {
-                // Handle error
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchLocation();
-    }, []);
+    console.log("hoteldata", hotelData[0].location.location)
 
     const handleAddressClick = (address) => {
         setSelectedLocation(address);
@@ -29,18 +13,13 @@ function CountryList({ setSelectedLocation, setIsLocationDropdownOpen }) {
 
     return (
         <div>
-            {isLoading ? (
-                <div className="loader">Loading</div>
-            ) : (
-                <div>
-                    {location.map((loc) => (
-                        <div className="bg-white flex flex-col gap-2 text-black text-md font-semibold" key={loc.id} onClick={() => handleAddressClick(loc.address.address)}>
-                            <div className="p-4">{loc.address.address}</div>
-                        </div>
-                    ))}
+            {hotelData.map((loc) => (
+                <div className="bg-white flex flex-col gap-2 text-black text-md font-semibold" key={loc.id} onClick={() => handleAddressClick(loc.location.location)}>
+                    <div className="p-4 hover:bg-slate-300 cursor-pointer">{loc.location.location}</div>
                 </div>
-            )}
+            ))}
         </div>
+
     );
 }
 

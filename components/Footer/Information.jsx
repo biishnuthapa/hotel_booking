@@ -19,7 +19,7 @@ const Information = () => {
         <div>
           <h1 className="text-3xl font-semibold mb-4 text-green-600">Contact Us</h1>
           <p className="text-xl mb-2">Rem.work, Kamalpokhari, Nepal</p>
-          <p className="text-xl mb-2">admin@koion.tech</p>
+          <p className="text-xl mb-2">admin@koinon.tech</p>
           <p className="text-xl">123-456-7890</p>
         </div>
 
