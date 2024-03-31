@@ -11,7 +11,7 @@ function CountryList({ setSelectedLocation, setIsLocationDropdownOpen }) {
     };
 
     return (
-        <div>
+        <div className='z-50'>
             {hotelData.map((loc) => (
                 <div className="bg-white flex flex-col gap-2 text-black text-md font-semibold" key={loc.id} onClick={() => handleAddressClick(loc.location.location)}>
                     <div className="p-4 hover:bg-slate-300 cursor-pointer">{loc.location.location}</div>
