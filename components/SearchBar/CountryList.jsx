@@ -1,5 +1,4 @@
-import React, { useEffect } from 'react';
-import { useState } from 'react';
+import React from 'react';
 import hotelData from '../../data/CountryList.json';
 
 function CountryList({ setSelectedLocation, setIsLocationDropdownOpen }) {
