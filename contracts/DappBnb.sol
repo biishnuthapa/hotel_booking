@@ -125,8 +125,8 @@ contract DappBnb is Ownable, ReentrancyGuard, ERC721URIStorage{
     require(appartmentExist[id] == true, 'Appartment not found');
     require(msg.sender == apartments[id].owner, 'Unauthorized personnel, owner only');
     require(bytes(name).length > 0, 'Name cannot be empty');
- await contract.deleteRoomType(apartmentId, roomId)
-      |                          ^length > 0, 'Location cannot be empty');
+    require(bytes(description).length > 0, 'Description cannot be empty');
+    require(bytes(location).length > 0, 'Location cannot be empty');
     require(bytes(images).length > 0, 'Images cannot be empty');
     require(rooms > 0, 'Rooms cannot be zero');
     require(price > 0 ether, 'Price cannot be zero');
