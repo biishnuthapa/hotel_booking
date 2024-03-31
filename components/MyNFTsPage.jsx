@@ -44,14 +44,14 @@ const NFTList = () => {
             className="bg-white rounded-lg shadow-md p-4"
           >
             <strong className="block text-lg font-bold mb-2">ID: {token.id}</strong>
-            <p className="text-sm mb-2">Name: {token.name}</p>
-            <p className="text-sm mb-2">Description: {token.description}</p>
             <img
               src={token.image}
               alt={token.name}
               className="w-full h-40 object-cover rounded-md"
               whileHover={{ scale: 1.05 }}
             />
+            <p className="text-sm mb-2">Name: {token.name}</p>
+            <p className="text-sm mb-2">Description: {token.description}</p>
           </motion.li>
         ))}
       </ul>
