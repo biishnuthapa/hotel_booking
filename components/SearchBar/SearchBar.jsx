@@ -112,13 +112,19 @@ function SearchBar({
           <div className="relative">
             <input
               value={selectedLocation}
+              onChange={(e) => setSelectedLocation(e.target.value)}
               className="w-full lg:w-[300px] border-0 rounded-sm bg-transparent outline-none"
               type="text"
               id="location"
               placeholder="Destination"
-              onClick={toggleLocationDropdown}
-              autoComplete="off"
+              onClick={(e) => {
+                const targetClassList = Array.from(e.target.classList)
+                if (!targetClassList.includes('arrow-icon-class')) {
+                  toggleLocationDropdown()
+                }
+              }}
             />
+
             {isLocationDropdownOpen && (
               <div
                 className="dropdown-content absolute bg-white shadow-lg rounded-lg mt-1 left-0"

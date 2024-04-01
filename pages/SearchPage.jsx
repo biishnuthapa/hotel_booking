@@ -17,15 +17,19 @@ function SearchPage() {
   return (
     <div>
       <h1 className="text-3xl font-semibold mb-8 mt-6 text-center">Search Results</h1>
-      <ul>
-        {apartments.map((apartment, index) => (
-          <li key={index}>
-            <Link href={`/room/${apartment[0]}`}>
-              <ApartmentCard apartment={apartment} />
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {apartments.length > 0 ? (
+        <ul>
+          {apartments.map((apartment, index) => (
+            <li key={index}>
+              <Link href={`/room/${apartment[0]}`}>
+                <ApartmentCard apartment={apartment} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-center">No hotels available in your location.</p>
+      )}
     </div>
   )
 }
