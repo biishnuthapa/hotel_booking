@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { toast } from 'react-toastify'
 import { useSelector } from 'react-redux'
 import DatePicker from 'react-datepicker'
-import { FaEthereum } from 'react-icons/fa'
 import { bookApartment, getRooms } from '@/services/blockchain'
 
 const Calendar = ({ apartment, timestamps }) => {
