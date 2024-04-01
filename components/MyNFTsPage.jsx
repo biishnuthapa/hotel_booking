@@ -43,7 +43,7 @@ const NFTList = () => {
   }
 
   return (
-    <div>
+   <div>
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {tokens.map((token) => (
           <motion.li
@@ -53,7 +53,7 @@ const NFTList = () => {
             transition={{ duration: 0.5 }}
             className="bg-white rounded-lg shadow-md p-4"
           >
-            <strong className="block text-lg font-bold mb-2">ID: {token.id}</strong>
+            <strong className="block text-lg font-bold mb-2 text-black">ID: {token.id}</strong>
             <img
               src={token.image}
               alt={token.name}
@@ -61,11 +61,12 @@ const NFTList = () => {
               onClick={() => openModal(token.image)}
               whileHover={{ scale: 1.05 }}
             />
-            <p className="text-sm mb-2">Name: {token.name}</p>
-            <p className="text-sm mb-2">Description: {token.description}</p>
+            <p className="text-base mt-2 mb-2 text-black font-semibold">Name: {token.name}</p>
+            <p className="text-base mb-2 text-black">Description: {token.description}</p>
           </motion.li>
         ))}
       </ul>
+   
       <Modal
         isOpen={selectedImage !== null}
         onRequestClose={closeModal}
