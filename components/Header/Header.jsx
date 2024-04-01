@@ -27,6 +27,7 @@ const ButtonGroup = () => {
         <button className="rounded-l-full px-5 py-3 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out">
           Anywhere
         </button>
+
         {address && (
           <Link href={'/room/add'}>
             <button
@@ -37,6 +38,18 @@ const ButtonGroup = () => {
             </button>
           </Link>
         )}
+
+        {address && (
+          <Link href={'/NFTList'}>
+            <button
+              type="button"
+              className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
+            >
+              My NFTs
+            </button>
+          </Link>
+        )}
+
         <button className="rounded-r-full px-5 py-3 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out">
           <p className="flex items-center">Any week</p>
         </button>
