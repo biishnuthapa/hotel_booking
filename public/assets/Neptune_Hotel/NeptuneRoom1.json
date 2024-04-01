@@ -1,0 +1,19 @@
+{
+    "name": "Superior garden Rooms",
+    "size": "27 m²",
+    "views": ["Mountain view", "City view"],
+    "amenities": ["Free WiFi", "Air conditioning", "TV"],
+    "reviews": "4.5/5 - Based on 100 reviews",
+    "description": "Superior Garden rooms have a maximum occupancy of 2 persons.  Rooms are either ground floor with a garden terrace, or second floor with a balcony.  ",
+    "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
+    "facilities": ["Air conditioning", "Heating", "Desk"],
+    "smoking": false,
+    "mainImageUrl": "https://www.neptunehotels.com/wp-content/uploads/2024/01/Neptune-Village-Suite-1200x900.jpg",
+    "otherImageUrls": [
+      "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/04/b1/3b/81/neptune-village-beach.jpg",
+      "https://www.neptunehotels.com/wp-content/uploads/2024/01/Baobab-Spa-Jacuzzi-1200x900.jpg",
+      "https://www.neptunehotels.com/wp-content/uploads/2022/08/Beach-Superior-Suite-2-800x500.jpg",
+      "https://www.neptunehotels.com/wp-content/uploads/2024/01/Neptune-Village-WC-1200x900.jpg"
+    ]
+  }
+  

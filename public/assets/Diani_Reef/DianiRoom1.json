@@ -1,0 +1,18 @@
+{
+    "name": "Standard Garden & Sea Facing Rooms",
+    "size": "36m²",
+    "views": ["Garden view", "City view"],
+    "amenities": ["Free WiFi", "Air conditioning", "TV"],
+    "reviews": "4.5/5 - Based on 100 reviews",
+    "description": "Experience ultimate comfort during your stay with us in our expansive garden and sea-facing standard rooms. ",
+    "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
+    "facilities": ["Air conditioning", "Heating", "Desk"],
+    "smoking": false,
+    "mainImageUrl": "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-RESORT-Spa-Standard-Rooms-Accommodation-1.jpg",
+    "otherImageUrls": [
+      "https://dianireef.com/wp-content/uploads/2023/05/FIRST-IMAGE-ON-CAROUSEL-DIANI-REEF-STANDARD-ROOMS-ACCOMMODATION.jpg",
+      "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-RESORT-Spa-Standard-Rooms-Accommodation-5.jpg",
+      "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-RESORT-Spa-Standard-Rooms-Accommodation-10.jpg"
+    ]
+  }
+  

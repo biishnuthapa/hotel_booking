@@ -1,0 +1,19 @@
+{
+    "name": "Penthouse Suites",
+    "size": "198.73 m²",
+    "views": ["Mountain view", "City view"],
+    "amenities": ["Free WiFi", "Air conditioning", "TV"],
+    "reviews": "4.5/5 - Based on 100 reviews",
+    "description": "Our penthouse suites are beautifully decorated with muted hues and sophisticated decor, creating an atmosphere of pure delight ",
+    "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
+    "facilities": ["Air conditioning", "Heating", "Desk"],
+    "smoking": false,
+    "mainImageUrl": "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-Resort-Spa-Penthouse-Suite-6.jpg",
+    "otherImageUrls": [
+      "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-Resort-Spa-Penthouse-Suite-1-1.jpg",
+      "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-Resort-Spa-Penthouse-Suite-3.jpg",
+      "https://dianireef.com/wp-content/uploads/2023/05/Diani-Reef-Beach-Resort-Spa-Penthouse-Suite-2.jpg",
+      "https://dianireef.com/wp-content/uploads/2023/05/FIRST-_-COVER-IMAGE-ON-SUB-SECTION-FOR-PENTHOUSE-SUITE-DIANI-REEF.jpg"
+    ]
+  }
+  

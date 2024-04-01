@@ -1,0 +1,19 @@
+{
+    "name": "Superior Double Room",
+    "size": "51 m²",
+    "views": ["Mountain view", "City view"],
+    "amenities": ["Free WiFi", "Air conditioning", "TV"],
+    "reviews": "4.5/5 - Based on 100 reviews",
+    "description": "Furnished balcony with separate sitting area and air conditioning. ",
+    "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
+    "facilities": ["Air conditioning", "Heating", "Desk"],
+    "smoking": false,
+    "mainImageUrl": "",
+    "otherImageUrls": [
+     "https://www.swahilibeach.com/wp-content/uploads/2015/09/SWAHILI-BEACH-Rooms-1.jpg",
+  
+      "https://imgfl.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_1300,q_auto,w_2000/partner-images/f8/1a/687369722ec90386b049717f934d72da6781f81a08e26463c743c82a26e6.jpeg",
+      "https://imgfl.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_1300,q_auto,w_2000/partner-images/3f/e0/636a697cc0f975c71e0af3bb80425f6b1348723c84640c80f085314dbdae.jpeg",
+      "https://imgfl.trivago.com/c_limit,d_dummy.jpeg,f_auto,h_1300,q_auto,w_2000/partner-images/3f/e0/636a697cc0f975c71e0af3bb80425f6b1348723c84640c80f085314dbdae.jpeg"
+    ]
+  }

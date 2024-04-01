@@ -1,0 +1,19 @@
+{
+    "name": "Garden Rooms",
+    "size": "28 m²",
+    "views": ["Mountain view", "City view"],
+    "amenities": ["Free WiFi", "Air conditioning", "TV"],
+    "reviews": "4.5/5 - Based on 100 reviews",
+    "description": "It includes terrace/balcony and ground floor with terrace while first floor with balcony",
+    "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
+    "facilities": ["Air conditioning", "Heating", "Desk"],
+    "smoking": false,
+    "mainImageUrl": "https://d1vp8nomjxwyf1.cloudfront.net/wp-content/uploads/sites/544/2023/06/23094728/bustani.jpg",
+    "otherImageUrls": [
+      "https://d1vp8nomjxwyf1.cloudfront.net/wp-content/uploads/sites/544/2023/06/23090722/Poolside-Room.jpg",
+      "https://d1vp8nomjxwyf1.cloudfront.net/wp-content/uploads/sites/544/2023/06/23083754/Sea-view1.jpg",
+      "https://d1vp8nomjxwyf1.cloudfront.net/wp-content/uploads/sites/544/2023/06/23115310/Oasis-view.jpg"
+     
+    ]
+  }
+  

@@ -1,0 +1,19 @@
+{
+    "name": "Deluxe terrace rooms",
+    "size": "34 m²",
+    "views": ["Mountain view", "City view"],
+    "amenities": ["Free WiFi", "Air conditioning", "TV"],
+    "reviews": "4.5/5 - Based on 100 reviews",
+    "description": "All rooms offer satellite TV, a writing desk and all have large sliding windows leading to patios. Bathrooms feature eco- friendly rain showers, handheld showers and Arabian showers.",
+    "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
+    "facilities": ["Air conditioning", "Heating", "Desk"],
+    "smoking": false,
+    "mainImageUrl": "https://www.leopardbeachresort.com/images/product/500/deluxe-terrace-banner_deluxe-terrace.jpg",
+    "otherImageUrls": [
+      "https://www.leopardbeachresort.com/images/product/1450/delux-trrece-gallery-1_.jpg",
+      "https://www.leopardbeachresort.com/images/product/1450/delux-trrece-gallery3_.jpg",
+      "https://www.leopardbeachresort.com/images/product/1450/delux-trrece-gallery5_deluxe-terrace_6.jpg",
+      "https://www.leopardbeachresort.com/images/product/1450/delux-trrece-gallery10_deluxe-terrace_10.jpg"
+    ]
+  }
+  

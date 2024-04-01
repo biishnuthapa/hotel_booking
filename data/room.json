@@ -1,17 +1,18 @@
 {
-  "name": "Example Room",
-  "size": "20 m²",
+  "name": "",
+  "size": " m²",
   "views": ["Mountain view", "City view"],
   "amenities": ["Free WiFi", "Air conditioning", "TV"],
   "reviews": "4.5/5 - Based on 100 reviews",
-  "description": "This is a description of the room. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+  "description": "",
   "sharedBathroom": ["Free toiletries", "Toilet", "Shower"],
   "facilities": ["Air conditioning", "Heating", "Desk"],
   "smoking": false,
-  "mainImageUrl": "https://images.pexels.com/photos/2062431/pexels-photo-2062431.jpeg",
+  "mainImageUrl": "",
   "otherImageUrls": [
-    "https://images.pexels.com/photos/271618/pexels-photo-271618.jpeg",
-    "https://images.pexels.com/photos/1743229/pexels-photo-1743229.jpeg",
-    "https://images.pexels.com/photos/261041/pexels-photo-261041.jpeg"
+    "",
+    "",
+    "",
+    ""
   ]
 }
