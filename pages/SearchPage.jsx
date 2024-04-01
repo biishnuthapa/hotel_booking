@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { ApartmentCard } from '@/components'
+import Link from 'next/link'
+import ApartmentCard from '@/components/ApartmentCard'
 
 function SearchPage() {
   const router = useRouter()
@@ -15,12 +16,13 @@ function SearchPage() {
 
   return (
     <div>
+      <h1 className="text-3xl font-semibold mb-8 mt-6 text-center">Search Results</h1>
       <ul>
-        <h1 className="text-3xl font-semibold mb-8 mt-6 text-center">Search Results</h1>
-
         {apartments.map((apartment, index) => (
           <li key={index}>
-            <ApartmentCard apartment={apartment} />
+            <Link href={`/room/${apartment[0]}`}>
+              <ApartmentCard apartment={apartment} />
+            </Link>
           </li>
         ))}
       </ul>
