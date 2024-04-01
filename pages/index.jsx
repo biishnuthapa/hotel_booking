@@ -1,21 +1,19 @@
 import React from 'react'
 import Head from 'next/head'
 import { getApartments } from '@/services/blockchain'
-import { Collection, Filter, HeroSection, Information, ParentComponent } from '@/components'
+import { Collection,  HeroSection, Information, ParentComponent } from '@/components'
 import Accordion from '../components/Questions/Questions'
 import UpcomingEvents from '../components/UpcomingEvent/Upcoming'
 import NFTWebsiteSteps from '../components/Steps/NFTWebsiteSteps'
 import Background from '@/components/Background/Background'
 
 const Home = ({ apartmentsData }) => {
-
   const images = [
     '/assets/image1.jpg',
     '/assets/image2.jpg',
     '/assets/image3.jpg',
     '/assets/image4.jpg',
     '/assets/image5.jpg',
-    // Add more image paths here as needed
   ]
 
   return (
@@ -35,15 +33,7 @@ const Home = ({ apartmentsData }) => {
         </div>
 
         <section className="relative h-screen">
-          {/* Background video */}
-          {/* <video
-            className="absolute inset-0 object-cover w-full h-full"
-            src="/assets/video.mp4"
-            autoPlay
-            loop
-            muted
-          /> */}
-
+        
           <Background images={images} />
 
           {/* Overlay */}
@@ -52,13 +42,8 @@ const Home = ({ apartmentsData }) => {
           {/* Content container */}
           <div className="absolute inset-0 flex flex-col justify-center items-center text-white z-10">
             {/* SearchBar */}
-            <div className="mb-5 mt-40 ">
+            <div className="mb-5 mt-30 ">
               <ParentComponent />
-            </div>
-
-            {/* HotelFilters */}
-            <div className="mb-5">
-              <Filter />
             </div>
 
             {/* HeroSection */}

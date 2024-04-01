@@ -58,10 +58,9 @@ const RoomDetails = ({ onClose, jsonLink }) => {
         </button>
       </div>
 
-      <div className="flex max-w-4xl mx-auto">
-        <div className="flex flex-col w-2/3">
+      <div className="flex flex-col lg:flex-row max-w-4xl mx-auto">
+        <div className="w-full lg:w-2/3">
           <div className="relative">
-            {/* Render main room view image */}
             <img
               alt="Main room view"
               className="w-full h-auto"
@@ -71,7 +70,6 @@ const RoomDetails = ({ onClose, jsonLink }) => {
                 objectFit: 'cover',
               }}
             />
-            {/* Buttons for navigating through images */}
             {roomData.otherImageUrls.length > 1 && (
               <>
                 <button
@@ -88,29 +86,24 @@ const RoomDetails = ({ onClose, jsonLink }) => {
                 </button>
               </>
             )}
-            {/* Render other room view images */}
             <div className="flex mt-2 space-x-2 overflow-x-auto">
               {roomData.otherImageUrls.map((imageUrl, index) => (
                 <img
                   key={index}
                   alt={`Room view ${index + 1}`}
                   className="flex-none w-24 h-24"
-                  height="100"
                   src={imageUrl}
                   style={{
                     aspectRatio: '100/100',
                     objectFit: 'cover',
                   }}
-                  width="100"
                 />
               ))}
             </div>
           </div>
-          {/* Other room details */}
         </div>
-        <div className="w-1/3 pl-6">
+        <div className="w-full lg:w-1/3 pl-6">
           <h2 className="text-xl font-semibold">{roomData.name}</h2>
-          {/* Render other room details */}
           <div className="flex items-center mt-2 space-x-2 text-sm">
             <span>{roomData.size}</span>
             {roomData.views.map((view, index) => (

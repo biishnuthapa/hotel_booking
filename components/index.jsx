@@ -25,9 +25,8 @@ import NFTWebsiteSteps from './Steps/NFTWebsiteSteps'
 import Features from './Features'
 import RoomTypes from './CreateRoomType'
 import RoomList from './RoomList'
-import ImageModal from './ImageModal'
 import MyNFTsPage from './MyNFTsPage'
-
+import ApartmentCard from './ApartmentCard'
 export {
   Header,
   Filter,
@@ -56,6 +55,6 @@ export {
   Features,
   RoomTypes,
   RoomList,
-  ImageModal,
   MyNFTsPage,
+  ApartmentCard,
 }

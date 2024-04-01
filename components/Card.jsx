@@ -1,7 +1,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { ImageSlider } from '.'
-import { FaStar, FaEthereum } from 'react-icons/fa'
+import { FaStar } from 'react-icons/fa'
 import { formatDate } from '@/utils/helper'
 
 const Card = ({ appartment }) => {
@@ -21,8 +21,8 @@ const Card = ({ appartment }) => {
         <div className="flex justify-between items-center text-sm">
           <p className="text-[#00773d]">{formatDate(appartment.timestamp)}</p>
           <b className="flex justify-start items-center space-x-1 font-semibold">
-            <FaEthereum />
-            <span>{appartment.price} Night</span>
+            {/* <span>{appartment.price} Night</span> */}
+            <span>$285 Night</span>
           </b>
         </div>
       </div>

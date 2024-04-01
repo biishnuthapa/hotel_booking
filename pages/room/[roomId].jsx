@@ -87,9 +87,9 @@ export default function Room({
         <RoomList apartmentId={roomId} />
         <Actions apartment={apartment} />
         <CustomGoogleMap
-          center={center} // Pass center coordinates as a prop
+          center={center} 
           zoom={11} // Pass zoom level as a prop
-          apiKey={process.env.NEXT_PUBLIC_API_KEY} // Pass your API key as a prop
+          apiKey={process.env.NEXT_PUBLIC_API_KEY} 
         />
         <div className="flex flex-col justify-between flex-wrap space-y-2">
           <div className="flex justify-start items-center space-x-2">

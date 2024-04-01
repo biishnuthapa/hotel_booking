@@ -18,7 +18,9 @@ const Description = ({ apartment }) => {
   return (
     <div className="py-5 border-b-2 border-b-slate-200 space-y-4">
       <h1 className="text-xl font-semibold">Description</h1>
-      <p className="text-slate-500 text-lg w-full sm:w-4/5">{apartment?.description}</p>
+      <p className="text-slate-500 text-lg w-full sm:w-4/5 leading-8 text-justify">
+        {apartment?.description}
+      </p>
 
       <div className="flex space-x-4">
         <BiBookOpen className="text-4xl" />

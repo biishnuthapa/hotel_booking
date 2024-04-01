@@ -15,7 +15,7 @@ const Review = ({ review }) => {
           <p className="text-slate-500 text-sm">{formatDate(review.timestamp)}</p>
         </div>
       </div>
-      <p className="text-slate-500 text-sm w-full sm:w-4/5">{review.text}</p>
+      <p className="text-slate-500 text-base w-full sm:w-4/5">{review.text}</p>
     </div>
   )
 }

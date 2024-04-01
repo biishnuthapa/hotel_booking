@@ -37,6 +37,12 @@ const getApartments = async () => {
   return structureAppartments(apartments)
 }
 
+export const filterApartmentsByLocation = async (apts, selectedLocation) => {
+  const contract = await getEthereumContracts()
+  const apartments = await contract.getApartments()
+  return apartments.filter((apartment) => apartment.location === selectedLocation)
+}
+
 const getApartment = async (id) => {
   const contract = await getEthereumContracts()
   const apartment = await contract.getApartment(id)
