@@ -1,7 +1,7 @@
 import React from 'react'
 import Head from 'next/head'
 import { getApartments } from '@/services/blockchain'
-import { Collection, Filter, HeroSection, Information, ParentComponent } from '@/components'
+import { Collection,  HeroSection, Information, ParentComponent } from '@/components'
 import Accordion from '../components/Questions/Questions'
 import UpcomingEvents from '../components/UpcomingEvent/Upcoming'
 import NFTWebsiteSteps from '../components/Steps/NFTWebsiteSteps'
@@ -14,7 +14,6 @@ const Home = ({ apartmentsData }) => {
     '/assets/image3.jpg',
     '/assets/image4.jpg',
     '/assets/image5.jpg',
-    // Add more image paths here as needed
   ]
 
   return (
