@@ -13,7 +13,7 @@ const Calendar = ({ apartment, timestamps }) => {
   const [totalDays, setTotalDays] = useState(0)
   const [selectedRoom, setSelectedRoom] = useState('')
   const [roomList, setRoomList] = useState([])
-  const [breakfastIncluded, setBreakfastIncluded] = useState(false) // Added state for breakfast
+  const [breakfastIncluded, setBreakfastIncluded] = useState(false)
 
   const { securityFee } = useSelector((states) => states.globalStates)
 
@@ -103,9 +103,10 @@ const Calendar = ({ apartment, timestamps }) => {
       >
         <div className="flex justify-between">
           <div className="flex justify-center items-center">
-            <FaEthereum className="text-lg text-gray-500" />
+            {/* <FaEthereum className="text-lg text-gray-500" /> */}
             <span className="text-lg text-gray-500">
-              {apartment?.price} <small>per night</small>
+              {/* {apartment?.price} <small>per night</small> */}
+               <small>$285 per night</small>
             </span>
           </div>
           <div className="text-gray-500">Total Days: {totalDays}</div>
