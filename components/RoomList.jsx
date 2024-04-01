@@ -102,10 +102,9 @@ const RoomList = ({ apartmentId }) => {
         </table>
       </div>
 
-      {/* Conditional rendering of RoomDetails modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
-          <div className="bg-white p-8 rounded-md">
+          <div className="bg-white p-8 rounded-md max-w-full w-11/12 md:w-3/4 lg:w-2/3 xl:w-1/2">
             <RoomDetails onClose={handleCloseModal} jsonLink={selectedRoom?.details} />
           </div>
         </div>
