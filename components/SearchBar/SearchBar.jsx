@@ -17,9 +17,7 @@ function SearchBar({
   setCheckOutDate,
   guests,
   setGuests,
-  onSearch,
   apartments,
-  setApartments,
 }) {
   const toggleLocationDropdown = () => {
     setIsLocationDropdownOpen(!isLocationDropdownOpen)
@@ -27,7 +25,6 @@ function SearchBar({
 
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false)
   const [isGuestsDropdownOpen, setIsGuestsDropdownOpen] = useState(false)
-  const [filteredApartments, setFilteredApartments] = useState([])
 
   const dropdownRef = useRef(null)
 
