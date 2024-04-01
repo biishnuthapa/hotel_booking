@@ -15,7 +15,7 @@ const ApartmentCard = ({ apartment }) => {
         <p className="text-gray-600 text-sm mt-2">{apartment[2].slice(0, 50)}...</p>
         <div className="flex justify-between items-center mt-4">
           <p>Total Rooms: {apartment[5]}</p>
-          <p>Price: {apartment[6]}</p>
+          <p>Price: $300 Night</p>
         </div>
         <p className="text-gray-600 text-xs mt-2">Location: {apartment[11]}</p>
       </div>

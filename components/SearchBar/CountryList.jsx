@@ -23,16 +23,18 @@ function CountryList({ setSelectedLocation, setIsLocationDropdownOpen }) {
   }
 
   return (
-    <div>
-      {apartments.map((location, index) => (
-        <div
-          className="bg-white flex flex-col gap-2 text-black text-md font-semibold"
-          key={index}
-          onClick={() => handleAddressClick(location)}
-        >
-          <div className="p-4 hover:bg-slate-300 cursor-pointer">{location}</div>
-        </div>
-      ))}
+    <div className="z-50">
+      <div>
+        {apartments.map((location, index) => (
+          <div
+            className="bg-white flex flex-col gap-2 text-black text-md font-semibold"
+            key={index}
+            onClick={() => handleAddressClick(location)}
+          >
+            <div className="p-4 hover:bg-slate-300 cursor-pointer">{location}</div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
