@@ -36,7 +36,7 @@ const RoomList = ({ apartmentId }) => {
         <h2 className="text-lg font-semibold px-4 py-2 bg-gray-100">Available Rooms</h2>
       </div>
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th
@@ -74,19 +74,21 @@ const RoomList = ({ apartmentId }) => {
           <tbody className="bg-white divide-y divide-gray-200">
             {rooms.map((room, index) => (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{room.name}</div>
+                <td className="px-6 py-4 ">
+                  <div className="text-sm text-gray-900 break-words">{room.name}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{room.capacity}</div>
+                <td className="px-6 py-4 ">
+                  <div className="text-sm md:text-base text-gray-900">{room.capacity}</div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="text-sm text-gray-900 break-words">{room.description}</div>
+                  <div className="text-xs md:text-base text-gray-900 break-words">
+                    {room.description}
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{room.price}</div>
+                <td className="px-6 py-4 ">
+                  <div className="text-sm  md:text-base text-gray-900">{room.price}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 ">
                   <button
                     className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
                     onClick={() => handleRoomClick(room)}
