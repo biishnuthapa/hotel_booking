@@ -11,7 +11,7 @@ const polygonMainnet = {
   id: 137,
   name: 'Polygon',
   network: 'polygon',
-  iconUrl: 'https://polygon.technology/favicon.ico',
+  iconUrl: 'https://cdn-icons-png.flaticon.com/128/14446/14446221.png',
   iconBackground: '#000000',
   nativeCurrency: {
     decimals: 18,
