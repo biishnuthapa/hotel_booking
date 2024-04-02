@@ -2,41 +2,35 @@ import React, { useState, useEffect } from 'react'
 import { RainbowKitSiweNextAuthProvider } from '@rainbow-me/rainbowkit-siwe-next-auth'
 import { WagmiConfig, configureChains, createConfig } from 'wagmi'
 import { RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me/rainbowkit'
-import {
-  metaMaskWallet,
-  trustWallet,
-  coinbaseWallet,
-  rainbowWallet,
-} from '@rainbow-me/rainbowkit/wallets'
-import { mainnet, hardhat } from 'wagmi/chains'
+import { metaMaskWallet, rainbowWallet } from '@rainbow-me/rainbowkit/wallets'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
 import { SessionProvider } from 'next-auth/react'
 
-const bitfinity = {
-  id: 355113,
-  name: 'Bitfinity',
-  network: 'bitfinity',
-  iconUrl: 'https://bitfinity.network/logo.png',
+const polygonMainnet = {
+  id: 137,
+  name: 'Polygon',
+  network: 'polygon',
+  iconUrl: 'https://polygon.technology/favicon.ico',
   iconBackground: '#000000',
   nativeCurrency: {
     decimals: 18,
-    name: 'Bitfinity',
-    symbol: 'BFT',
+    name: 'Matic',
+    symbol: 'MATIC',
   },
   rpcUrls: {
-    public: { http: ['https://testnet.bitfinity.network'] },
-    default: { http: ['https://testnet.bitfinity.network'] },
+    public: { http: ['https://rpc-mainnet.maticvigil.com/'] },
+    default: { http: ['https://rpc-mainnet.maticvigil.com/'] },
   },
   blockExplorers: {
-    default: { name: 'Bitfinity Block Explorer', url: 'https://explorer.bitfinity.network/' },
-    etherscan: { name: 'Bitfinity Block Explorer', url: 'https://explorer.bitfinity.network/' },
+    default: { name: 'Polygon Explorer', url: 'https://polygonscan.com/' },
+    etherscan: { name: 'Polygon Explorer', url: 'https://polygonscan.com/' },
   },
-  testnet: true,
+  testnet: false,
 }
 
 const { chains, publicClient } = configureChains(
-  [mainnet, bitfinity, hardhat],
+  [polygonMainnet],
   [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID }), publicProvider()]
 )
 
@@ -45,12 +39,7 @@ const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
 const connectors = connectorsForWallets([
   {
     groupName: 'Recommended',
-    wallets: [
-      metaMaskWallet({ projectId, chains }),
-      trustWallet({ projectId, chains }),
-      coinbaseWallet({ appName: 'Coinbase', chains }),
-      rainbowWallet({ projectId, chains }),
-    ],
+    wallets: [metaMaskWallet({ projectId, chains }), rainbowWallet({ projectId, chains })],
   },
 ])
 

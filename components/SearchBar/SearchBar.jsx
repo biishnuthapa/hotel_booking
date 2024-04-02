@@ -117,6 +117,7 @@ function SearchBar({
               type="text"
               id="location"
               placeholder="Destination"
+              autoComplete="off"
               onClick={(e) => {
                 const targetClassList = Array.from(e.target.classList)
                 if (!targetClassList.includes('arrow-icon-class')) {
