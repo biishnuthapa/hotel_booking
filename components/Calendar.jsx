@@ -78,7 +78,7 @@ const Calendar = ({ apartment, timestamps }) => {
       }),
       {
         pending: 'Approve transaction...',
-        success: 'Apartment booked successfully 👌',
+        success: ' Booking is Successful, Congratulations! 👌',
         error: 'Encountered error 🤯',
       }
     )
@@ -105,7 +105,7 @@ const Calendar = ({ apartment, timestamps }) => {
             {/* <FaEthereum className="text-lg text-gray-500" /> */}
             <span className="text-lg text-gray-500">
               {/* {apartment?.price} <small>per night</small> */}
-               <small>$285 Night</small>
+              <small>$285 Night</small>
             </span>
           </div>
           <div className="text-gray-500">Total Days: {totalDays}</div>

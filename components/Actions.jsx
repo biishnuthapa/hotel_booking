@@ -14,7 +14,7 @@ const Actions = ({ apartment }) => {
   const [showCreateRoomModal, setShowCreateRoomModal] = useState(false)
 
   const handleDelete = () => {
-    if (confirm(`Are you sure you want to delete Apartment ${apartment?.id}?`)) {
+    if (confirm(`Are you sure you want to delete Hotel ${apartment?.id}?`)) {
       toast.promise(
         new Promise((resolve, reject) => {
            deleteApartment(apartment?.id)
@@ -26,7 +26,7 @@ const Actions = ({ apartment }) => {
         }),
         {
           pending: 'Approve transaction...',
-          success: 'Apartment deleted successfully 👌',
+          success: 'Hotel deleted successfully 👌',
           error: 'Encountered error 🤯',
         }
       )
