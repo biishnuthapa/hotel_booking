@@ -50,12 +50,15 @@ const ButtonGroup = () => {
             My NFTs
           </button>
         </Link>
-        <button
-          type="button"
-          className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
-        >
-          My Bookings
-        </button>
+
+        <Link href={'/MyBookings'}>
+          <button
+            type="button"
+            className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
+          >
+            My Bookings
+          </button>
+        </Link>
 
         <button className="rounded-r-full px-5 py-3 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out">
           <p className="flex items-center">Any week</p>
