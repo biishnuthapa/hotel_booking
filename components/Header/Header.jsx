@@ -20,6 +20,9 @@ const Header = () => {
 
 const ButtonGroup = () => {
   const { address } = useAccount()
+  const ownerAddress = '0x913e361e6945beEe78dD01a53E1df920C47E1357'
+  console.log('Wallet', address)
+  console.log('owner', ownerAddress)
 
   return (
     <div className="md:flex hidden items-center justify-center border-gray-300 border overflow-hidden rounded-full cursor-pointer">
@@ -28,7 +31,7 @@ const ButtonGroup = () => {
           Anywhere
         </button>
 
-        {address && (
+        {address && address === ownerAddress && (
           <Link href={'/room/add'}>
             <button
               type="button"
@@ -39,16 +42,20 @@ const ButtonGroup = () => {
           </Link>
         )}
 
-        {address && (
-          <Link href={'/NFTList'}>
-            <button
-              type="button"
-              className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
-            >
-              My NFTs
-            </button>
-          </Link>
-        )}
+        <Link href={'/MyNFTs'}>
+          <button
+            type="button"
+            className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
+          >
+            My NFTs
+          </button>
+        </Link>
+        <button
+          type="button"
+          className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
+        >
+          My Bookings
+        </button>
 
         <button className="rounded-r-full px-5 py-3 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out">
           <p className="flex items-center">Any week</p>

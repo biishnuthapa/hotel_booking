@@ -43,7 +43,10 @@ const NFTList = () => {
   }
 
   return (
-   <div>
+    <div>
+      {tokens.length === 0 && (
+        <p className="text-center text-gray-500 mt-8">You have no NFTs minted on your account.</p>
+      )}
       <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {tokens.map((token) => (
           <motion.li
@@ -66,7 +69,7 @@ const NFTList = () => {
           </motion.li>
         ))}
       </ul>
-   
+
       <Modal
         isOpen={selectedImage !== null}
         onRequestClose={closeModal}
