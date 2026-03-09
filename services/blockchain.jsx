@@ -2,73 +2,143 @@ import { ethers } from 'ethers'
 import { store } from '@/store'
 import { globalActions } from '@/store/globalSlices'
 import address from '@/contracts/contractAddress.json'
-import dappBnbAbi from '@/artifacts/contracts/DappBnb.sol/DappBnb.json'
+import hospitalityBookingAbi from '@/artifacts/contracts/HospitalityBookingNFT.sol/HospitalityBookingNFT.json'
+import { normalizeIpfsUrl } from '@/utils/helper'
 
 const toWei = (num) => ethers.parseEther(num.toString())
 const fromWei = (num) => ethers.formatEther(num)
 
 let ethereum, tx
+const contractAddress = address.hospitalityBookingContract
+const localChainId = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 31337)
+const localChainName = localChainId === 31337 ? 'Hardhat Localhost' : 'Localhost'
+const localChainHex = `0x${localChainId.toString(16)}`
+const localRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545'
+const isLocalRpc = /127\.0\.0\.1|localhost/.test(localRpcUrl)
 
 if (typeof window !== 'undefined') ethereum = window.ethereum
-const { setBookings, setTimestamps, setReviews } = globalActions
+const { setBookings, setReviews } = globalActions
 
-const getEthereumContracts = async () => {
-  const accounts = await ethereum?.request?.({ method: 'eth_accounts' })
+const isUnknownChainError = (error) => {
+  const code = Number(error?.code ?? error?.data?.originalError?.code)
+  if (code === 4902) return true
+  return /4902/.test(error?.message || '')
+}
 
-  if (accounts?.length > 0) {
-    const provider = new ethers.BrowserProvider(ethereum)
-    const signer = await provider.getSigner()
-    const contracts = new ethers.Contract(address.dappBnbContract, dappBnbAbi.abi, signer)
+const ensureLocalChain = async () => {
+  if (!ethereum || !isLocalRpc) return
 
-    return contracts
-  } else {
-    const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL)
-    const wallet = ethers.Wallet.createRandom()
-    const signer = wallet.connect(provider)
-    const contracts = new ethers.Contract(address.dappBnbContract, dappBnbAbi.abi, signer)
+  const currentHex = await ethereum.request({ method: 'eth_chainId' })
+  if (currentHex?.toLowerCase() === localChainHex) return
 
-    return contracts
+  try {
+    await ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: localChainHex }],
+    })
+  } catch (switchError) {
+    if (!isUnknownChainError(switchError)) {
+      throw switchError
+    }
+
+    await ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [
+        {
+          chainId: localChainHex,
+          chainName: localChainName,
+          nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+          rpcUrls: [localRpcUrl],
+        },
+      ],
+    })
+  }
+
+  const finalHex = await ethereum.request({ method: 'eth_chainId' })
+  if (finalHex?.toLowerCase() !== localChainHex) {
+    throw new Error(`Please switch MetaMask to ${localChainName} (chainId ${localChainId}).`)
   }
 }
 
+const assertContractCode = async (provider) => {
+  const code = await provider.getCode(contractAddress)
+  if (!code || code === '0x') {
+    throw new Error(
+      `Contract not found at ${contractAddress} on current RPC. Check NEXT_PUBLIC_RPC_URL and deploy network.`
+    )
+  }
+}
+
+const getRpcProvider = () => new ethers.JsonRpcProvider(localRpcUrl)
+
+const getChainNowSeconds = async () => {
+  const provider = getRpcProvider()
+  const latestBlock = await provider.getBlock('latest')
+  return Number(latestBlock?.timestamp || Math.floor(Date.now() / 1000))
+}
+
+const getReadOnlyContract = async () => {
+  const provider = getRpcProvider()
+  await assertContractCode(provider)
+  return new ethers.Contract(contractAddress, hospitalityBookingAbi.abi, provider)
+}
+
+const getSignerContract = async () => {
+  if (!ethereum) {
+    throw new Error('Please install and connect MetaMask')
+  }
+
+  await ensureLocalChain()
+
+  const accounts = await ethereum.request({ method: 'eth_requestAccounts' })
+  if (!accounts?.length) {
+    throw new Error('No wallet account connected')
+  }
+
+  const provider = new ethers.BrowserProvider(ethereum)
+  const signer = await provider.getSigner()
+  await assertContractCode(provider)
+  return new ethers.Contract(contractAddress, hospitalityBookingAbi.abi, signer)
+}
+
 const getApartments = async () => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const apartments = await contract.getApartments()
   return structureAppartments(apartments)
 }
 
-export const filterApartmentsByLocation = async (apts, selectedLocation) => {
-  const contract = await getEthereumContracts()
+export const filterApartmentsByLocation = async (selectedLocation) => {
+  const contract = await getReadOnlyContract()
   const apartments = await contract.getApartments()
   return apartments.filter((apartment) => apartment.location === selectedLocation)
 }
 
 const getApartment = async (id) => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const apartment = await contract.getApartment(id)
   return structureAppartments([apartment])[0]
 }
 
 const getBookings = async (id) => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const bookings = await contract.getBookings(id)
   return structuredBookings(bookings)
 }
 
 const getQualifiedReviewers = async (id) => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const bookings = await contract.getQualifiedReviewers(id)
   return bookings
 }
 
 const getReviews = async (id) => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const reviewers = await contract.getReviews(id)
   return structuredReviews(reviewers)
 }
 
 const getSecurityFee = async () => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const fee = await contract.securityFee()
   return Number(fee)
 }
@@ -80,7 +150,7 @@ const createApartment = async (apartment) => {
   }
 
   try {
-    const contract = await getEthereumContracts()
+    const contract = await getSignerContract()
     tx = await contract.createAppartment(
       apartment.name,
       apartment.description,
@@ -108,7 +178,7 @@ const updateApartment = async (apartment) => {
   }
 
   try {
-    const contract = await getEthereumContracts()
+    const contract = await getSignerContract()
     tx = await contract.updateAppartment(
       apartment.id,
       apartment.name,
@@ -134,7 +204,7 @@ const deleteApartment = async (aid) => {
   }
 
   try {
-    const contract = await getEthereumContracts()
+    const contract = await getSignerContract()
     tx = await contract.deleteAppartment(aid)
     await tx.wait()
 
@@ -145,16 +215,41 @@ const deleteApartment = async (aid) => {
   }
 }
 
-const bookApartment = async ({ aid, timestamps, amount }) => {
+const bookApartment = async ({ aid, timestamps, nightlyPrice, feePercent }) => {
   if (!ethereum) {
     reportError('Please install a browser provider')
     return Promise.reject(new Error('Browser provider not installed'))
   }
 
   try {
-    const contract = await getEthereumContracts()
-    tx = await contract.bookApartment(aid, timestamps, {
-      value: toWei(amount),
+    const contract = await getSignerContract()
+    const normalizedTimestamps = (timestamps || []).map((timestamp) => {
+      const value = Number(timestamp)
+      if (!Number.isFinite(value)) return 0
+      return value > 1e12 ? Math.floor(value / 1000) : Math.floor(value)
+    })
+
+    const validTimestamps = normalizedTimestamps.filter((timestamp) => timestamp > 0)
+    if (validTimestamps.length === 0) {
+      throw new Error('Please select at least one valid booking date')
+    }
+
+    const chainNow = await getChainNowSeconds()
+    const firstInvalid = validTimestamps.find((timestamp) => timestamp <= chainNow)
+    if (firstInvalid) {
+      throw new Error('Selected booking date is not in the future on the current chain clock')
+    }
+
+    const basePriceWei = ethers.parseEther(nightlyPrice.toString())
+    const totalPriceWei = basePriceWei * BigInt(validTimestamps.length)
+    const onChainFeePercent = await contract.securityFee()
+    const fallbackFeePercent = Number.isFinite(Number(feePercent)) ? BigInt(Number(feePercent)) : 0n
+    const appliedFeePercent = onChainFeePercent > 0n ? onChainFeePercent : fallbackFeePercent
+    const totalFeeWei = (totalPriceWei * appliedFeePercent) / 100n
+    const expectedValue = totalPriceWei + totalFeeWei
+
+    tx = await contract.bookApartment(aid, validTimestamps, {
+      value: expectedValue,
     })
 
     await tx.wait()
@@ -166,15 +261,15 @@ const bookApartment = async ({ aid, timestamps, amount }) => {
   }
 }
 
-const checkInApartment = async (aid, timestamps) => {
+const checkInApartment = async (aid, bookingId) => {
   if (!ethereum) {
     reportError('Please install a browser provider')
     return Promise.reject(new Error('Browser provider not installed'))
   }
 
   try {
-    const contract = await getEthereumContracts()
-    tx = await contract.checkInApartment(aid, timestamps)
+    const contract = await getSignerContract()
+    tx = await contract.checkInApartment(aid, bookingId)
 
     await tx.wait()
     const bookings = await getBookings(aid)
@@ -194,7 +289,7 @@ const refundBooking = async (aid, bookingId) => {
   }
 
   try {
-    const contract = await getEthereumContracts()
+    const contract = await getSignerContract()
     tx = await contract.refundBooking(aid, bookingId)
 
     await tx.wait()
@@ -215,7 +310,7 @@ const addReview = async (aid, comment) => {
   }
 
   try {
-    const contract = await getEthereumContracts()
+    const contract = await getSignerContract()
     tx = await contract.addReview(aid, comment)
 
     await tx.wait()
@@ -236,14 +331,14 @@ const addRoomTypeToApartment = async (apartmentId, name, description, price, det
   }
 
   try {
-    const contract = await getEthereumContracts()
+    const contract = await getSignerContract()
     const tx = await contract.addRoomTypeToApartment(
       apartmentId,
       name,
       description,
       toWei(price),
       details,
-      capacity
+      Number(capacity)
     )
     await tx.wait()
 
@@ -255,18 +350,22 @@ const addRoomTypeToApartment = async (apartmentId, name, description, price, det
 }
 
 const getRooms = async (apartmentId) => {
-  const contract = await getEthereumContracts()
+  const contract = await getReadOnlyContract()
   const rooms = await contract.getRooms(apartmentId)
   return structureRoomTypes(rooms)
 }
 const structureRoomTypes = (roomTypes) =>
-  roomTypes.map((roomType) => ({
-    name: roomType.name,
-    description: roomType.description,
-    price: fromWei(roomType.price),
-    details: roomType.details.split(','),
-    capacity: Number(roomType.capacity),
-  }))
+  roomTypes
+    .filter((roomType) => !roomType.deleted)
+    .map((roomType, index) => ({
+      id: index,
+      name: roomType.name,
+      description: roomType.description,
+      price: fromWei(roomType.price),
+      details: roomType.details,
+      capacity: Number(roomType.capacity),
+      deleted: roomType.deleted,
+    }))
 
 const structureAppartments = (appartments) =>
   appartments.map((appartment) => ({
@@ -277,13 +376,13 @@ const structureAppartments = (appartments) =>
     location: appartment.location,
     price: fromWei(appartment.price),
     deleted: appartment.deleted,
-    images: appartment.images.split(','),
+    images: appartment.images.split(',').map((img) => normalizeIpfsUrl(img)),
     rooms: Number(appartment.rooms),
     timestamp: Number(appartment.timestamp),
     booked: appartment.booked,
     latitude: appartment.latitude,
     longitude: appartment.longitude,
-    pinataJsonLink: appartment.pinataJsonLink,
+    pinataJsonLink: normalizeIpfsUrl(appartment.pinataJsonLink),
   }))
 
 const structuredBookings = (bookings) =>
@@ -309,23 +408,56 @@ const structuredReviews = (reviews) =>
 
 const getOwnedTokens = async (owner) => {
   try {
-    const contract = await getEthereumContracts()
-    const totalTokens = await contract.getTotalTokens()
-    const ownedTokens = []
-
-    for (let i = 1; i <= totalTokens; i++) {
-      const tokenOwner = await contract.ownerOf(i)
-      if (tokenOwner === owner) {
-        const metadataUri = await contract.tokenURI(i)
-        ownedTokens.push({ id: i, metadataUri })
-      }
-    }
-
-    return ownedTokens
+    if (!owner) return []
+    const contract = await getReadOnlyContract()
+    const ownedTokens = await contract.getOwnedTokens(owner)
+    return ownedTokens.map((token) => ({
+      id: Number(token.id),
+      metadataUri: token.metadataUri,
+    }))
   } catch (error) {
     console.error('Error fetching owned tokens:', error)
     throw error
   }
+}
+
+const getMyBookings = async (owner) => {
+  if (!owner) return []
+  const apartments = await getApartments()
+  const ownerLower = owner.toLowerCase()
+
+  const bookingsByApartment = await Promise.all(
+    apartments.map(async (apartment) => {
+      const bookings = await getBookings(apartment.id)
+      return bookings
+        .filter((booking) => booking.tenant.toLowerCase() === ownerLower)
+        .map((booking) => ({
+          ...booking,
+          apartmentName: apartment.name,
+          apartmentLocation: apartment.location,
+        }))
+    })
+  )
+
+  return bookingsByApartment.flat().sort((a, b) => Number(b.date) - Number(a.date))
+}
+
+const extractErrorMessage = (error) => {
+  if (!error) return 'Unknown error'
+  if (typeof error === 'string') return error
+  return (
+    error?.reason ||
+    error?.shortMessage ||
+    error?.error?.message ||
+    error?.data?.message ||
+    error?.message ||
+    'Unknown error'
+  )
+}
+
+const reportError = (error) => {
+  const message = extractErrorMessage(error)
+  console.error('Blockchain call failed:', message, error)
 }
 
 export {
@@ -345,4 +477,6 @@ export {
   addRoomTypeToApartment,
   getRooms,
   getOwnedTokens,
+  getMyBookings,
+  getChainNowSeconds,
 }

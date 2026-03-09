@@ -14,39 +14,44 @@ const Bookings = ({ apartmentData, bookingsData }) => {
   const { setApartment, setBookings } = globalActions
   const { apartment, bookings } = useSelector((states) => states.globalStates)
 
-  const newBookings=bookings?.filter((booking, index, self) =>
-  index === self.findIndex((b) => b.timestamp === booking.timestamp)
-);
+  const currentBookings = bookings || []
 
-const getMaxDateForTimestamp = (timestamp) => {
-  const bookingsWithSameTimestamp = bookings.filter(
-    (b) => b.timestamp === timestamp
-  )
-  const maxDateBooking = bookingsWithSameTimestamp.reduce((prev, current) =>
-    new Date(prev.date) > new Date(current.date) ? prev : current
+  const newBookings = currentBookings.filter(
+    (booking, index, self) => index === self.findIndex((b) => b.timestamp === booking.timestamp)
   )
 
-  // Add one day to the max date
-  const maxDate = new Date(maxDateBooking.date)
-  maxDate.setDate(maxDate.getDate() + 1)
+  const getMaxDateForTimestamp = (timestamp) => {
+    const bookingsWithSameTimestamp = currentBookings.filter((b) => b.timestamp === timestamp)
+    const maxDateBooking = bookingsWithSameTimestamp.reduce((prev, current) =>
+      Number(prev.date) > Number(current.date) ? prev : current
+    )
 
-  return maxDate.getTime() // Return the timestamp of the modified max date
-}
-
-
-console.log("Booking",bookings)
-
+    // Return checkout day (+1 day) as seconds
+    const oneDayInSeconds = 24 * 60 * 60
+    return Number(maxDateBooking.date) + oneDayInSeconds
+  }
   useEffect(() => {
     dispatch(setApartment(apartmentData))
     dispatch(setBookings(bookingsData))
   }, [dispatch, setApartment, apartmentData, setBookings, bookingsData])
-   return (
-    <div className="w-full sm:w-3/5 mx-auto mt-8">
-      <h1 className="text-center text-3xl text-black font-bold">Bookings</h1>
-      {newBookings.length < 1 && <div>No bookings for this apartment yet</div>}
+
+  return (
+    <div className="mx-auto mt-8 w-full max-w-4xl px-4">
+      <h1 className="mb-4 text-center text-3xl font-bold text-slate-900">Bookings</h1>
+      {newBookings.length < 1 && (
+        <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-slate-600">
+          No bookings for this apartment yet.
+        </div>
+      )}
 
       {newBookings.map((booking, i) => (
-        <Booking key={i} id={roomId} booking={booking} apartment={apartment} maxDateOut={getMaxDateForTimestamp(booking.timestamp)}/>
+        <Booking
+          key={i}
+          id={roomId}
+          booking={booking}
+          apartment={apartment}
+          maxDateOut={getMaxDateForTimestamp(booking.timestamp)}
+        />
       ))}
     </div>
   )

@@ -1,4 +1,3 @@
-const { faker } = require('@faker-js/faker')
 const { ethers } = require('hardhat')
 const fs = require('fs')
 
@@ -37,25 +36,50 @@ const shuffleArray = (array) => {
   return array
 }
 
+const pick = (list) => list[Math.floor(Math.random() * list.length)]
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+const randomFloat = (min, max, precision = 2) =>
+  Number((Math.random() * (max - min) + min).toFixed(precision))
+
+const apartmentWords = ['River', 'Summit', 'Maple', 'Willow', 'Cedar', 'Pine', 'Lakeside', 'Meadow']
+const locations = ['Laramie', 'Cheyenne', 'Denver', 'Boulder', 'Fort Collins', 'Jackson']
+const descriptionParts = [
+  'spacious rooms and mountain views',
+  'modern kitchen and quiet neighborhood',
+  'walkable location and fast wifi',
+  'comfortable beds and bright interiors',
+  'easy parking and family-friendly layout',
+]
+
+const roomTypeTemplates = [
+  {
+    name: 'Standard Suite',
+    description: 'Ideal for solo travelers and couples.',
+    price: 0.08,
+    details: 'http://localhost:3000/assets/rooms/standard.json',
+    capacity: 2,
+  },
+  {
+    name: 'Family Loft',
+    description: 'Extra beds and lounge area for families.',
+    price: 0.14,
+    details: 'http://localhost:3000/assets/rooms/family.json',
+    capacity: 4,
+  },
+]
+
 const generateFakeApartment = (count) => {
   const apartments = []
   for (let i = 0; i < count; i++) {
     const id = i + 1
-    const name = faker.word.words(5)
-    const deleted = faker.datatype.boolean()
-    const description = faker.lorem.paragraph()
-    const location = faker.lorem.word()
-    const price = faker.number.float({
-      min: 0.1,
-      max: maxPrice,
-      precision: 0.01,
-    })
-    const rooms = faker.number.int({ min: 2, max: 5 })
-    const owner = faker.string.hexadecimal({
-      length: { min: 42, max: 42 },
-      prefix: '0x',
-    })
-    const timestamp = faker.date.past().getTime()
+    const name = `${pick(apartmentWords)} ${pick(apartmentWords)} Apartment ${id}`
+    const description = `A cozy stay with ${pick(descriptionParts)}.`
+    const location = pick(locations)
+    const price = randomFloat(0.1, maxPrice, 2)
+    const rooms = randomInt(2, 5)
+    const latitude = (25 + Math.random() * 24).toFixed(6)
+    const longitude = (-124 + Math.random() * 58).toFixed(6)
+    const pinataJsonLink = `http://localhost:3000/assets/Metadata/Hotel${((id - 1) % 5) + 1}.json`
     const images = []
 
     for (let i = 0; i < 5; i++) {
@@ -70,9 +94,9 @@ const generateFakeApartment = (count) => {
       price: toWei(price),
       images: images.join(', '),
       rooms,
-      owner,
-      timestamp,
-      deleted,
+      latitude,
+      longitude,
+      pinataJsonLink,
     })
   }
 
@@ -86,33 +110,71 @@ async function createApartments(contract, apartment) {
     apartment.location,
     apartment.images,
     apartment.rooms,
-    apartment.price
+    apartment.price,
+    apartment.latitude,
+    apartment.longitude,
+    apartment.pinataJsonLink
   )
   await tx.wait()
 }
 
 async function bookApartments(contract, aid, dates) {
-  const tx = await contract.bookApartment(aid, dates, { value: toWei(maxPrice * dates.length) })
+  const apartment = await contract.getApartment(aid)
+  const totalPrice = apartment.price * BigInt(dates.length)
+  const feePercent = await contract.securityFee()
+  const totalFee = (totalPrice * feePercent) / 100n
+
+  const tx = await contract.bookApartment(aid, dates, { value: totalPrice + totalFee })
   await tx.wait()
+}
+
+async function seedRoomTypes(contract, apartmentId) {
+  for (const roomType of roomTypeTemplates) {
+    const tx = await contract.addRoomTypeToApartment(
+      apartmentId,
+      roomType.name,
+      roomType.description,
+      toWei(roomType.price),
+      roomType.details,
+      roomType.capacity
+    )
+    await tx.wait()
+  }
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function main() {
-  let dappBnbContract
+  let hospitalityBookingContract
 
   try {
     const contractAddresses = fs.readFileSync('./contracts/contractAddress.json', 'utf8')
-    const { dappBnbContract: dappBnbAddress } = JSON.parse(contractAddresses)
+    const { hospitalityBookingContract: hospitalityBookingAddress } = JSON.parse(contractAddresses)
 
-    dappBnbContract = await ethers.getContractAt('DappBnb', dappBnbAddress)
-    const dates1 = [1678492800000, 1678579200000, 1678665600000]
+    hospitalityBookingContract = await ethers.getContractAt(
+      'HospitalityBookingNFT',
+      hospitalityBookingAddress
+    )
+    // Use chain time, not host machine time, so seeding works even after local time travel.
+    const latestBlock = await ethers.provider.getBlock('latest')
+    const chainNow = Number(latestBlock?.timestamp || Math.floor(Date.now() / 1000))
+    const oneDay = 24 * 60 * 60
+    const dates1 = [chainNow + oneDay, chainNow + oneDay * 2, chainNow + oneDay * 3]
 
     // Process #1
     await Promise.all(
       generateFakeApartment(dataCount).map(async (apartment) => {
-        await createApartments(dappBnbContract, apartment)
+        await createApartments(hospitalityBookingContract, apartment)
       })
+    )
+
+    // Process #1b - Add room types for each seeded apartment
+    await Promise.all(
+      Array(dataCount)
+        .fill()
+        .map(async (_, i) => {
+          await seedRoomTypes(hospitalityBookingContract, i + 1)
+        })
     )
 
     await delay(2500) // Wait for 2.5 seconds
@@ -122,7 +184,7 @@ async function main() {
       Array(dataCount)
         .fill()
         .map(async (_, i) => {
-          await bookApartments(dappBnbContract, i + 1, dates1)
+          await bookApartments(hospitalityBookingContract, i + 1, dates1)
         })
     )
 

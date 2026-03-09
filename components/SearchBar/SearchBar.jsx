@@ -17,7 +17,6 @@ function SearchBar({
   setCheckOutDate,
   guests,
   setGuests,
-  apartments,
 }) {
   const toggleLocationDropdown = () => {
     setIsLocationDropdownOpen(!isLocationDropdownOpen)
@@ -81,7 +80,7 @@ function SearchBar({
 
   const handleSearch = async () => {
     try {
-      const filteredApartments = await filterApartmentsByLocation(apartments, selectedLocation)
+      const filteredApartments = await filterApartmentsByLocation(selectedLocation)
       const apartmentsWithSerializedBigInts = filteredApartments.map((apartment) => {
         const serializedApartment = { ...apartment }
         for (const key in serializedApartment) {

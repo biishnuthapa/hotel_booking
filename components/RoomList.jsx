@@ -8,9 +8,14 @@ const RoomList = ({ apartmentId }) => {
   const [selectedRoom, setSelectedRoom] = useState(null)
 
   useEffect(() => {
+    if (!apartmentId) return
+
     const fetchRoomsData = async () => {
       try {
-        const roomData = await getRooms(apartmentId)
+        const id = Number(apartmentId)
+        if (!Number.isFinite(id) || id <= 0) return
+
+        const roomData = await getRooms(id)
         setRooms(roomData)
       } catch (error) {
         console.error('Error fetching rooms:', error)
@@ -31,85 +36,48 @@ const RoomList = ({ apartmentId }) => {
   }
 
   return (
-    <div className="my-8 bg-white shadow rounded-md overflow-hidden">
-      <div className="border-b border-gray-200">
-        <h2 className="text-lg font-semibold px-4 py-2 bg-gray-100">Available Rooms</h2>
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-slate-900">Room Types</h2>
+        <p className="text-sm text-slate-500">{rooms.length} option(s)</p>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+
+      <div className="grid gap-3">
+        {rooms.map((room) => (
+          <div
+            key={room.id}
+            className="grid gap-3 rounded-2xl border border-slate-200 p-4 md:grid-cols-[1fr_auto]"
+          >
+            <div>
+              <p className="text-base font-semibold text-slate-900">{room.name}</p>
+              <p className="mt-1 text-sm text-slate-600">{room.description}</p>
+              <p className="mt-2 text-sm text-slate-500">Capacity: {room.capacity} guest(s)</p>
+              <p className="text-sm font-medium text-[#00773d]">{room.price} ETH / night</p>
+            </div>
+            <div className="flex items-center">
+              <button
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#00773d] hover:text-[#00773d]"
+                onClick={() => handleRoomClick(room)}
               >
-                Room Name
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Number of Guest
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Description
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Price($)
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {rooms.map((room, index) => (
-              <tr key={index}>
-                <td className="px-6 py-4 ">
-                  <div className="text-sm text-gray-900 break-words">{room.name}</div>
-                </td>
-                <td className="px-6 py-4 ">
-                  <div className="text-sm md:text-base text-gray-900">{room.capacity}</div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="text-xs md:text-base text-gray-900 break-words">
-                    {room.description}
-                  </div>
-                </td>
-                <td className="px-6 py-4 ">
-                  <div className="text-sm  md:text-base text-gray-900">{room.price}</div>
-                </td>
-                <td className="px-6 py-4 ">
-                  <button
-                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:bg-blue-600"
-                    onClick={() => handleRoomClick(room)}
-                  >
-                    View Details
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                View details
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {rooms.length === 0 && (
+          <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+            No room types available yet for this apartment.
+          </div>
+        )}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
-          <div className="bg-white p-8 rounded-md">
-            <RoomDetails onClose={handleCloseModal} jsonLink={selectedRoom?.details} />
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
+          <RoomDetails onClose={handleCloseModal} jsonLink={selectedRoom?.details} />
         </div>
       )}
-    </div>
+    </section>
   )
 }
 

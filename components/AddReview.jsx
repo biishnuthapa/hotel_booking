@@ -5,6 +5,9 @@ import { addReview } from '@/services/blockchain'
 import { globalActions } from '@/store/globalSlices'
 import { useDispatch, useSelector } from 'react-redux'
 
+const formatToastError = (error) =>
+  error?.shortMessage || error?.reason || error?.message || 'Encountered error'
+
 const AddReview = ({ roomId }) => {
   const [reviewText, setReviewText] = useState('')
   const dispatch = useDispatch()
@@ -18,78 +21,63 @@ const AddReview = ({ roomId }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-
-    if (!reviewText) return
+    if (!reviewText.trim()) return
 
     toast.promise(
       new Promise((resolve, reject) => {
-        addReview(roomId, reviewText)
-          .then(async (tx) => {
+        addReview(roomId, reviewText.trim())
+          .then((tx) => {
             dispatch(setReviewModal('scale-0'))
             resetForm()
             resolve(tx)
           })
-          .catch(() => reject())
+          .catch((error) => reject(error))
       }),
       {
         pending: 'Approve transaction...',
-        success: 'Review submitted successfully 👌',
-        error: 'Encountered error 🤯',
+        success: 'Review submitted successfully.',
+        error: {
+          render({ data }) {
+            return formatToastError(data)
+          },
+        },
       }
     )
   }
 
   return (
     <div
-      className={`fixed top-0 left-0 w-screen h-screen flex items-center justify-center
-      bg-black bg-opacity-50 transform z-[3000] transition-transform duration-300 ${reviewModal}`}
+      className={`fixed left-0 top-0 z-[3000] flex h-screen w-screen items-center justify-center bg-black/60 transition-transform duration-300 ${reviewModal}`}
     >
-      <div className="bg-white shadow-lg shadow-slate-900 rounded-xl w-11/12 md:w-2/5 h-7/12 p-6">
+      <div className="w-11/12 rounded-3xl bg-white p-6 shadow-2xl md:w-2/5">
         <form className="flex flex-col" onSubmit={handleSubmit}>
-          <div className="flex flex-row justify-between items-center">
-            <p className="font-semibold">Add a review today</p>
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-slate-900">Share your stay feedback</p>
             <button
               type="button"
-              className="border-0 bg-transparent focus:outline-none"
+              className="rounded-md p-2 text-slate-500 hover:bg-slate-100"
               onClick={() => dispatch(setReviewModal('scale-0'))}
             >
-              <FaTimes className="text-gray-400" />
+              <FaTimes />
             </button>
           </div>
 
-          <div className="flex flex-col justify-center items-center rounded-xl mt-5">
-            <div
-              className="flex justify-center items-center rounded-full overflow-hidden
-              h-10 w-40 shadow-md shadow-slate-300 p-4"
-            >
-              <p className="text-lg font-bold text-slate-700"> HospitalityNFT</p>
-            </div>
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
+          <div className="mt-4 rounded-xl border border-slate-200 p-3">
             <textarea
-              className="block w-full text-sm resize-none
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0 h-14"
-              type="text"
+              className="block h-28 w-full resize-none border-0 bg-transparent text-sm text-slate-700 outline-none"
               name="comment"
-              placeholder="Drop your review..."
+              placeholder="Write your review..."
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               required
-            ></textarea>
+            />
           </div>
 
           <button
             type="submit"
-            className="flex flex-row justify-center items-center w-full text-white text-md
-            bg-[#004c1c] py-2 px-5 rounded-full drop-shadow-xl border
-            focus:outline-none focus:ring mt-5"
+            className="mt-4 w-full rounded-xl bg-[#00773d] py-3 font-semibold text-white transition hover:brightness-110"
           >
-            Submit
+            Submit Review
           </button>
         </form>
       </div>

@@ -1,33 +1,37 @@
-import React, { useState } from 'react';
-import Lightbox from 'react-image-lightbox';
-import 'react-image-lightbox/style.css';
+import React, { useState } from 'react'
+import Lightbox from 'react-image-lightbox'
+import 'react-image-lightbox/style.css'
+import { normalizeIpfsUrl } from '@/utils/helper'
 
 const ImageGrid = ({ first, second, third, forth, fifth }) => {
-  const [lightboxOpen, setLightboxOpen] = useState(false);
-  const [photoIndex, setPhotoIndex] = useState(0);
-  const images = [first, second, third, forth, fifth];
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const images = [first, second, third, forth, fifth].map((img) => normalizeIpfsUrl(img)).filter(Boolean)
+
+  if (images.length === 0) return null
 
   const openLightbox = (index) => {
-    setPhotoIndex(index);
-    setLightboxOpen(true);
-  };
+    setPhotoIndex(index)
+    setLightboxOpen(true)
+  }
 
   return (
-    <div className="mt-8 h-[32rem] flex rounded-2xl overflow-hidden">
-      <div className="md:w-1/2 w-full overflow-hidden">
+    <div className="mt-2 grid gap-2 md:grid-cols-[1.3fr_1fr]">
+      <div className="overflow-hidden rounded-2xl">
         <img
-          className="object-cover w-full h-full cursor-pointer"
-          src={first}
+          className="h-[22rem] w-full cursor-pointer object-cover"
+          src={images[0]}
+          alt="Apartment image"
           onClick={() => openLightbox(0)}
         />
       </div>
-      <div className="w-1/2 md:flex hidden flex-wrap">
-        {images.slice(1).map((image, index) => (
+      <div className="hidden grid-cols-2 gap-2 md:grid">
+        {images.slice(1, 5).map((image, index) => (
           <img
             key={index}
             src={image}
-            alt=""
-            className="object-cover w-1/2 h-64 pl-2 pb-1 pr-1 cursor-pointer"
+            alt={`Apartment image ${index + 2}`}
+            className="h-[10.9rem] w-full cursor-pointer rounded-2xl object-cover"
             onClick={() => openLightbox(index + 1)}
           />
         ))}
@@ -38,16 +42,12 @@ const ImageGrid = ({ first, second, third, forth, fifth }) => {
           nextSrc={images[(photoIndex + 1) % images.length]}
           prevSrc={images[(photoIndex + images.length - 1) % images.length]}
           onCloseRequest={() => setLightboxOpen(false)}
-          onMovePrevRequest={() =>
-            setPhotoIndex((photoIndex + images.length - 1) % images.length)
-          }
-          onMoveNextRequest={() =>
-            setPhotoIndex((photoIndex + 1) % images.length)
-          }
+          onMovePrevRequest={() => setPhotoIndex((photoIndex + images.length - 1) % images.length)}
+          onMoveNextRequest={() => setPhotoIndex((photoIndex + 1) % images.length)}
         />
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ImageGrid;
+export default ImageGrid

@@ -36,9 +36,7 @@ const ConnectBtn = () => {
               if (!connected) {
                 return (
                   <button
-                    className="bg-transparent border border-gray-300 hover:bg-[#00773d]
-                        py-2 px-6 text-black hover:text-white rounded-full
-                        transition duration-300 ease-in-out"
+                    className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#00773d] hover:text-[#00773d]"
                     onClick={openConnectModal}
                     type="button"
                   >
@@ -50,9 +48,7 @@ const ConnectBtn = () => {
               if (chain.unsupported) {
                 return (
                   <button
-                    className="bg-transparent border border-gray-300 hover:bg-[#00773d]
-                        py-2 px-6 text-black hover:text-white rounded-full
-                        transition duration-300 ease-in-out"
+                    className="rounded-full border border-amber-300 px-5 py-2 text-sm font-semibold text-amber-700 transition hover:bg-amber-50"
                     onClick={openChainModal}
                     type="button"
                   >
@@ -66,9 +62,7 @@ const ConnectBtn = () => {
                   <button
                     onClick={openChainModal}
                     style={{ display: 'flex', alignItems: 'center' }}
-                    className="bg-transparent border border-gray-300 hover:bg-[#00773d]
-                    py-2 px-6 text-black hover:text-white rounded-full
-                    transition duration-300 ease-in-out"
+                    className="rounded-full border border-slate-300 px-5 py-2 text-sm font-semibold text-slate-700 transition hover:border-[#00773d] hover:text-[#00773d]"
                     type="button"
                   >
                     {chain.hasIcon && (
@@ -96,9 +90,7 @@ const ConnectBtn = () => {
                   </button>
 
                   <button
-                    className="bg-transparent border border-gray-300 hover:bg-[#00773d]
-                    py-2 px-6 text-black hover:text-white rounded-full
-                    transition duration-300 ease-in-out"
+                    className="rounded-full bg-[#00773d] px-5 py-2 text-sm font-semibold text-white transition hover:brightness-110"
                     onClick={openAccountModal}
                     type="button"
                   >

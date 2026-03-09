@@ -6,23 +6,23 @@ import { formatDate } from '@/utils/helper'
 
 const Card = ({ appartment }) => {
   return (
-    <div className="shadow-md w-96 text-xl pb-5 rounded-b-2xl mb-20">
+    <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <Link href={'/room/' + appartment.id}>
         <ImageSlider images={appartment.images} />
       </Link>
-      <div className="px-4">
-        <div className="flex justify-between items-start mt-2">
-          <p className="font-semibold capitalize text-[15px]">{appartment.name}</p>
-          <p className="flex justify-start items-center space-x-2 text-sm">
+      <div className="space-y-2 px-4 py-4">
+        <div className="flex items-start justify-between">
+          <p className="text-base font-semibold capitalize text-slate-900">{appartment.name}</p>
+          <p className="flex items-center justify-start space-x-2 text-xs font-medium text-slate-500">
             <FaStar />
             <span>New</span>
           </p>
         </div>
-        <div className="flex justify-between items-center text-sm">
-          <p className="text-[#00773d]">{formatDate(appartment.timestamp)}</p>
-          <b className="flex justify-start items-center space-x-1 font-semibold">
-            {/* <span>{appartment.price} Night</span> */}
-            <span>$285 Night</span>
+        <p className="text-sm text-slate-500">{appartment.location}</p>
+        <div className="flex items-center justify-between text-sm">
+          <p className="text-slate-500">{formatDate(appartment.timestamp)}</p>
+          <b className="flex items-center justify-start space-x-1 font-semibold text-[#00773d]">
+            <span>{appartment.price} ETH / night</span>
           </b>
         </div>
       </div>

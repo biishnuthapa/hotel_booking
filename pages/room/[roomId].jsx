@@ -17,6 +17,7 @@ import {
 import {
   getReviews,
   getApartment,
+  getBookings,
   getSecurityFee,
   getQualifiedReviewers,
 } from '@/services/blockchain'
@@ -60,9 +61,12 @@ export default function Room({
     dispatch(setReviewModal('scale-100'))
   }
 
+  const normalizedReviewers = (qualifiedReviewers || []).map((reviewer) => reviewer?.toLowerCase())
+  const canReview = !!address && normalizedReviewers.includes(address.toLowerCase())
+
   const center = {
-    lat: parseFloat(apartment?.latitude), // Use fetched latitude
-    lng: parseFloat(apartment?.longitude), // Use fetched longitude
+    lat: Number.parseFloat(apartment?.latitude) || 0,
+    lng: Number.parseFloat(apartment?.longitude) || 0,
   }
 
   return (
@@ -72,7 +76,7 @@ export default function Room({
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <div className="py-8 px-10 sm:px-20 md:px-32 space-y-8">
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
         <Title apartment={apartment} />
         <ImageGrid
           first={apartment?.images[0]}
@@ -84,30 +88,30 @@ export default function Room({
         <Features />
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
-        <RoomList apartmentId={roomId} />
+        <RoomList apartmentId={apartment?.id || roomId} />
         <Actions apartment={apartment} />
-        <CustomGoogleMap
-          center={center} 
-          zoom={11} // Pass zoom level as a prop
-          apiKey={process.env.NEXT_PUBLIC_API_KEY} 
-        />
-        <div className="flex flex-col justify-between flex-wrap space-y-2">
+        <CustomGoogleMap center={center} zoom={11} apiKey={process.env.NEXT_PUBLIC_API_KEY} />
+        <div className="space-y-4">
           <div className="flex justify-start items-center space-x-2">
-            <h1 className="text-xl font-semibold">Reviews</h1>
-            {qualifiedReviewers?.includes(address) && (
+            <h1 className="text-xl font-semibold text-slate-900">Reviews</h1>
+            {canReview && (
               <button
-                className="cursor-pointer text-[#00773d] hover:text-[#00773d]"
+                className="cursor-pointer text-sm font-semibold text-[#00773d] hover:underline"
                 onClick={handleReviewOpen}
               >
                 Drop your review
               </button>
             )}
           </div>
-          <div>
+          <div className="grid gap-3 md:grid-cols-2">
             {reviews.map((review, i) => (
               <Review key={i} review={review} />
             ))}
-            {reviews.length < 1 && 'No reviews yet!'}
+            {reviews.length < 1 && (
+              <p className="rounded-xl border border-dashed border-slate-300 p-6 text-slate-600">
+                No reviews yet.
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -119,6 +123,10 @@ export default function Room({
 export const getServerSideProps = async (context) => {
   const { roomId } = context.query
   const apartmentData = await getApartment(roomId)
+  const bookingsData = await getBookings(roomId)
+  const timestampsData = bookingsData
+    .filter((booking) => !booking.cancelled)
+    .map((booking) => Number(booking.date))
   const qualifiedReviewers = await getQualifiedReviewers(roomId)
   const reviewsData = await getReviews(roomId)
   const securityFee = await getSecurityFee()
@@ -126,6 +134,7 @@ export const getServerSideProps = async (context) => {
   return {
     props: {
       apartmentData: JSON.parse(JSON.stringify(apartmentData)),
+      timestampsData: JSON.parse(JSON.stringify(timestampsData)),
       reviewsData: JSON.parse(JSON.stringify(reviewsData)),
       qualifiedReviewers: JSON.parse(JSON.stringify(qualifiedReviewers)),
       securityFee: JSON.parse(JSON.stringify(securityFee)),

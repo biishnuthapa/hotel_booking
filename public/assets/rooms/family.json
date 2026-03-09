@@ -1,0 +1,16 @@
+{
+  "name": "Family Loft",
+  "size": "46 sqm",
+  "reviews": "4.8 / 5",
+  "description": "A spacious loft layout with two sleeping zones, lounge space, and a dining corner.",
+  "mainImageUrl": "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+  "otherImageUrls": [
+    "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1200&q=80",
+    "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80"
+  ],
+  "sharedBathroom": ["Bathtub", "Dual sinks", "Fresh towels", "Complimentary toiletries"],
+  "views": ["Mountain ridge", "Pool deck"],
+  "facilities": ["Free Wi-Fi", "Smart TV", "Dining table", "Microwave", "Tea and coffee setup"],
+  "smoking": false
+}

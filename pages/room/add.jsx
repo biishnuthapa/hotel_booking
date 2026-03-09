@@ -6,8 +6,13 @@ import { useRouter } from 'next/router'
 import { useAccount } from 'wagmi'
 import { createApartment } from '@/services/blockchain'
 
-export default function Add() {
+const formatToastError = (error) =>
+  error?.shortMessage || error?.reason || error?.message || 'Encountered error'
+
+export default function AddApartmentPage() {
   const { address } = useAccount()
+  const navigate = useRouter()
+
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
@@ -18,33 +23,35 @@ export default function Add() {
   const [price, setPrice] = useState('')
   const [links, setLinks] = useState([])
   const [pinataJsonLink, setPinataJsonLink] = useState('')
-  const navigate = useRouter()
 
   const handleSubmit = (e) => {
     e.preventDefault()
+
     if (
       !name ||
       !location ||
       !description ||
       !rooms ||
-      links.length != 5 ||
+      links.length !== 5 ||
       !price ||
       !pinataJsonLink ||
       !latitude ||
       !longitude
-    )
+    ) {
+      toast.error('Please complete all fields and provide exactly 5 image links.')
       return
+    }
 
     const params = {
-      name,
-      description,
-      location,
-      rooms,
+      name: name.trim(),
+      description: description.trim(),
+      location: location.trim(),
+      rooms: Number(rooms),
       images: links.slice(0, 5).join(','),
       price,
-      latitude,
-      longitude,
-      pinataJsonLink: pinataJsonLink,
+      latitude: latitude.trim(),
+      longitude: longitude.trim(),
+      pinataJsonLink: pinataJsonLink.trim(),
     }
 
     toast.promise(
@@ -54,20 +61,23 @@ export default function Add() {
             navigate.push('/')
             resolve()
           })
-          .catch(() => reject())
+          .catch((error) => reject(error))
       }),
       {
         pending: 'Approve transaction...',
-        success: 'Apartment added successfully 👌',
-        error: 'Encountered error 🤯',
+        success: 'Apartment added successfully.',
+        error: {
+          render({ data }) {
+            return formatToastError(data)
+          },
+        },
       }
     )
   }
 
   const addImage = () => {
-    if (links.length != 5) {
-      setLinks((prevState) => [...prevState, images])
-    }
+    if (!images.trim()) return
+    if (links.length !== 5) setLinks((prevState) => [...prevState, images.trim()])
     setImages('')
   }
 
@@ -77,204 +87,120 @@ export default function Add() {
   }
 
   return (
-    <div className="h-screen flex justify-center mx-auto">
-      <div className="w-11/12 md:w-2/5 h-7/12 p-6">
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="flex justify-center items-center">
-            <p className="font-semibold text-black">Add Room</p>
-          </div>
+    <div className="mx-auto max-w-3xl px-4 py-10">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h1 className="mb-5 text-2xl font-semibold text-slate-900">List a New Property</h1>
 
-          <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="text"
-              name="name"
-              placeholder="Room Name "
-              onChange={(e) => setName(e.target.value)}
-              value={name}
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <input
+            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
+            type="text"
+            placeholder="Property Name"
+            onChange={(e) => setName(e.target.value)}
+            value={name}
+            required
+          />
 
-          <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="number"
-              step={0.01}
-              min={0.01}
-              name="price"
-              placeholder="Price"
-              onChange={(e) => setPrice(e.target.value)}
-              value={price}
-              required
-            />
-          </div>
+          <input
+            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
+            type="number"
+            step={0.01}
+            min={0.01}
+            placeholder="Nightly Price (ETH)"
+            onChange={(e) => setPrice(e.target.value)}
+            value={price}
+            required
+          />
 
-          <div className="flex flex-row justify-between items-center border border-gray-300 p-2 rounded-xl mt-5">
+          <div className="flex gap-2">
             <input
-              className="block flex-1 text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
+              className="flex-1 rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
               type="url"
-              name="images"
-              placeholder="Images"
+              placeholder="Image URL"
               onChange={(e) => setImages(e.target.value)}
               value={images}
             />
-
-            {links.length != 5 && (
+            {links.length !== 5 && (
               <button
                 onClick={addImage}
                 type="button"
-                className="p-2 bg-[#00773d] text-white rounded-full text-sm"
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
               >
-                Add image link
+                Add
               </button>
             )}
           </div>
 
-          <div
-            className="flex flex-row justify-start items-center
-          rounded-xl mt-5 space-x-1 flex-wrap"
-          >
+          <div className="flex flex-wrap gap-2">
             {links.map((link, i) => (
-              <div
-                key={i}
-                className="p-2 rounded-full text-gray-500 bg-gray-200 font-semibold
-                flex items-center w-max cursor-pointer active:bg-gray-300
-                transition duration-300 ease space-x-2 text-xs"
-              >
-                <span>{truncate(link, 4, 4, 11)}</span>
-                <button
-                  onClick={() => removeImage(i)}
-                  type="button"
-                  className="bg-transparent hover focus:outline-none"
-                >
+              <div key={i} className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-700">
+                <span>{truncate(link, 6, 8, 22)}</span>
+                <button onClick={() => removeImage(i)} type="button" className="text-slate-500">
                   <FaTimes />
                 </button>
               </div>
             ))}
           </div>
 
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
+          <input
+            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
+            type="text"
+            placeholder="Location"
+            onChange={(e) => setLocation(e.target.value)}
+            value={location}
+            required
+          />
+          <input
+            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
+            type="number"
+            min={1}
+            placeholder="Number of rooms"
+            onChange={(e) => setRooms(e.target.value)}
+            value={rooms}
+            required
+          />
+          <textarea
+            className="h-28 rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
+            placeholder="Description"
+            onChange={(e) => setDescription(e.target.value)}
+            value={description}
+            required
+          />
+          <div className="grid gap-4 md:grid-cols-2">
             <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
+              className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
               type="text"
-              name="location"
-              placeholder="Location"
-              onChange={(e) => setLocation(e.target.value)}
-              value={location}
-              required
-            />
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="text"
-              name="rooms"
-              placeholder="Number of room"
-              onChange={(e) => setRooms(e.target.value)}
-              value={rooms}
-              required
-            />
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <textarea
-              className="block w-full text-sm resize-none
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0 h-20"
-              type="text"
-              name="description"
-              placeholder="Room Description"
-              onChange={(e) => setDescription(e.target.value)}
-              value={description}
-              required
-            ></textarea>
-          </div>
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="text"
-              name="latitude"
               placeholder="Latitude"
               onChange={(e) => setLatitude(e.target.value)}
               value={latitude}
               required
             />
-          </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
             <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
+              className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
               type="text"
-              name="longitude"
               placeholder="Longitude"
               onChange={(e) => setLongitude(e.target.value)}
               value={longitude}
               required
             />
           </div>
-
-          <div
-            className="flex flex-row justify-between items-center
-          border border-gray-300 p-2 rounded-xl mt-5"
-          >
-            <input
-              className="block w-full text-sm
-                text-slate-500 bg-transparent border-0
-                focus:outline-none focus:ring-0"
-              type="url" // Change input type to "url"
-              name="pinataJsonLink"
-              placeholder="Pinata JSON Link"
-              onChange={(e) => setPinataJsonLink(e.target.value)}
-              value={pinataJsonLink}
-              required
-            />
-          </div>
+          <input
+            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
+            type="url"
+            placeholder="Metadata JSON URL"
+            onChange={(e) => setPinataJsonLink(e.target.value)}
+            value={pinataJsonLink}
+            required
+          />
 
           <button
             type="submit"
-            className={`flex flex-row justify-center items-center
-            w-full text-white text-md bg-[#00773d]
-            py-2 px-5 rounded-full drop-shadow-xl hover:bg-white
-            border-transparent border
-            hover:hover:text-[#00773d]
-            hover:border-[#00773d]
-            mt-5 transition-all duration-500 ease-in-out ${
-              !address ? 'opacity-50 cursor-not-allowed' : ''
+            className={`rounded-xl bg-[#00773d] py-3 font-semibold text-white transition hover:brightness-110 ${
+              !address ? 'cursor-not-allowed opacity-50' : ''
             }`}
             disabled={!address}
           >
-            Add Hotel
+            Add Property
           </button>
         </form>
       </div>

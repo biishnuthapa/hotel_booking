@@ -1,75 +1,94 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 import { useAccount } from 'wagmi'
 import { toast } from 'react-toastify'
 import Identicon from 'react-identicons'
-import { formatDate, truncate } from '@/utils/helper'
-import { checkInApartment, refundBooking } from '@/services/blockchain'
+import { formatDate, toMillis, truncate } from '@/utils/helper'
+import { checkInApartment, refundBooking, getChainNowSeconds } from '@/services/blockchain'
+
+const formatToastError = (error) =>
+  error?.shortMessage || error?.reason || error?.message || 'Encountered error'
 
 const Booking = ({ booking, maxDateOut }) => {
   const router = useRouter()
   const { address } = useAccount()
+  const [chainNowSec, setChainNowSec] = useState(null)
+
+  useEffect(() => {
+    const loadChainTime = async () => {
+      try {
+        setChainNowSec(await getChainNowSeconds())
+      } catch (error) {
+        console.error('Failed to load chain time for check-in state:', error)
+      }
+    }
+
+    loadChainTime()
+  }, [])
+
+  const canCheckInNow = chainNowSec ? booking.date <= chainNowSec : toMillis(booking.date) <= Date.now()
 
   const handleCheckIn = () => {
     toast.promise(
       new Promise((resolve, reject) => {
         checkInApartment(booking.aid, booking.id)
           .then((tx) => {
-            console.log(tx)
             resolve(tx)
-            router.push('/NFTList')
+            router.push('/MyNFTs')
           })
           .catch((error) => reject(error))
       }),
       {
         pending: 'Approve transaction...',
-        success:
-          'Congratulation!! Your Booking has been confirmed and NFT has been sent to Your wallet 👌',
-        error: 'Encountered error 🤯',
+        success: 'Booking confirmed and NFT sent to your wallet.',
+        error: {
+          render({ data }) {
+            return formatToastError(data)
+          },
+        },
       }
     )
   }
-
-  console.log('maxDateOut', maxDateOut)
 
   const handleRefund = () => {
     toast.promise(
       new Promise((resolve, reject) => {
         refundBooking(booking.aid, booking.id)
-          .then(() => {
-            resolve()
-          })
-          .catch(() => reject())
+          .then(() => resolve())
+          .catch((error) => reject(error))
       }),
       {
         pending: 'Approve transaction...',
-        success: 'Refunded successfully 👌',
-        error: 'Encountered error 🤯',
+        success: 'Refunded successfully.',
+        error: {
+          render({ data }) {
+            return formatToastError(data)
+          },
+        },
       }
     )
   }
 
-  const bookedDayStatus = (booking) => {
-    const bookedDate = new Date(booking.date).getTime()
-    const current = new Date().getTime()
-    const bookedDayStatus = bookedDate < current && !booking.checked
-    return bookedDayStatus
-  }
-
   const functions = {
-    bookedDayStatus,
     handleCheckIn,
     handleRefund,
   }
 
   return (
-    <TenantView booking={booking} functions={functions} owner={address} maxDateOut={maxDateOut} />
+    <TenantView
+      booking={booking}
+      functions={functions}
+      owner={address}
+      maxDateOut={maxDateOut}
+      canCheckInNow={canCheckInNow}
+    />
   )
 }
 
-const TenantView = ({ booking, functions, owner, maxDateOut }) => {
+const TenantView = ({ booking, functions, owner, maxDateOut, canCheckInNow }) => {
   return (
-    <div className="w-full flex justify-between items-center my-3 bg-[#bfcfe7] p-3">
+    <div className="my-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
       <Link
         className="flex justify-start items-center
       space-x-2 font-medium"
@@ -91,14 +110,22 @@ const TenantView = ({ booking, functions, owner, maxDateOut }) => {
       {booking.tenant == owner && !booking.checked && !booking.cancelled && (
         <div className="flex space-x-2">
           <button
-            className="p-2 bg-[#00773d] text-white rounded-full text-sm px-4"
+            className={`rounded-full px-4 py-2 text-sm ${
+              canCheckInNow
+                ? 'bg-[#00773d] text-white hover:brightness-110'
+                : 'cursor-not-allowed bg-slate-200 text-slate-500'
+            }`}
             onClick={functions.handleCheckIn}
+            disabled={!canCheckInNow}
+            title={
+              canCheckInNow ? 'Check in and mint your NFT.' : 'Check-in is available on your booking date.'
+            }
           >
             Check In
           </button>
 
           <button
-            className="p-2 bg-[#00773d] text-white rounded-full text-sm px-4"
+            className="rounded-full bg-slate-900 px-4 py-2 text-sm text-white hover:brightness-110"
             onClick={functions.handleRefund}
           >
             Refund
@@ -108,8 +135,7 @@ const TenantView = ({ booking, functions, owner, maxDateOut }) => {
 
       {booking.tenant == owner && booking.checked && !booking.cancelled && (
         <button
-          className="p-2 bg-[#00773d] text-white font-medium italic
-        rounded-full text-sm px-4"
+          className="rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium italic text-emerald-800"
         >
           Checked In
         </button>
@@ -117,8 +143,7 @@ const TenantView = ({ booking, functions, owner, maxDateOut }) => {
 
       {booking.tenant != owner && !booking.cancelled && (
         <button
-          className="p-2 bg-[#00773d] text-white font-medium italic
-        rounded-full text-sm px-4"
+          className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium italic text-slate-700"
         >
           Booked
         </button>
@@ -126,8 +151,7 @@ const TenantView = ({ booking, functions, owner, maxDateOut }) => {
 
       {booking.cancelled && (
         <button
-          className="p-2 bg-[#00773d] text-white font-medium italic
-        rounded-full text-sm px-4"
+          className="rounded-full bg-rose-100 px-4 py-2 text-sm font-medium italic text-rose-700"
         >
           Cancelled
         </button>

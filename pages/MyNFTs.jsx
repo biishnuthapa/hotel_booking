@@ -2,8 +2,8 @@ import MyNFTsPage from '@/components/MyNFTsPage'
 
 const NFTPage = () => {
   return (
-    <div className="container mx-auto px-4 py-8 text-center">
-      <h1 className="text-3xl font-bold mb-8">My NFTs</h1>
+    <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+      <h1 className="mb-6 text-3xl font-semibold text-slate-900">My NFTs</h1>
       <MyNFTsPage />
     </div>
   )

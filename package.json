@@ -9,7 +9,11 @@
     "lint": "next lint",
     "format": "prettier --ignore-path .gitignore \"pages/**/*.+(ts|js|tsx)\" --write",
     "postinstall": "husky install",
-    "deploy": "yarn hardhat run scripts/deploy.js"
+    "blockchain": "yarn hardhat node",
+    "deploy": "yarn hardhat run scripts/deploy.js --network localhost",
+    "deploy:localhost": "yarn hardhat run scripts/deploy.js --network localhost",
+    "seed": "yarn hardhat run scripts/seed.js --network localhost",
+    "seed:localhost": "yarn hardhat run scripts/seed.js --network localhost"
   },
   "lint-staged": {
     "./src/**/*.{ts,js,jsx,tsx}": [

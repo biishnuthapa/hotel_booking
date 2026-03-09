@@ -22,10 +22,11 @@ export default function App({ Component, pageProps }) {
     return (
       <Providers pageProps={pageProps}>
         <Provider store={store}>
-          <div className="relative h-screen min-w-screen">
+          <div className="min-h-screen bg-[#f6f8fb]">
             <Header />
-            <Component {...pageProps} />
-            <div className="h-20"></div>
+            <main className="mx-auto w-full">
+              <Component {...pageProps} />
+            </main>
             <Footer />
           </div>
 

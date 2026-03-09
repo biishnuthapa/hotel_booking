@@ -7,7 +7,7 @@ async function deployContract() {
   const securityFeePercent = 5
 
   try {
-    contract = await ethers.deployContract('DappBnb', [taxPercent, securityFeePercent])
+    contract = await ethers.deployContract('HospitalityBookingNFT', [taxPercent, securityFeePercent])
     await contract.waitForDeployment()
 
     console.log('Contracts deployed successfully.')
@@ -20,21 +20,17 @@ async function deployContract() {
 
 async function saveContractAddress(contract) {
   try {
-    const address = JSON.stringify(
+    const addressPath = './contracts/contractAddress.json'
+    const addressPayload = JSON.stringify(
       {
-        dappBnbContract: contract.target,
+        hospitalityBookingContract: contract.target,
       },
       null,
       4
     )
 
-    fs.writeFile('./contracts/contractAddress.json', address, 'utf8', (error) => {
-      if (error) {
-        console.error('Error saving contract address:', err)
-      } else {
-        console.log('Deployed contract address:', address)
-      }
-    })
+    fs.writeFileSync(addressPath, addressPayload, 'utf8')
+    console.log(`Deployed contract address saved to ${addressPath}: ${contract.target}`)
   } catch (error) {
     console.error('Error saving contract address:', error)
     throw error

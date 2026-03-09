@@ -5,6 +5,7 @@ import { RainbowKitProvider, connectorsForWallets, darkTheme } from '@rainbow-me
 import { metaMaskWallet, rainbowWallet } from '@rainbow-me/rainbowkit/wallets'
 import { alchemyProvider } from 'wagmi/providers/alchemy'
 import { publicProvider } from 'wagmi/providers/public'
+import { jsonRpcProvider } from 'wagmi/providers/jsonRpc'
 import { SessionProvider } from 'next-auth/react'
 
 const polygonMainnet = {
@@ -29,12 +30,42 @@ const polygonMainnet = {
   testnet: false,
 }
 
+const localRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545'
+const isLocalRpc = /127\.0\.0\.1|localhost/.test(localRpcUrl)
+const localChainId = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 31337)
+const localChainName = localChainId === 31337 ? 'Hardhat Localhost' : 'Localhost'
+
+const hardhatLocalChain = {
+  id: localChainId,
+  name: localChainName,
+  network: 'hardhat-localhost',
+  nativeCurrency: {
+    decimals: 18,
+    name: 'Ethereum',
+    symbol: 'ETH',
+  },
+  rpcUrls: {
+    public: { http: [localRpcUrl] },
+    default: { http: [localRpcUrl] },
+  },
+  testnet: true,
+}
+
+const activeChains = isLocalRpc ? [hardhatLocalChain] : [polygonMainnet]
+
 const { chains, publicClient } = configureChains(
-  [polygonMainnet],
-  [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID }), publicProvider()]
+  activeChains,
+  isLocalRpc
+    ? [
+        jsonRpcProvider({
+          rpc: () => ({ http: localRpcUrl }),
+        }),
+      ]
+    : [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID }), publicProvider()]
 )
 
 const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
+const enableSiwe = process.env.NEXT_PUBLIC_ENABLE_SIWE === 'true'
 
 const connectors = connectorsForWallets([
   {
@@ -50,27 +81,35 @@ const wagmiConfig = createConfig({
 })
 
 const demoAppInfo = {
-  appName: 'DappBnb dApp',
+  appName: 'HospitalityBooking dApp',
 }
 
 const getSiweMessageOptions = () => ({
   statement: `
   Once you're signed in, you'll be able to access all of our dApp's features.
-  Thank you for partnering with DappBnb!`,
+  Thank you for partnering with HospitalityBooking!`,
 })
 
 const Providers = ({ children, pageProps }) => {
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
+  const content = (
+    <RainbowKitProvider theme={darkTheme()} chains={chains} appInfo={demoAppInfo}>
+      {mounted && children}
+    </RainbowKitProvider>
+  )
+
   return (
     <WagmiConfig config={wagmiConfig}>
       <SessionProvider refetchInterval={0} session={pageProps.session}>
-        <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
-          <RainbowKitProvider theme={darkTheme()} chains={chains} appInfo={demoAppInfo}>
-            {mounted && children}
-          </RainbowKitProvider>
-        </RainbowKitSiweNextAuthProvider>
+        {enableSiwe ? (
+          <RainbowKitSiweNextAuthProvider getSiweMessageOptions={getSiweMessageOptions}>
+            {content}
+          </RainbowKitSiweNextAuthProvider>
+        ) : (
+          content
+        )}
       </SessionProvider>
     </WagmiConfig>
   )

@@ -5,7 +5,6 @@ function ParentComponent() {
   const [selectedLocation, setSelectedLocation] = useState('')
   const [checkOutDate, setCheckOutDate] = useState(null)
   const [checkInDate, setCheckInDate] = useState(null)
-  const [apartments, setApartments] = useState([])
   const [guests, setGuests] = useState({
     adults: 0,
     children: 0,
@@ -33,8 +32,6 @@ function ParentComponent() {
         guests={guests}
         setGuests={setGuests}
         onSearch={handleSearch}
-        apartments={apartments}
-        setApartments={setApartments}
       />
     </div>
   )

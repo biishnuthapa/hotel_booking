@@ -4,67 +4,54 @@ import { useAccount } from 'wagmi'
 
 const Header = () => {
   return (
-    <header className="flex justify-between items-center p-4 px-8 sm:px-10 md:px-14 border-b-2 border-b-slate-200 w-full">
-      <Link href={'/'}>
-        <img
-          src="/assets/img.jpg"
-          alt="HospitalityNFT Logo"
-          className="h-12 w-auto inline-block mr-4"
-        />
-      </Link>
-      <ButtonGroup />
-      <ConnectBtn />
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        <Link href="/" className="flex items-center gap-3">
+          <img src="/assets/img.jpg" alt="Hospitality NFT Logo" className="h-10 w-10 rounded-xl object-cover" />
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#00773d]">Hospitality NFT</p>
+            <p className="text-xs text-slate-500">Book stays. Mint experiences.</p>
+          </div>
+        </Link>
+
+        <div className="hidden md:block">
+          <NavLinks />
+        </div>
+
+        <ConnectBtn />
+      </div>
+      <div className="mx-auto block max-w-7xl px-4 pb-3 md:hidden">
+        <NavLinks mobile />
+      </div>
     </header>
   )
 }
 
-const ButtonGroup = () => {
+const NavLinks = ({ mobile = false }) => {
   const { address } = useAccount()
-  const ownerAddress = '0x913e361e6945beEe78dD01a53E1df920C47E1357'
-  console.log('Wallet', address)
-  console.log('owner', ownerAddress)
+  const baseClass =
+    'rounded-full px-4 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900'
 
   return (
-    <div className="md:flex hidden items-center justify-center border-gray-300 border overflow-hidden rounded-full cursor-pointer">
-      <div className="inline-flex" role="group">
-        <button className="rounded-l-full px-5 py-3 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out">
-          Anywhere
-        </button>
-
-        {address && address === ownerAddress && (
-          <Link href={'/room/add'}>
-            <button
-              type="button"
-              className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
-            >
-              Add Hotels
-            </button>
-          </Link>
-        )}
-
-        <Link href={'/MyNFTs'}>
-          <button
-            type="button"
-            className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
-          >
-            My NFTs
-          </button>
+    <nav className={`flex ${mobile ? 'flex-wrap gap-2' : 'items-center gap-2'}`}>
+      <Link href="/" className={`${baseClass} text-slate-700`}>
+        Explore
+      </Link>
+      <Link href="/MyNFTs" className={`${baseClass} text-slate-700`}>
+        My NFTs
+      </Link>
+      <Link href="/MyBookings" className={`${baseClass} text-slate-700`}>
+        My Bookings
+      </Link>
+      {address && (
+        <Link
+          href="/room/add"
+          className="rounded-full bg-[#00773d] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+        >
+          List Property
         </Link>
-
-        <Link href={'/MyBookings'}>
-          <button
-            type="button"
-            className="px-5 py-3 border-x border-gray-300 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"
-          >
-            My Bookings
-          </button>
-        </Link>
-
-        <button className="rounded-r-full px-5 py-3 text-[#00773d] font-medium text-sm leading-tight hover:bg-black hover:bg-opacity-5 focus:outline-none focus:ring-0 transition duration-150 ease-in-out">
-          <p className="flex items-center">Any week</p>
-        </button>
-      </div>
-    </div>
+      )}
+    </nav>
   )
 }
 
