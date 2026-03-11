@@ -534,13 +534,22 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
     require(_exists(tokenId), 'ERC721Metadata: URI query for nonexistent token');
     BookingKey memory key = tokenToBooking[tokenId];
-    BookingStruct memory booking = bookingsOf[key.aid][key.bookingId];
-    ApartmentStruct memory apartment = apartments[key.aid];
+    BookingStruct storage booking = bookingsOf[key.aid][key.bookingId];
+    ApartmentStruct storage apartment = apartments[key.aid];
+    bytes memory dataURI = buildTokenJSON(tokenId, booking, apartment);
 
+    return string(abi.encodePacked('data:application/json;base64,', Base64.encode(dataURI)));
+  }
+
+  function buildTokenJSON(
+    uint256 tokenId,
+    BookingStruct storage booking,
+    ApartmentStruct storage apartment
+  ) internal view returns (bytes memory) {
     string memory image = firstImage(apartment.images);
     string memory status = statusToString(booking.status);
 
-    bytes memory dataURI = abi.encodePacked(
+    return abi.encodePacked(
       '{',
         '"name":"Hotel Reservation #', tokenId.toString(), '",',
         '"description":"NFT reservation ticket",',
@@ -553,8 +562,6 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
         ']',
       '}'
     );
-
-    return string(abi.encodePacked('data:application/json;base64,', Base64.encode(dataURI)));
   }
 
 }
