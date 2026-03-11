@@ -22,8 +22,15 @@ const NFTList = () => {
         const tokensWithMetadata = await Promise.all(
           ownedTokens.map(async (token) => {
             try {
-              const metadataResponse = await fetch(normalizeIpfsUrl(token.metadataUri))
-              const metadata = await metadataResponse.json()
+              let metadata = null
+              const uri = token.metadataUri || ''
+              if (uri.startsWith('data:application/json;base64,')) {
+                const base64 = uri.replace('data:application/json;base64,', '')
+                metadata = JSON.parse(atob(base64))
+              } else {
+                const metadataResponse = await fetch(normalizeIpfsUrl(uri))
+                metadata = await metadataResponse.json()
+              }
               return {
                 ...token,
                 name: metadata.name || `Hospitality NFT #${token.id}`,

@@ -3,12 +3,15 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
+import '@openzeppelin/contracts/utils/Strings.sol';
+import '@openzeppelin/contracts/utils/Base64.sol';
 import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
 contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   using Counters for Counters.Counter;
+  using Strings for uint256;
   Counters.Counter private _totalAppartments;
   Counters.Counter private _totalTokens;
 
@@ -44,9 +47,16 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     address tenant;
     uint date;
     uint price;
-    bool checked;
-    bool cancelled;
+    uint tokenId;
+    BookingStatus status;
     uint timestamp;
+  }
+
+  enum BookingStatus {
+    Booked,
+    Cancelled,
+    CheckedIn,
+    Expired
   }
 
   struct ReviewStruct {
@@ -67,6 +77,13 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   mapping(uint => uint[]) bookedDates;
   mapping(uint => mapping(address => uint256)) checkedInCount;
   mapping(uint256 => RoomType[]) roomTypes;
+  mapping(uint => mapping(uint => uint)) public bookingToToken;
+
+  struct BookingKey {
+    uint aid;
+    uint bookingId;
+  }
+  mapping(uint => BookingKey) private tokenToBooking;
 
   mapping(uint => mapping(uint => bool)) isDateBooked;
 
@@ -249,7 +266,16 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
       booking.tenant = msg.sender;
       booking.date = normalizedDates[i];
       booking.price = apartments[aid].price;
+      booking.status = BookingStatus.Booked;
       booking.timestamp = currentTime();
+
+      _totalTokens.increment();
+      uint tokenId = _totalTokens.current();
+      booking.tokenId = tokenId;
+      _mint(msg.sender, tokenId);
+      bookingToToken[aid][booking.id] = tokenId;
+      tokenToBooking[tokenId] = BookingKey({ aid: aid, bookingId: booking.id });
+
       bookingsOf[aid].push(booking);
       bookedDates[aid].push(normalizedDates[i]);
       isDateBooked[aid][normalizedDates[i]] = true;
@@ -260,12 +286,10 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
     BookingStruct memory booking = bookingsOf[aid][bookingId];
     require(msg.sender == booking.tenant, 'Unauthorized tenant!');
-    require(!booking.checked, 'Apartment already checked on this date!');
-    require(!booking.cancelled, 'Booking has been cancelled!');
+    require(booking.status == BookingStatus.Booked, 'Booking is not active');
     require(currentTime() >= booking.date, 'Cannot check in before booking date!');
-    require(mintTickets(aid), 'failed to mint');
 
-    bookingsOf[aid][bookingId].checked = true;
+    bookingsOf[aid][bookingId].status = BookingStatus.CheckedIn;
     uint tax = (booking.price * taxPercent) / 100;
     uint fee = (booking.price * securityFee) / 100;
 
@@ -280,13 +304,12 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
     BookingStruct memory booking = bookingsOf[aid][bookingId];
     require(msg.sender == apartments[aid].owner, 'Unauthorized entity');
-    require(!booking.checked, 'Apartment already checked on this date!');
-    require(!booking.cancelled, 'Booking already settled!');
+    require(booking.status == BookingStatus.Booked, 'Booking is not active');
     require(currentTime() > booking.date, 'Cannot claim before booking date');
 
     uint tax = (booking.price * taxPercent) / 100;
     uint fee = (booking.price * securityFee) / 100;
-    bookingsOf[aid][bookingId].cancelled = true;
+    bookingsOf[aid][bookingId].status = BookingStatus.Expired;
 
     payTo(apartments[aid].owner, (booking.price - tax));
     payTo(owner(), tax);
@@ -296,15 +319,14 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   function refundBooking(uint aid, uint bookingId) public nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
     BookingStruct memory booking = bookingsOf[aid][bookingId];
-    require(!booking.checked, 'Apartment already checked on this date!');
-    require(!booking.cancelled, 'Booking already cancelled!');
+    require(booking.status == BookingStatus.Booked, 'Booking is not refundable');
 
     if (msg.sender != owner()) {
       require(msg.sender == booking.tenant, 'Unauthorized tenant!');
       require(booking.date > currentTime(), 'Can no longer refund, booking date started');
     }
 
-    bookingsOf[aid][bookingId].cancelled = true;
+    bookingsOf[aid][bookingId].status = BookingStatus.Cancelled;
 
     uint[] storage dates = bookedDates[aid];
     for (uint i = 0; i < dates.length; i++) {
@@ -315,6 +337,12 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
       }
     }
     isDateBooked[aid][booking.date] = false;
+
+    if (booking.tokenId != 0 && _exists(booking.tokenId)) {
+      _burn(booking.tokenId);
+      delete tokenToBooking[booking.tokenId];
+    }
+    delete bookingToToken[aid][bookingId];
 
     uint fee = (booking.price * securityFee) / 100;
     uint collateral = fee / 2;
@@ -331,14 +359,14 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   function getQualifiedReviewers(uint aid) public view returns (address[] memory Tenants) {
     uint256 available;
     for (uint i = 0; i < bookingsOf[aid].length; i++) {
-      if (bookingsOf[aid][i].checked) available++;
+      if (bookingsOf[aid][i].status == BookingStatus.CheckedIn) available++;
     }
 
     Tenants = new address[](available);
 
     uint256 index;
     for (uint i = 0; i < bookingsOf[aid].length; i++) {
-      if (bookingsOf[aid][i].checked) {
+      if (bookingsOf[aid][i].status == BookingStatus.CheckedIn) {
         Tenants[index++] = bookingsOf[aid][i].tenant;
       }
     }
@@ -383,12 +411,12 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     return block.timestamp;
   }
 
-  function mintTickets(uint id) internal returns (bool) {
-    _totalTokens.increment();
-    _mint(msg.sender, _totalTokens.current());
-    _setTokenURI(_totalTokens.current(), apartments[id].pinataJsonLink);
-
-    return true;
+  function expireBooking(uint aid, uint bookingId) public {
+    require(bookingId < bookingsOf[aid].length, 'Booking not found');
+    BookingStruct memory booking = bookingsOf[aid][bookingId];
+    require(booking.status == BookingStatus.Booked, 'Booking is not active');
+    require(currentTime() > booking.date, 'Booking date not passed');
+    bookingsOf[aid][bookingId].status = BookingStatus.Expired;
   }
 
   struct TokenData {
@@ -417,6 +445,52 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
 
   function getTotalTokens() public view returns (uint256) {
     return _totalTokens.current();
+  }
+
+  function statusToString(BookingStatus status) internal pure returns (string memory) {
+    if (status == BookingStatus.Booked) return 'Booked';
+    if (status == BookingStatus.Cancelled) return 'Cancelled';
+    if (status == BookingStatus.CheckedIn) return 'CheckedIn';
+    return 'Expired';
+  }
+
+  function firstImage(string memory images) internal pure returns (string memory) {
+    bytes memory data = bytes(images);
+    if (data.length == 0) return '';
+    uint i = 0;
+    while (i < data.length && data[i] != ',') {
+      i++;
+    }
+    bytes memory result = new bytes(i);
+    for (uint j = 0; j < i; j++) {
+      result[j] = data[j];
+    }
+    return string(result);
+  }
+
+  function tokenURI(uint256 tokenId) public view override returns (string memory) {
+    require(_exists(tokenId), 'ERC721Metadata: URI query for nonexistent token');
+    BookingKey memory key = tokenToBooking[tokenId];
+    BookingStruct memory booking = bookingsOf[key.aid][key.bookingId];
+    ApartmentStruct memory apartment = apartments[key.aid];
+
+    string memory image = firstImage(apartment.images);
+    string memory status = statusToString(booking.status);
+
+    bytes memory dataURI = abi.encodePacked(
+      '{',
+        '"name":"Hotel Reservation #', tokenId.toString(), '",',
+        '"description":"NFT reservation ticket",',
+        '"image":"', image, '",',
+        '"attributes":[',
+          '{"trait_type":"Apartment","value":"', apartment.name, '"},',
+          '{"trait_type":"CheckIn","value":"', booking.date.toString(), '"},',
+          '{"trait_type":"Status","value":"', status, '"}',
+        ']',
+      '}'
+    );
+
+    return string(abi.encodePacked('data:application/json;base64,', Base64.encode(dataURI)));
   }
 
 }

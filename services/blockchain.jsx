@@ -392,8 +392,10 @@ const structuredBookings = (bookings) =>
     tenant: booking.tenant,
     date: Number(booking.date),
     price: fromWei(booking.price),
-    checked: booking.checked,
-    cancelled: booking.cancelled,
+    status: Number(booking.status),
+    tokenId: Number(booking.tokenId || 0),
+    checked: Number(booking.status) === 2,
+    cancelled: Number(booking.status) === 1,
     timestamp: Number(booking.timestamp),
   }))
 

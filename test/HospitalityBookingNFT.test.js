@@ -64,6 +64,8 @@ describe('HospitalityBookingNFT', () => {
     expect(bookings.length).to.equal(2)
     expect(bookings[0].date).to.equal(dates[0])
     expect(bookings[1].date).to.equal(dates[1])
+    expect(Number(bookings[0].tokenId)).to.equal(1)
+    expect(Number(bookings[0].status)).to.equal(0) // Booked
   })
 
   it('rejects duplicate dates in one booking request', async () => {
@@ -101,7 +103,7 @@ describe('HospitalityBookingNFT', () => {
     await contract.connect(tenant).refundBooking(id, 0)
 
     const booking = await contract.getBooking(id, 0)
-    expect(booking.cancelled).to.equal(true)
+    expect(Number(booking.status)).to.equal(1) // Cancelled
 
     const totalPrice2 = toWei(price)
     const fee2 = (totalPrice2 * BigInt(securityFee)) / 100n
@@ -121,6 +123,20 @@ describe('HospitalityBookingNFT', () => {
 
     const booking = await contract.getBooking(id, 0)
     expect(Number(booking.date)).to.equal(datesSec[0])
+  })
+
+  it('burns reservation NFT on refund', async () => {
+    const dates = await futureDates(1)
+    const totalPrice = toWei(price)
+    const fee = (totalPrice * BigInt(securityFee)) / 100n
+    const amount = totalPrice + fee
+
+    await contract.connect(tenant).bookApartment(id, dates, { value: amount })
+    const booking = await contract.getBooking(id, 0)
+    const tokenId = Number(booking.tokenId)
+
+    await contract.connect(tenant).refundBooking(id, 0)
+    await expect(contract.ownerOf(tokenId)).to.be.reverted
   })
 
   it('keeps review eligibility after check-in even if a later booking is refunded', async () => {
