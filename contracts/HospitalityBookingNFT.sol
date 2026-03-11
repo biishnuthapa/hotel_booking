@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.7.0 <0.9.0;
+pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
@@ -78,6 +78,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   mapping(uint => mapping(address => uint256)) checkedInCount;
   mapping(uint256 => RoomType[]) roomTypes;
   mapping(uint => mapping(uint => uint)) public bookingToToken;
+  mapping(uint => mapping(uint => uint)) private bookedDateIndex;
 
   struct BookingKey {
     uint aid;
@@ -86,6 +87,18 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
   mapping(uint => BookingKey) private tokenToBooking;
 
   mapping(uint => mapping(uint => bool)) isDateBooked;
+
+  event ApartmentCreated(uint indexed id, address indexed owner, string name);
+  event ApartmentUpdated(uint indexed id, address indexed owner, string name);
+  event ApartmentDeleted(uint indexed id, address indexed owner);
+  event BookingCreated(uint indexed aid, uint indexed bookingId, address indexed tenant, uint date, uint price, uint tokenId);
+  event BookingRefunded(uint indexed aid, uint indexed bookingId, address indexed tenant);
+  event BookingCheckedIn(uint indexed aid, uint indexed bookingId, address indexed tenant);
+  event BookingExpired(uint indexed aid, uint indexed bookingId);
+  event FundsClaimed(uint indexed aid, uint indexed bookingId, address indexed owner);
+  event ReviewAdded(uint indexed aid, uint indexed reviewId, address indexed reviewer);
+  event RoomTypeAdded(uint indexed aid, uint indexed index, string name);
+  event RoomTypeDeleted(uint indexed aid, uint indexed index);
 
   constructor(uint _taxPercent, uint _securityFee) ERC721('Hospitality', 'NFT') {
     require(_taxPercent <= 100, 'Tax cannot exceed 100%');
@@ -130,6 +143,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
 
     appartmentExist[lodge.id] = true;
     apartments[_totalAppartments.current()] = lodge;
+    emit ApartmentCreated(lodge.id, msg.sender, name);
   }
 
   function updateAppartment(
@@ -159,6 +173,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     lodge.price = price;
 
     apartments[id] = lodge;
+    emit ApartmentUpdated(id, msg.sender, name);
   }
 
   function addRoomTypeToApartment(
@@ -186,6 +201,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     newRoomType.deleted = false;
 
     roomTypes[_apartmentId].push(newRoomType);
+    emit RoomTypeAdded(_apartmentId, roomTypes[_apartmentId].length - 1, _name);
   }
 
   function getRooms(uint256 _apartmentId) public view returns (RoomType[] memory) {
@@ -200,6 +216,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     require(!roomTypes[_apartmentId][_index].deleted, 'Room already deleted');
 
     roomTypes[_apartmentId][_index].deleted = true;
+    emit RoomTypeDeleted(_apartmentId, _index);
   }
 
   function deleteAppartment(uint id) public {
@@ -208,18 +225,20 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
 
     appartmentExist[id] = false;
     apartments[id].deleted = true;
+    emit ApartmentDeleted(id, msg.sender);
   }
 
   function getApartments() public view returns (ApartmentStruct[] memory Apartments) {
     uint256 available;
-    for (uint i = 1; i <= _totalAppartments.current(); i++) {
+    uint total = _totalAppartments.current();
+    for (uint i = 1; i <= total; i++) {
       if (!apartments[i].deleted) available++;
     }
 
     Apartments = new ApartmentStruct[](available);
 
     uint256 index;
-    for (uint i = 1; i <= _totalAppartments.current(); i++) {
+    for (uint i = 1; i <= total; i++) {
       if (!apartments[i].deleted) {
         Apartments[index++] = apartments[i];
       }
@@ -278,18 +297,20 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
 
       bookingsOf[aid].push(booking);
       bookedDates[aid].push(normalizedDates[i]);
+      bookedDateIndex[aid][normalizedDates[i]] = bookedDates[aid].length;
       isDateBooked[aid][normalizedDates[i]] = true;
+      emit BookingCreated(aid, booking.id, msg.sender, normalizedDates[i], booking.price, tokenId);
     }
   }
 
   function checkInApartment(uint aid, uint bookingId) public nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
-    BookingStruct memory booking = bookingsOf[aid][bookingId];
+    BookingStruct storage booking = bookingsOf[aid][bookingId];
     require(msg.sender == booking.tenant, 'Unauthorized tenant!');
     require(booking.status == BookingStatus.Booked, 'Booking is not active');
     require(currentTime() >= booking.date, 'Cannot check in before booking date!');
 
-    bookingsOf[aid][bookingId].status = BookingStatus.CheckedIn;
+    booking.status = BookingStatus.CheckedIn;
     uint tax = (booking.price * taxPercent) / 100;
     uint fee = (booking.price * securityFee) / 100;
 
@@ -298,27 +319,29 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     payTo(apartments[aid].owner, (booking.price - tax));
     payTo(owner(), tax);
     payTo(msg.sender, fee);
+    emit BookingCheckedIn(aid, bookingId, msg.sender);
   }
 
   function claimFunds(uint aid, uint bookingId) public nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
-    BookingStruct memory booking = bookingsOf[aid][bookingId];
+    BookingStruct storage booking = bookingsOf[aid][bookingId];
     require(msg.sender == apartments[aid].owner, 'Unauthorized entity');
     require(booking.status == BookingStatus.Booked, 'Booking is not active');
     require(currentTime() > booking.date, 'Cannot claim before booking date');
 
     uint tax = (booking.price * taxPercent) / 100;
     uint fee = (booking.price * securityFee) / 100;
-    bookingsOf[aid][bookingId].status = BookingStatus.Expired;
+    booking.status = BookingStatus.Expired;
 
     payTo(apartments[aid].owner, (booking.price - tax));
     payTo(owner(), tax);
     payTo(msg.sender, fee);
+    emit FundsClaimed(aid, bookingId, msg.sender);
   }
 
   function refundBooking(uint aid, uint bookingId) public nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
-    BookingStruct memory booking = bookingsOf[aid][bookingId];
+    BookingStruct storage booking = bookingsOf[aid][bookingId];
     require(booking.status == BookingStatus.Booked, 'Booking is not refundable');
 
     if (msg.sender != owner()) {
@@ -326,15 +349,20 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
       require(booking.date > currentTime(), 'Can no longer refund, booking date started');
     }
 
-    bookingsOf[aid][bookingId].status = BookingStatus.Cancelled;
+    booking.status = BookingStatus.Cancelled;
 
     uint[] storage dates = bookedDates[aid];
-    for (uint i = 0; i < dates.length; i++) {
-      if (dates[i] == booking.date) {
-        dates[i] = dates[dates.length - 1];
-        dates.pop();
-        break;
+    uint indexPlusOne = bookedDateIndex[aid][booking.date];
+    if (indexPlusOne > 0) {
+      uint index = indexPlusOne - 1;
+      uint lastIndex = dates.length - 1;
+      if (index != lastIndex) {
+        uint swappedDate = dates[lastIndex];
+        dates[index] = swappedDate;
+        bookedDateIndex[aid][swappedDate] = index + 1;
       }
+      dates.pop();
+      delete bookedDateIndex[aid][booking.date];
     }
     isDateBooked[aid][booking.date] = false;
 
@@ -343,6 +371,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
       delete tokenToBooking[booking.tokenId];
     }
     delete bookingToToken[aid][bookingId];
+    booking.tokenId = 0;
 
     uint fee = (booking.price * securityFee) / 100;
     uint collateral = fee / 2;
@@ -350,6 +379,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     payTo(apartments[aid].owner, collateral);
     payTo(owner(), collateral);
     payTo(booking.tenant, booking.price);
+    emit BookingRefunded(aid, bookingId, booking.tenant);
   }
 
   function getBookings(uint aid) public view returns (BookingStruct[] memory) {
@@ -397,6 +427,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     review.owner = msg.sender;
 
     reviewsOf[aid].push(review);
+    emit ReviewAdded(aid, review.id, msg.sender);
   }
 
   function getReviews(uint aid) public view returns (ReviewStruct[] memory) {
@@ -413,10 +444,15 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
 
   function expireBooking(uint aid, uint bookingId) public {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
-    BookingStruct memory booking = bookingsOf[aid][bookingId];
+    BookingStruct storage booking = bookingsOf[aid][bookingId];
+    require(
+      msg.sender == apartments[aid].owner || msg.sender == owner(),
+      'Unauthorized'
+    );
     require(booking.status == BookingStatus.Booked, 'Booking is not active');
     require(currentTime() > booking.date, 'Booking date not passed');
-    bookingsOf[aid][bookingId].status = BookingStatus.Expired;
+    booking.status = BookingStatus.Expired;
+    emit BookingExpired(aid, bookingId);
   }
 
   struct TokenData {
@@ -429,7 +465,7 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     uint count = 0;
 
     for (uint i = 1; i <= _totalTokens.current(); i++) {
-      if (ownerOf(i) == owner) {
+      if (_exists(i) && ownerOf(i) == owner) {
         ownedTokens[count] = TokenData(i, tokenURI(i));
         count++;
       }
