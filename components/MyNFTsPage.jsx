@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { getOwnedTokens } from '@/services/blockchain'
 import { useAccount } from 'wagmi'
 import Modal from 'react-modal'
-import { normalizeIpfsUrl } from '@/utils/helper'
+import { normalizeIpfsUrl, formatDate, toMillis } from '@/utils/helper'
 
 const NFTList = () => {
   const [tokens, setTokens] = useState([])
@@ -36,6 +36,7 @@ const NFTList = () => {
                 name: metadata.name || `Hospitality NFT #${token.id}`,
                 description: metadata.description || token.metadataUri,
                 image: normalizeIpfsUrl(metadata.image),
+                attributes: Array.isArray(metadata.attributes) ? metadata.attributes : [],
               }
             } catch (metadataError) {
               console.warn(`Failed to load metadata for token ${token.id}:`, metadataError)
@@ -44,6 +45,7 @@ const NFTList = () => {
                 name: `Hospitality NFT #${token.id}`,
                 description: token.metadataUri,
                 image: '',
+                attributes: [],
               }
             }
           })
@@ -59,6 +61,34 @@ const NFTList = () => {
 
   const openModal = (image) => setSelectedImage(image)
   const closeModal = () => setSelectedImage(null)
+
+  const getAttribute = (attributes, key) =>
+    attributes.find((attr) => attr?.trait_type === key)?.value
+
+  const renderDetails = (token) => {
+    const checkInDateLabel = getAttribute(token.attributes || [], 'CheckInDate')
+    const checkInUnix = getAttribute(token.attributes || [], 'CheckInUnix') || getAttribute(token.attributes || [], 'CheckIn')
+    const apartment = getAttribute(token.attributes || [], 'Apartment')
+    const status = getAttribute(token.attributes || [], 'Status')
+    const checkInDate = checkInDateLabel || (checkInUnix ? formatDate(toMillis(checkInUnix)) : 'N/A')
+
+    return (
+      <div className="mt-3 space-y-1 text-sm text-slate-600">
+        <p>
+          <span className="font-semibold text-slate-800">Apartment:</span> {apartment || 'N/A'}
+        </p>
+        <p>
+          <span className="font-semibold text-slate-800">Check-in:</span> {checkInDate}
+        </p>
+        <p>
+          <span className="font-semibold text-slate-800">Status:</span> {status || 'N/A'}
+        </p>
+        <p>
+          <span className="font-semibold text-slate-800">Token ID:</span> {token.id}
+        </p>
+      </div>
+    )
+  }
 
   return (
     <div>
@@ -91,6 +121,7 @@ const NFTList = () => {
             )}
             <p className="mt-3 text-base font-semibold text-slate-900">{token.name}</p>
             <p className="mt-1 text-sm text-slate-600">{token.description}</p>
+            {renderDetails(token)}
           </motion.li>
         ))}
       </ul>

@@ -468,6 +468,69 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     return string(result);
   }
 
+  function twoDigits(uint value) internal pure returns (string memory) {
+    if (value >= 10) return value.toString();
+    return string(abi.encodePacked('0', value.toString()));
+  }
+
+  function formatDate(uint timestamp) internal pure returns (string memory) {
+    uint secs = timestamp;
+    uint year = 1970;
+
+    uint[12] memory monthDays = [
+      uint(31),
+      28,
+      31,
+      30,
+      31,
+      30,
+      31,
+      31,
+      30,
+      31,
+      30,
+      31
+    ];
+
+    while (true) {
+      uint daysInYear = isLeapYear(year) ? 366 : 365;
+      if (secs < daysInYear * 1 days) break;
+      secs -= daysInYear * 1 days;
+      year++;
+    }
+
+    uint month = 0;
+    for (uint i = 0; i < 12; i++) {
+      uint daysInMonth = monthDays[i];
+      if (i == 1 && isLeapYear(year)) {
+        daysInMonth = 29;
+      }
+      if (secs < daysInMonth * 1 days) {
+        month = i + 1;
+        break;
+      }
+      secs -= daysInMonth * 1 days;
+    }
+
+    uint day = secs / 1 days + 1;
+
+    return string(
+      abi.encodePacked(
+        year.toString(),
+        '-',
+        twoDigits(month),
+        '-',
+        twoDigits(day)
+      )
+    );
+  }
+
+  function isLeapYear(uint year) internal pure returns (bool) {
+    if (year % 4 != 0) return false;
+    if (year % 100 != 0) return true;
+    return (year % 400 == 0);
+  }
+
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
     require(_exists(tokenId), 'ERC721Metadata: URI query for nonexistent token');
     BookingKey memory key = tokenToBooking[tokenId];
@@ -484,7 +547,8 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
         '"image":"', image, '",',
         '"attributes":[',
           '{"trait_type":"Apartment","value":"', apartment.name, '"},',
-          '{"trait_type":"CheckIn","value":"', booking.date.toString(), '"},',
+          '{"trait_type":"CheckInUnix","value":"', booking.date.toString(), '"},',
+          '{"trait_type":"CheckInDate","value":"', formatDate(booking.date), '"},',
           '{"trait_type":"Status","value":"', status, '"}',
         ']',
       '}'
