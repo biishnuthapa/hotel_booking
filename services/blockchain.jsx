@@ -154,6 +154,12 @@ const getSecurityFee = async () => {
   return Number(fee)
 }
 
+const getTaxPercent = async () => {
+  const contract = await getReadOnlyContract()
+  const tax = await contract.taxPercent()
+  return Number(tax)
+}
+
 const createApartment = async (apartment) => {
   if (!ethereum) {
     reportError('Please install a browser provider')
@@ -385,6 +391,59 @@ const deleteRoomType = async (apartmentId, roomTypeIndex) => {
   }
 }
 
+const tenantBooked = async (aid) => {
+  if (!ethereum) {
+    reportError('Please install a browser provider')
+    return Promise.reject(new Error('Browser provider not installed'))
+  }
+
+  try {
+    const contract = await getSignerContract()
+    return await contract.tenantBooked(aid)
+  } catch (error) {
+    reportError(error)
+    return Promise.reject(error)
+  }
+}
+
+const checkoutGuest = async (aid, bookingId) => {
+  if (!ethereum) {
+    reportError('Please install a browser provider')
+    return Promise.reject(new Error('Browser provider not installed'))
+  }
+
+  try {
+    const contract = await getSignerContract()
+    tx = await contract.checkout(aid, bookingId)
+    await tx.wait()
+    const bookings = await getBookings(aid)
+    store.dispatch(setBookings(bookings))
+    return Promise.resolve(tx)
+  } catch (error) {
+    reportError(error)
+    return Promise.reject(error)
+  }
+}
+
+const claimNoShowFunds = async (aid, bookingId) => {
+  if (!ethereum) {
+    reportError('Please install a browser provider')
+    return Promise.reject(new Error('Browser provider not installed'))
+  }
+
+  try {
+    const contract = await getSignerContract()
+    tx = await contract.claimFunds(aid, bookingId)
+    await tx.wait()
+    const bookings = await getBookings(aid)
+    store.dispatch(setBookings(bookings))
+    return Promise.resolve(tx)
+  } catch (error) {
+    reportError(error)
+    return Promise.reject(error)
+  }
+}
+
 const getRooms = async (apartmentId) => {
   const contract = await getReadOnlyContract()
   const rooms = await contract.getRooms(apartmentId)
@@ -473,6 +532,53 @@ const getOwnedTokens = async (owner) => {
   }
 }
 
+const getTotalTokens = async () => {
+  const contract = await getReadOnlyContract()
+  const total = await contract.getTotalTokens()
+  return Number(total)
+}
+
+const getRevenueEvents = async (fromBlock = 0) => {
+  const contract = await getReadOnlyContract()
+  const provider = getRpcProvider()
+  const latestBlock = await provider.getBlockNumber()
+
+  const [checkedIn, claimed, refunded] = await Promise.all([
+    contract.queryFilter(contract.filters.BookingCheckedIn(), fromBlock, latestBlock),
+    contract.queryFilter(contract.filters.FundsClaimed(), fromBlock, latestBlock),
+    contract.queryFilter(contract.filters.BookingRefunded(), fromBlock, latestBlock),
+  ])
+
+  const logs = [
+    ...checkedIn.map((log) => ({ ...log, type: 'checked_in' })),
+    ...claimed.map((log) => ({ ...log, type: 'claimed' })),
+    ...refunded.map((log) => ({ ...log, type: 'refunded' })),
+  ]
+
+  const uniqueBlocks = Array.from(new Set(logs.map((log) => log.blockNumber)))
+  const blockByNumber = new Map()
+  await Promise.all(
+    uniqueBlocks.map(async (blockNumber) => {
+      const block = await provider.getBlock(blockNumber)
+      blockByNumber.set(blockNumber, block)
+    })
+  )
+
+  return logs.map((log) => ({
+    type: log.type,
+    aid: Number(log.args?.aid ?? log.args?.[0] ?? 0),
+    bookingId: Number(log.args?.bookingId ?? log.args?.[1] ?? 0),
+    blockNumber: log.blockNumber,
+    timestamp: Number(blockByNumber.get(log.blockNumber)?.timestamp || 0),
+    txHash: log.transactionHash,
+  }))
+}
+
+const getContractOwner = async () => {
+  const contract = await getReadOnlyContract()
+  return await contract.owner()
+}
+
 const getMyBookings = async (owner) => {
   if (!owner) return []
   const apartments = await getApartments()
@@ -521,15 +627,22 @@ export {
   deleteApartment,
   bookApartment,
   checkInApartment,
+  checkoutGuest,
+  claimNoShowFunds,
   refundBooking,
+  tenantBooked,
   addReview,
   getReviews,
   getQualifiedReviewers,
   getSecurityFee,
+  getTaxPercent,
   addRoomTypeToApartment,
   deleteRoomType,
   getRooms,
   getOwnedTokens,
+  getTotalTokens,
+  getRevenueEvents,
+  getContractOwner,
   getMyBookings,
   getChainNowSeconds,
 }

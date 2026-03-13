@@ -1,4 +1,4 @@
-const { ethers } = require('hardhat')
+const { ethers, network } = require('hardhat')
 const fs = require('fs')
 const path = require('path')
 
@@ -148,7 +148,13 @@ async function createApartments(contract, apartment) {
     apartment.nftDescription,
     apartment.nftImageUrl
   )
-  await tx.wait()
+  const receipt = await tx.wait()
+  const createdEvent = receipt?.logs?.find((log) => log.eventName === 'ApartmentCreated')
+  if (createdEvent?.args?.id) {
+    return Number(createdEvent.args.id)
+  }
+  const fallback = await contract.getApartments()
+  return Number(fallback[fallback.length - 1]?.id || 0)
 }
 
 async function seedRoomTypes(contract, apartmentId) {
@@ -166,6 +172,79 @@ async function seedRoomTypes(contract, apartmentId) {
 }
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+const getNowSeconds = async () => {
+  const block = await ethers.provider.getBlock('latest')
+  return Number(block?.timestamp || Math.floor(Date.now() / 1000))
+}
+
+const toUtcSeconds = (year, month, day, hour = 12) =>
+  Math.floor(Date.UTC(year, month - 1, day, hour, 0, 0) / 1000)
+
+const ensureChainTime = async (targetTimestamp) => {
+  const now = await getNowSeconds()
+  if (now > targetTimestamp) {
+    throw new Error(
+      `Chain time (${new Date(now * 1000).toISOString()}) is after target ${new Date(
+        targetTimestamp * 1000
+      ).toISOString()}. Restart hardhat node with an earlier initialDate.`
+    )
+  }
+  await network.provider.send('evm_setNextBlockTimestamp', [targetTimestamp])
+  await network.provider.send('evm_mine')
+}
+
+const getBookerSigner = async (address) => {
+  const signers = await ethers.getSigners()
+  const matched = signers.find((signer) => signer.address.toLowerCase() === address.toLowerCase())
+  if (matched) return matched
+
+  await network.provider.request({
+    method: 'hardhat_impersonateAccount',
+    params: [address],
+  })
+  const funder = signers[0]
+  await funder.sendTransaction({ to: address, value: ethers.parseEther('10') })
+  return await ethers.getSigner(address)
+}
+
+const seedBookings = async (contract, apartmentId, bookerAddress) => {
+  const roomTypes = await contract.getRooms(apartmentId)
+  if (!roomTypes?.length) return
+
+  const roomTypeIndex = 0
+  const roomsRequested = 1
+  const pricePerNight = BigInt(roomTypes[0].price.toString())
+  const feePercent = await contract.securityFee()
+
+  const bookingDates = [
+    toUtcSeconds(2026, 3, 10),
+    toUtcSeconds(2026, 3, 11),
+    toUtcSeconds(2026, 3, 12),
+    toUtcSeconds(2026, 3, 13),
+    toUtcSeconds(2026, 3, 14),
+    toUtcSeconds(2026, 3, 15),
+    toUtcSeconds(2026, 3, 16),
+  ]
+
+  await ensureChainTime(bookingDates[0] - 3600)
+  const booker = await getBookerSigner(bookerAddress)
+
+  for (const date of bookingDates) {
+    const dates = [date]
+    const totalPrice = pricePerNight * BigInt(roomsRequested) * BigInt(dates.length)
+    const totalFee = (totalPrice * BigInt(feePercent)) / 100n
+    const expectedValue = totalPrice + totalFee
+
+    const tx = await contract
+      .connect(booker)
+      .bookApartment(apartmentId, roomTypeIndex, roomsRequested, dates, { value: expectedValue })
+    await tx.wait()
+    await delay(150)
+  }
+
+  await ensureChainTime(toUtcSeconds(2026, 3, 13))
+}
 
 async function clearData(contract, ownerSigner) {
   const apartments = await contract.getApartments()
@@ -208,10 +287,23 @@ async function main() {
     console.log('Previous data cleared (refunded + deleted where owner matched)...')
 
     const apartments = await generateFakeApartment(dataCount)
+    const createdApartmentIds = []
     for (const apartment of apartments) {
-      await createApartments(hospitalityBookingContract.connect(deployer), apartment)
-      await seedRoomTypes(hospitalityBookingContract.connect(deployer), apartment.id)
+      const createdId = await createApartments(hospitalityBookingContract.connect(deployer), apartment)
+      if (!createdId) {
+        throw new Error('Failed to create apartment during seeding.')
+      }
+      createdApartmentIds.push(createdId)
+      await seedRoomTypes(hospitalityBookingContract.connect(deployer), createdId)
       await delay(200)
+    }
+
+    if (createdApartmentIds.length > 0) {
+      await seedBookings(
+        hospitalityBookingContract,
+        createdApartmentIds[0],
+        '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65'
+      )
     }
 
     console.log('Items dummy data seeded...')
