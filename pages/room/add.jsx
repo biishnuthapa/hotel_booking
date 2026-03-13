@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FaTimes } from 'react-icons/fa'
-import { truncate } from '@/utils/helper'
+import { normalizeIpfsUrl, truncate } from '@/utils/helper'
 import { toast } from 'react-toastify'
 import { useRouter } from 'next/router'
 import { useAccount } from 'wagmi'
@@ -20,25 +20,60 @@ export default function AddApartmentPage() {
   const [longitude, setLongitude] = useState('')
   const [rooms, setRooms] = useState('')
   const [images, setImages] = useState('')
-  const [price, setPrice] = useState('')
   const [links, setLinks] = useState([])
   const [pinataJsonLink, setPinataJsonLink] = useState('')
+  const [metadataPreview, setMetadataPreview] = useState(null)
+  const [metadataError, setMetadataError] = useState('')
+  const [metadataLoading, setMetadataLoading] = useState(false)
+
+  useEffect(() => {
+    const trimmed = pinataJsonLink.trim()
+    if (!trimmed) {
+      setMetadataPreview(null)
+      setMetadataError('')
+      setMetadataLoading(false)
+      return
+    }
+
+    const controller = new AbortController()
+    const fetchMetadata = async () => {
+      setMetadataLoading(true)
+      setMetadataError('')
+      try {
+        const response = await fetch(normalizeIpfsUrl(trimmed), { signal: controller.signal })
+        if (!response.ok) {
+          throw new Error(`Metadata request failed with ${response.status}`)
+        }
+        const metadata = await response.json()
+        setMetadataPreview({
+          name: typeof metadata?.name === 'string' ? metadata.name.trim() : '',
+          description: typeof metadata?.description === 'string' ? metadata.description.trim() : '',
+          image: normalizeIpfsUrl(metadata?.image || ''),
+        })
+      } catch (error) {
+        if (error?.name !== 'AbortError') {
+          setMetadataPreview(null)
+          setMetadataError('Unable to load metadata. Check the JSON link.')
+        }
+      } finally {
+        setMetadataLoading(false)
+      }
+    }
+
+    fetchMetadata()
+    return () => controller.abort()
+  }, [pinataJsonLink])
 
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    if (
-      !name ||
-      !location ||
-      !description ||
-      !rooms ||
-      links.length !== 5 ||
-      !price ||
-      !pinataJsonLink ||
-      !latitude ||
-      !longitude
-    ) {
-      toast.error('Please complete all fields and provide exactly 5 image links.')
+    if (!name || !location || !description || !rooms || links.length !== 5 || !pinataJsonLink || !latitude || !longitude) {
+      toast.error('Please complete all fields, provide 5 property images, and add the NFT metadata link.')
+      return
+    }
+
+    if (!metadataPreview?.image || !metadataPreview?.name || !metadataPreview?.description) {
+      toast.error('Please provide a valid Pinata JSON link with name, description, and image.')
       return
     }
 
@@ -48,10 +83,12 @@ export default function AddApartmentPage() {
       location: location.trim(),
       rooms: Number(rooms),
       images: links.slice(0, 5).join(','),
-      price,
       latitude: latitude.trim(),
       longitude: longitude.trim(),
       pinataJsonLink: pinataJsonLink.trim(),
+      nftName: metadataPreview.name.trim(),
+      nftDescription: metadataPreview.description.trim(),
+      nftImageUrl: metadataPreview.image.trim(),
     }
 
     toast.promise(
@@ -98,17 +135,6 @@ export default function AddApartmentPage() {
             placeholder="Property Name"
             onChange={(e) => setName(e.target.value)}
             value={name}
-            required
-          />
-
-          <input
-            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
-            type="number"
-            step={0.01}
-            min={0.01}
-            placeholder="Nightly Price (ETH)"
-            onChange={(e) => setPrice(e.target.value)}
-            value={price}
             required
           />
 
@@ -187,11 +213,43 @@ export default function AddApartmentPage() {
           <input
             className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
             type="url"
-            placeholder="Metadata JSON URL"
+            placeholder="NFT Metadata JSON URL (Pinata)"
             onChange={(e) => setPinataJsonLink(e.target.value)}
             value={pinataJsonLink}
             required
           />
+          <p className="text-xs text-slate-500">
+            This JSON controls the NFT image, name, and description. The NFT will use the image from this link.
+          </p>
+          {(metadataLoading || metadataError || metadataPreview) && (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              {metadataLoading && <p className="text-sm text-slate-600">Loading metadata preview...</p>}
+              {metadataError && <p className="text-sm text-rose-600">{metadataError}</p>}
+              {metadataPreview && !metadataLoading && !metadataError && (
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  {metadataPreview.image ? (
+                    <img
+                      src={metadataPreview.image}
+                      alt={metadataPreview.name || 'NFT preview'}
+                      className="h-28 w-28 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-28 w-28 items-center justify-center rounded-xl bg-slate-200 text-xs text-slate-600">
+                      No image
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {metadataPreview.name || 'Missing name'}
+                    </p>
+                    <p className="text-xs text-slate-600">
+                      {metadataPreview.description || 'Missing description'}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <button
             type="submit"

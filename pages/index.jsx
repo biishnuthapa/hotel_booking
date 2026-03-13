@@ -1,6 +1,6 @@
 import Head from 'next/head'
 import Link from 'next/link'
-import { getApartments } from '@/services/blockchain'
+import { getApartments, getRooms } from '@/services/blockchain'
 import { Collection } from '@/components'
 
 const Home = ({ apartmentsData }) => {
@@ -62,7 +62,26 @@ const Home = ({ apartmentsData }) => {
 export default Home
 
 export const getServerSideProps = async () => {
-  const apartmentsData = await getApartments()
+  const apartments = await getApartments()
+  const apartmentsData = await Promise.all(
+    apartments.map(async (apartment) => {
+      let minPrice = 0
+      try {
+        const rooms = await getRooms(apartment.id)
+        const prices = rooms.map((room) => Number(room.price || 0)).filter((price) => price > 0)
+        if (prices.length) {
+          minPrice = Math.min(...prices)
+        }
+      } catch (error) {
+        console.error(`Failed to load rooms for apartment ${apartment.id}:`, error)
+      }
+
+      return {
+        ...apartment,
+        price: minPrice,
+      }
+    })
+  )
 
   return {
     props: {

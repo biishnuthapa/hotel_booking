@@ -1,0 +1,1 @@
+https://raw.githubusercontent.com/bthapa-hub/hotel_booking_assets/main/room-details.json

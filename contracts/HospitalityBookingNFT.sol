@@ -2,18 +2,29 @@
 pragma solidity ^0.8.20;
 
 import '@openzeppelin/contracts/access/Ownable.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
 import '@openzeppelin/contracts/utils/Counters.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
 import '@openzeppelin/contracts/utils/Base64.sol';
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol';
 
-contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
+/**
+ * @title HospitalityBookingNFT
+ * @notice Per-room-type apartment booking that mints one NFT per stay.
+ */
+contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721 {
   using Counters for Counters.Counter;
   using Strings for uint256;
+
+  // ------------------------------------------------------------
+  // Storage
+  // ------------------------------------------------------------
   Counters.Counter private _totalAppartments;
   Counters.Counter private _totalTokens;
+  mapping(uint => Counters.Counter) private apartmentTokenCounters;
+
+  uint public securityFee; // percent (0-100)
+  uint public taxPercent;  // percent (0-100)
 
   struct ApartmentStruct {
     uint id;
@@ -22,34 +33,24 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     string longitude;
     string images;
     uint rooms;
-    uint price;
     address owner;
-    bool booked;
     bool deleted;
     uint timestamp;
     string location;
     string latitude;
     string pinataJsonLink;
+    string nftName;
+    string nftDescription;
+    string nftImageUrl;
   }
 
   struct RoomType {
     string name;
     string description;
-    uint256 price;
-    string details;
+    uint256 price; // wei per night
+    string images;
     uint capacity;
     bool deleted;
-  }
-
-  struct BookingStruct {
-    uint id;
-    uint aid;
-    address tenant;
-    uint date;
-    uint price;
-    uint tokenId;
-    BookingStatus status;
-    uint timestamp;
   }
 
   enum BookingStatus {
@@ -57,6 +58,21 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     Cancelled,
     CheckedIn,
     Expired
+  }
+
+  struct BookingStruct {
+    uint id;
+    uint aid;
+    address tenant;
+    uint roomTypeIndex;
+    uint roomsBooked;
+    uint[] dates;
+    uint pricePerNight;
+    uint totalPrice;
+    uint tokenId;
+    uint apartmentTokenId;
+    BookingStatus status;
+    uint timestamp;
   }
 
   struct ReviewStruct {
@@ -67,39 +83,49 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     address owner;
   }
 
-  uint public securityFee;
-  uint public taxPercent;
-
-  mapping(uint => ApartmentStruct) apartments;
-  mapping(uint => BookingStruct[]) bookingsOf;
-  mapping(uint => ReviewStruct[]) reviewsOf;
-  mapping(uint => bool) appartmentExist;
-  mapping(uint => uint[]) bookedDates;
-  mapping(uint => mapping(address => uint256)) checkedInCount;
-  mapping(uint256 => RoomType[]) roomTypes;
-  mapping(uint => mapping(uint => uint)) public bookingToToken;
-  mapping(uint => mapping(uint => uint)) private bookedDateIndex;
-
   struct BookingKey {
     uint aid;
     uint bookingId;
   }
-  mapping(uint => BookingKey) private tokenToBooking;
 
-  mapping(uint => mapping(uint => bool)) isDateBooked;
+  mapping(uint => ApartmentStruct) private apartments;
+  mapping(uint => bool) private appartmentExist;
+  mapping(uint256 => RoomType[]) private roomTypes; // aid => room types
+  mapping(uint => BookingStruct[]) private bookingsOf; // aid => bookings
+  mapping(uint => ReviewStruct[]) private reviewsOf; // aid => reviews
+  mapping(uint => mapping(uint => mapping(uint => uint))) public roomTypeBookedOnDate; // aid => roomType => date => count
+  mapping(uint => mapping(address => uint256)) private checkedInCount;
+  mapping(uint => mapping(uint => uint)) public bookingToToken; // aid => bookingId => tokenId
+  mapping(uint => BookingKey) private tokenToBooking; // tokenId => booking key
 
+  // ------------------------------------------------------------
+  // Events
+  // ------------------------------------------------------------
   event ApartmentCreated(uint indexed id, address indexed owner, string name);
   event ApartmentUpdated(uint indexed id, address indexed owner, string name);
   event ApartmentDeleted(uint indexed id, address indexed owner);
-  event BookingCreated(uint indexed aid, uint indexed bookingId, address indexed tenant, uint date, uint price, uint tokenId);
+  event RoomTypeAdded(uint indexed aid, uint indexed index, string name);
+  event RoomTypeDeleted(uint indexed aid, uint indexed index);
+  event BookingCreated(
+    uint indexed aid,
+    uint indexed bookingId,
+    address indexed tenant,
+    uint roomTypeIndex,
+    uint[] dates,
+    uint pricePerNight,
+    uint totalPrice,
+    uint tokenId,
+    uint apartmentTokenId
+  );
   event BookingRefunded(uint indexed aid, uint indexed bookingId, address indexed tenant);
   event BookingCheckedIn(uint indexed aid, uint indexed bookingId, address indexed tenant);
   event BookingExpired(uint indexed aid, uint indexed bookingId);
   event FundsClaimed(uint indexed aid, uint indexed bookingId, address indexed owner);
   event ReviewAdded(uint indexed aid, uint indexed reviewId, address indexed reviewer);
-  event RoomTypeAdded(uint indexed aid, uint indexed index, string name);
-  event RoomTypeDeleted(uint indexed aid, uint indexed index);
 
+  // ------------------------------------------------------------
+  // Constructor
+  // ------------------------------------------------------------
   constructor(uint _taxPercent, uint _securityFee) ERC721('Hospitality', 'NFT') {
     require(_taxPercent <= 100, 'Tax cannot exceed 100%');
     require(_securityFee <= 100, 'Security fee cannot exceed 100%');
@@ -107,43 +133,55 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     securityFee = _securityFee;
   }
 
+  // ------------------------------------------------------------
+  // Apartment management
+  // ------------------------------------------------------------
   function createAppartment(
     string memory name,
     string memory description,
     string memory location,
     string memory images,
     uint rooms,
-    uint price,
     string memory latitude,
     string memory longitude,
-    string memory pinataJsonLink
-  ) public {
-    require(bytes(name).length > 0, 'Name cannot be empty');
-    require(bytes(description).length > 0, 'Description cannot be empty');
-    require(bytes(location).length > 0, 'Location cannot be empty');
-    require(bytes(images).length > 0, 'Images cannot be empty');
-    require(bytes(pinataJsonLink).length > 0, 'Give the link for Metadata');
+    string memory pinataJsonLink,
+    string memory nftName,
+    string memory nftDescription,
+    string memory nftImageUrl
+  ) external {
+    require(bytes(name).length > 0, 'Name required');
+    require(bytes(description).length > 0, 'Description required');
+    require(bytes(location).length > 0, 'Location required');
+    require(bytes(images).length > 0, 'Images required');
+    require(bytes(pinataJsonLink).length > 0, 'Metadata link required');
+    require(bytes(nftName).length > 0, 'NFT name required');
+    require(bytes(nftDescription).length > 0, 'NFT description required');
+    require(bytes(nftImageUrl).length > 0, 'NFT image required');
     require(rooms > 0, 'Rooms cannot be zero');
-    require(price > 0 ether, 'Price cannot be zero');
 
     _totalAppartments.increment();
-    ApartmentStruct memory lodge;
-    lodge.id = _totalAppartments.current();
-    lodge.name = name;
-    lodge.description = description;
-    lodge.location = location;
-    lodge.images = images;
-    lodge.rooms = rooms;
-    lodge.price = price;
-    lodge.owner = msg.sender;
-    lodge.timestamp = currentTime();
-    lodge.latitude = latitude;
-    lodge.longitude = longitude;
-    lodge.pinataJsonLink = pinataJsonLink;
+    uint id = _totalAppartments.current();
 
-    appartmentExist[lodge.id] = true;
-    apartments[_totalAppartments.current()] = lodge;
-    emit ApartmentCreated(lodge.id, msg.sender, name);
+    apartments[id] = ApartmentStruct({
+      id: id,
+      name: name,
+      description: description,
+      longitude: longitude,
+      images: images,
+      rooms: rooms,
+      owner: msg.sender,
+      deleted: false,
+      timestamp: currentTime(),
+      location: location,
+      latitude: latitude,
+      pinataJsonLink: pinataJsonLink,
+      nftName: nftName,
+      nftDescription: nftDescription,
+      nftImageUrl: nftImageUrl
+    });
+
+    appartmentExist[id] = true;
+    emit ApartmentCreated(id, msg.sender, name);
   }
 
   function updateAppartment(
@@ -152,92 +190,43 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     string memory description,
     string memory location,
     string memory images,
-    uint rooms,
-    uint price
-  ) public {
-    require(appartmentExist[id] == true, 'Appartment not found');
-    require(msg.sender == apartments[id].owner, 'Unauthorized personnel, owner only');
-    require(bytes(name).length > 0, 'Name cannot be empty');
-    require(bytes(description).length > 0, 'Description cannot be empty');
-    require(bytes(location).length > 0, 'Location cannot be empty');
-    require(bytes(images).length > 0, 'Images cannot be empty');
+    uint rooms
+  ) external {
+    require(appartmentExist[id], 'Appartment not found');
+    require(msg.sender == apartments[id].owner, 'Owner only');
+    require(bytes(name).length > 0, 'Name required');
+    require(bytes(description).length > 0, 'Description required');
+    require(bytes(location).length > 0, 'Location required');
+    require(bytes(images).length > 0, 'Images required');
     require(rooms > 0, 'Rooms cannot be zero');
-    require(price > 0 ether, 'Price cannot be zero');
 
-    ApartmentStruct memory lodge = apartments[id];
+    ApartmentStruct storage lodge = apartments[id];
     lodge.name = name;
     lodge.description = description;
     lodge.location = location;
     lodge.images = images;
     lodge.rooms = rooms;
-    lodge.price = price;
 
-    apartments[id] = lodge;
     emit ApartmentUpdated(id, msg.sender, name);
   }
 
-  function addRoomTypeToApartment(
-    uint256 _apartmentId,
-    string memory _name,
-    string memory _description,
-    uint256 _price,
-    string memory _details,
-    uint256 _capacity
-) public {
-    require(appartmentExist[_apartmentId], 'Apartment does not exist');
-    require(msg.sender == apartments[_apartmentId].owner, 'Unauthorized: owner only');
-    require(bytes(_name).length > 0, 'Room name cannot be empty');
-    require(bytes(_description).length > 0, 'Room description cannot be empty');
-    require(_price > 0, 'Room price must be greater than zero');
-    require(bytes(_details).length > 0, 'Room details cannot be empty');
-    require(_capacity > 0, 'Room capacity must be greater than zero');
-
-    RoomType memory newRoomType;
-    newRoomType.name = _name;
-    newRoomType.description = _description;
-    newRoomType.price = _price;
-    newRoomType.details = _details;
-    newRoomType.capacity = _capacity;
-    newRoomType.deleted = false;
-
-    roomTypes[_apartmentId].push(newRoomType);
-    emit RoomTypeAdded(_apartmentId, roomTypes[_apartmentId].length - 1, _name);
-  }
-
-  function getRooms(uint256 _apartmentId) public view returns (RoomType[] memory) {
-    require(appartmentExist[_apartmentId], 'Apartment does not exist');
-    return roomTypes[_apartmentId];
-  }
-
-  function deleteRoomType(uint256 _apartmentId, uint256 _index) public {
-    require(appartmentExist[_apartmentId], 'Apartment does not exist');
-    require(_index < roomTypes[_apartmentId].length, 'Invalid room index');
-    require(msg.sender == apartments[_apartmentId].owner, 'Unauthorized: owner only');
-    require(!roomTypes[_apartmentId][_index].deleted, 'Room already deleted');
-
-    roomTypes[_apartmentId][_index].deleted = true;
-    emit RoomTypeDeleted(_apartmentId, _index);
-  }
-
-  function deleteAppartment(uint id) public {
-    require(appartmentExist[id] == true, 'Appartment not found');
-    require(apartments[id].owner == msg.sender, 'Unauthorized entity');
-
+  function deleteAppartment(uint id) external {
+    require(appartmentExist[id], 'Appartment not found');
+    require(apartments[id].owner == msg.sender, 'Unauthorized');
     appartmentExist[id] = false;
     apartments[id].deleted = true;
     emit ApartmentDeleted(id, msg.sender);
   }
 
-  function getApartments() public view returns (ApartmentStruct[] memory Apartments) {
-    uint256 available;
+  function getApartments() external view returns (ApartmentStruct[] memory Apartments) {
     uint total = _totalAppartments.current();
+    uint available;
     for (uint i = 1; i <= total; i++) {
       if (!apartments[i].deleted) available++;
     }
 
     Apartments = new ApartmentStruct[](available);
-
-    uint256 index;
+    uint index;
     for (uint i = 1; i <= total; i++) {
       if (!apartments[i].deleted) {
         Apartments[index++] = apartments[i];
@@ -245,126 +234,192 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     }
   }
 
-  function getApartment(uint id) public view returns (ApartmentStruct memory) {
+  function getApartment(uint id) external view returns (ApartmentStruct memory) {
     require(appartmentExist[id], 'Appartment not found');
     return apartments[id];
   }
 
-  function normalizeDate(uint rawDate) internal pure returns (uint) {
-    if (rawDate > 1e12) return rawDate / 1000; // accept milliseconds inputs
-    return rawDate;
+  // ------------------------------------------------------------
+  // Room types
+  // ------------------------------------------------------------
+  function addRoomTypeToApartment(
+    uint256 _apartmentId,
+    string memory _name,
+    string memory _description,
+    uint256 _price,
+    string memory _images,
+    uint256 _capacity
+  ) external {
+    require(appartmentExist[_apartmentId], 'Apartment does not exist');
+    require(msg.sender == apartments[_apartmentId].owner, 'Owner only');
+    require(bytes(_name).length > 0, 'Room name required');
+    require(bytes(_description).length > 0, 'Room description required');
+    require(_price > 0, 'Room price must be greater than zero');
+    require(bytes(_images).length > 0, 'Room images required');
+    require(_capacity > 0, 'Room capacity must be greater than zero');
+
+    roomTypes[_apartmentId].push(
+      RoomType({
+        name: _name,
+        description: _description,
+        price: _price,
+        images: _images,
+        capacity: _capacity,
+        deleted: false
+      })
+    );
+    emit RoomTypeAdded(_apartmentId, roomTypes[_apartmentId].length - 1, _name);
   }
 
-  function bookApartment(uint aid, uint[] memory dates) public payable {
-    require(appartmentExist[aid], 'Apartment not found!');
-    require(dates.length > 0, 'Dates required');
+  function getRooms(uint256 _apartmentId) external view returns (RoomType[] memory) {
+    require(appartmentExist[_apartmentId], 'Apartment does not exist');
+    return roomTypes[_apartmentId];
+  }
 
-    uint totalPrice = apartments[aid].price * dates.length;
+  function deleteRoomType(uint256 _apartmentId, uint256 _index) external {
+    require(appartmentExist[_apartmentId], 'Apartment does not exist');
+    require(_index < roomTypes[_apartmentId].length, 'Invalid room index');
+    require(msg.sender == apartments[_apartmentId].owner, 'Owner only');
+    require(!roomTypes[_apartmentId][_index].deleted, 'Room already deleted');
+
+    roomTypes[_apartmentId][_index].deleted = true;
+    emit RoomTypeDeleted(_apartmentId, _index);
+  }
+
+  // ------------------------------------------------------------
+  // Booking
+  // ------------------------------------------------------------
+  function bookApartment(
+    uint aid,
+    uint roomTypeIndex,
+    uint roomsRequested,
+    uint[] memory dates
+  ) external payable {
+    require(appartmentExist[aid], 'Apartment not found');
+    require(roomTypeIndex < roomTypes[aid].length, 'Room type not found');
+    RoomType storage room = roomTypes[aid][roomTypeIndex];
+    require(!room.deleted, 'Room type deleted');
+    require(dates.length > 0, 'Dates required');
+    require(room.price > 0, 'Price must be > 0');
+    require(roomsRequested > 0, 'Rooms required');
+    require(roomsRequested <= room.capacity, 'Rooms exceed capacity');
+
+    uint[] memory normalizedDates = _normalizeAndValidateDates(aid, roomTypeIndex, roomsRequested, dates);
+
+    uint totalPrice = room.price * roomsRequested * normalizedDates.length;
     uint totalFee = (totalPrice * securityFee) / 100;
     uint expectedValue = totalPrice + totalFee;
-    require(
-      msg.value == expectedValue,
-      'Incorrect payment amount'
+    require(msg.value == expectedValue, 'Incorrect payment amount');
+
+    for (uint i = 0; i < normalizedDates.length; i++) {
+      roomTypeBookedOnDate[aid][roomTypeIndex][normalizedDates[i]] += roomsRequested;
+    }
+
+    BookingStruct memory booking;
+    booking.aid = aid;
+    booking.id = bookingsOf[aid].length;
+    booking.tenant = msg.sender;
+    booking.roomTypeIndex = roomTypeIndex;
+    booking.roomsBooked = roomsRequested;
+    booking.dates = normalizedDates;
+    booking.pricePerNight = room.price;
+    booking.totalPrice = totalPrice;
+    booking.status = BookingStatus.Booked;
+    booking.timestamp = currentTime();
+
+    apartmentTokenCounters[aid].increment();
+    uint apartmentTokenId = apartmentTokenCounters[aid].current();
+
+    _totalTokens.increment();
+    uint tokenId = _totalTokens.current();
+    booking.tokenId = tokenId;
+    booking.apartmentTokenId = apartmentTokenId;
+    _mint(msg.sender, tokenId);
+    bookingToToken[aid][booking.id] = tokenId;
+    tokenToBooking[tokenId] = BookingKey({ aid: aid, bookingId: booking.id });
+
+    bookingsOf[aid].push(booking);
+    emit BookingCreated(
+      aid,
+      booking.id,
+      msg.sender,
+      roomTypeIndex,
+      normalizedDates,
+      booking.pricePerNight,
+      booking.totalPrice,
+      tokenId,
+      apartmentTokenId
     );
-
-    uint[] memory normalizedDates = new uint[](dates.length);
-    for (uint i = 0; i < dates.length; i++) {
-      uint normalizedDate = normalizeDate(dates[i]);
-      require(normalizedDate > currentTime(), 'Booking date must be in the future');
-      for (uint j = 0; j < i; j++) {
-        require(normalizedDate != normalizedDates[j], 'Duplicate dates in request');
-      }
-      require(!isDateBooked[aid][normalizedDate], 'One or more dates already booked');
-      normalizedDates[i] = normalizedDate;
-    }
-
-    for (uint i = 0; i < dates.length; i++) {
-      BookingStruct memory booking;
-      booking.aid = aid;
-      booking.id = bookingsOf[aid].length;
-      booking.tenant = msg.sender;
-      booking.date = normalizedDates[i];
-      booking.price = apartments[aid].price;
-      booking.status = BookingStatus.Booked;
-      booking.timestamp = currentTime();
-
-      _totalTokens.increment();
-      uint tokenId = _totalTokens.current();
-      booking.tokenId = tokenId;
-      _mint(msg.sender, tokenId);
-      bookingToToken[aid][booking.id] = tokenId;
-      tokenToBooking[tokenId] = BookingKey({ aid: aid, bookingId: booking.id });
-
-      bookingsOf[aid].push(booking);
-      bookedDates[aid].push(normalizedDates[i]);
-      bookedDateIndex[aid][normalizedDates[i]] = bookedDates[aid].length;
-      isDateBooked[aid][normalizedDates[i]] = true;
-      emit BookingCreated(aid, booking.id, msg.sender, normalizedDates[i], booking.price, tokenId);
-    }
   }
 
-  function checkInApartment(uint aid, uint bookingId) public nonReentrant {
+  function checkInApartment(uint aid, uint bookingId) external nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
     BookingStruct storage booking = bookingsOf[aid][bookingId];
-    require(msg.sender == booking.tenant, 'Unauthorized tenant!');
-    require(booking.status == BookingStatus.Booked, 'Booking is not active');
-    require(currentTime() >= booking.date, 'Cannot check in before booking date!');
+    require(msg.sender == booking.tenant, 'Unauthorized tenant');
+    require(booking.status == BookingStatus.Booked, 'Not active');
+    require(currentTime() >= booking.dates[0], 'Too early');
+    require(currentTime() <= booking.dates[0] + 24 hours, 'Check-in window passed');
 
     booking.status = BookingStatus.CheckedIn;
-    uint tax = (booking.price * taxPercent) / 100;
-    uint fee = (booking.price * securityFee) / 100;
+    uint tax = (booking.totalPrice * taxPercent) / 100;
+    uint fee = (booking.totalPrice * securityFee) / 100;
 
     checkedInCount[aid][msg.sender] += 1;
 
-    payTo(apartments[aid].owner, (booking.price - tax));
+    payTo(apartments[aid].owner, (booking.totalPrice - tax));
     payTo(owner(), tax);
     payTo(msg.sender, fee);
     emit BookingCheckedIn(aid, bookingId, msg.sender);
   }
 
-  function claimFunds(uint aid, uint bookingId) public nonReentrant {
+  function checkout(uint aid, uint bookingId) external nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
     BookingStruct storage booking = bookingsOf[aid][bookingId];
-    require(msg.sender == apartments[aid].owner, 'Unauthorized entity');
-    require(booking.status == BookingStatus.Booked, 'Booking is not active');
-    require(currentTime() > booking.date, 'Cannot claim before booking date');
+    require(msg.sender == apartments[aid].owner, 'Owner only');
+    require(booking.status == BookingStatus.CheckedIn, 'Not checked in');
 
-    uint tax = (booking.price * taxPercent) / 100;
-    uint fee = (booking.price * securityFee) / 100;
+    booking.status = BookingStatus.Expired;
+    emit BookingExpired(aid, bookingId);
+  }
+
+  function claimFunds(uint aid, uint bookingId) external nonReentrant {
+    require(bookingId < bookingsOf[aid].length, 'Booking not found');
+    BookingStruct storage booking = bookingsOf[aid][bookingId];
+    require(msg.sender == apartments[aid].owner, 'Owner only');
+    require(booking.status == BookingStatus.Booked, 'Not active');
+    require(currentTime() > booking.dates[0], 'Too early');
+
+    uint tax = (booking.totalPrice * taxPercent) / 100;
+    uint fee = (booking.totalPrice * securityFee) / 100;
     booking.status = BookingStatus.Expired;
 
-    payTo(apartments[aid].owner, (booking.price - tax));
+    payTo(apartments[aid].owner, (booking.totalPrice - tax));
     payTo(owner(), tax);
-    payTo(msg.sender, fee);
+    payTo(apartments[aid].owner, fee);
     emit FundsClaimed(aid, bookingId, msg.sender);
   }
 
-  function refundBooking(uint aid, uint bookingId) public nonReentrant {
+  function refundBooking(uint aid, uint bookingId) external nonReentrant {
     require(bookingId < bookingsOf[aid].length, 'Booking not found');
     BookingStruct storage booking = bookingsOf[aid][bookingId];
-    require(booking.status == BookingStatus.Booked, 'Booking is not refundable');
+    require(booking.status == BookingStatus.Booked, 'Not refundable');
 
     if (msg.sender != owner()) {
-      require(msg.sender == booking.tenant, 'Unauthorized tenant!');
-      require(booking.date > currentTime(), 'Can no longer refund, booking date started');
+      require(msg.sender == booking.tenant, 'Tenant only');
+      require(booking.dates[0] > currentTime(), 'Stay started');
     }
 
     booking.status = BookingStatus.Cancelled;
 
-    uint[] storage dates = bookedDates[aid];
-    uint indexPlusOne = bookedDateIndex[aid][booking.date];
-    if (indexPlusOne > 0) {
-      uint index = indexPlusOne - 1;
-      uint lastIndex = dates.length - 1;
-      if (index != lastIndex) {
-        uint swappedDate = dates[lastIndex];
-        dates[index] = swappedDate;
-        bookedDateIndex[aid][swappedDate] = index + 1;
+    for (uint i = 0; i < booking.dates.length; i++) {
+      uint day = booking.dates[i];
+      uint currentCount = roomTypeBookedOnDate[aid][booking.roomTypeIndex][day];
+      if (currentCount >= booking.roomsBooked) {
+        roomTypeBookedOnDate[aid][booking.roomTypeIndex][day] = currentCount - booking.roomsBooked;
+      } else {
+        roomTypeBookedOnDate[aid][booking.roomTypeIndex][day] = 0;
       }
-      dates.pop();
-      delete bookedDateIndex[aid][booking.date];
     }
-    isDateBooked[aid][booking.date] = false;
 
     if (booking.tokenId != 0 && _exists(booking.tokenId)) {
       _burn(booking.tokenId);
@@ -373,53 +428,28 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     delete bookingToToken[aid][bookingId];
     booking.tokenId = 0;
 
-    uint fee = (booking.price * securityFee) / 100;
+    uint fee = (booking.totalPrice * securityFee) / 100;
     uint collateral = fee / 2;
 
     payTo(apartments[aid].owner, collateral);
     payTo(owner(), collateral);
-    payTo(booking.tenant, booking.price);
+    payTo(booking.tenant, booking.totalPrice);
     emit BookingRefunded(aid, bookingId, booking.tenant);
   }
 
-  function getBookings(uint aid) public view returns (BookingStruct[] memory) {
+  function getBookings(uint aid) external view returns (BookingStruct[] memory) {
     return bookingsOf[aid];
   }
 
-  function getQualifiedReviewers(uint aid) public view returns (address[] memory Tenants) {
-    uint256 available;
-    for (uint i = 0; i < bookingsOf[aid].length; i++) {
-      if (bookingsOf[aid][i].status == BookingStatus.CheckedIn) available++;
-    }
-
-    Tenants = new address[](available);
-
-    uint256 index;
-    for (uint i = 0; i < bookingsOf[aid].length; i++) {
-      if (bookingsOf[aid][i].status == BookingStatus.CheckedIn) {
-        Tenants[index++] = bookingsOf[aid][i].tenant;
-      }
-    }
-  }
-
-  function getBooking(uint aid, uint bookingId) public view returns (BookingStruct memory) {
-    require(bookingId < bookingsOf[aid].length, 'Booking not found');
-    return bookingsOf[aid][bookingId];
-  }
-
-  function payTo(address to, uint256 amount) internal {
-    if (amount == 0) return;
-    (bool success, ) = payable(to).call{ value: amount }('');
-    require(success, 'Payment failed');
-  }
-
-  function addReview(uint aid, string memory reviewText) public {
+  // ------------------------------------------------------------
+  // Reviews
+  // ------------------------------------------------------------
+  function addReview(uint aid, string memory reviewText) external {
     require(appartmentExist[aid], 'Appartment not available');
-    require(checkedInCount[aid][msg.sender] > 0, 'Book first before review');
-    require(bytes(reviewText).length > 0, 'Review text cannot be empty');
+    require(checkedInCount[aid][msg.sender] > 0, 'Check in first');
+    require(bytes(reviewText).length > 0, 'Review text required');
 
     ReviewStruct memory review;
-
     review.aid = aid;
     review.id = reviewsOf[aid].length;
     review.reviewText = reviewText;
@@ -430,42 +460,43 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     emit ReviewAdded(aid, review.id, msg.sender);
   }
 
-  function getReviews(uint aid) public view returns (ReviewStruct[] memory) {
+  function getReviews(uint aid) external view returns (ReviewStruct[] memory) {
     return reviewsOf[aid];
   }
 
-  function tenantBooked(uint appartmentId) public view returns (bool) {
+  function getQualifiedReviewers(uint aid) external view returns (address[] memory tenants) {
+    uint256 available;
+    for (uint i = 0; i < bookingsOf[aid].length; i++) {
+      if (bookingsOf[aid][i].status == BookingStatus.CheckedIn) available++;
+    }
+
+    tenants = new address[](available);
+    uint256 index;
+    for (uint i = 0; i < bookingsOf[aid].length; i++) {
+      if (bookingsOf[aid][i].status == BookingStatus.CheckedIn) {
+        tenants[index++] = bookingsOf[aid][i].tenant;
+      }
+    }
+  }
+
+  function tenantBooked(uint appartmentId) external view returns (bool) {
     return checkedInCount[appartmentId][msg.sender] > 0;
   }
 
-  function currentTime() internal view returns (uint256) {
-    return block.timestamp;
-  }
-
-  function expireBooking(uint aid, uint bookingId) public {
-    require(bookingId < bookingsOf[aid].length, 'Booking not found');
-    BookingStruct storage booking = bookingsOf[aid][bookingId];
-    require(
-      msg.sender == apartments[aid].owner || msg.sender == owner(),
-      'Unauthorized'
-    );
-    require(booking.status == BookingStatus.Booked, 'Booking is not active');
-    require(currentTime() > booking.date, 'Booking date not passed');
-    booking.status = BookingStatus.Expired;
-    emit BookingExpired(aid, bookingId);
-  }
-
+  // ------------------------------------------------------------
+  // NFT helpers
+  // ------------------------------------------------------------
   struct TokenData {
     uint id;
     string metadataUri;
   }
 
-  function getOwnedTokens(address owner) public view returns (TokenData[] memory) {
+  function getOwnedTokens(address owner_) external view returns (TokenData[] memory) {
     TokenData[] memory ownedTokens = new TokenData[](_totalTokens.current());
-    uint count = 0;
+    uint count;
 
     for (uint i = 1; i <= _totalTokens.current(); i++) {
-      if (_exists(i) && ownerOf(i) == owner) {
+      if (_exists(i) && ownerOf(i) == owner_) {
         ownedTokens[count] = TokenData(i, tokenURI(i));
         count++;
       }
@@ -475,129 +506,109 @@ contract HospitalityBookingNFT is Ownable, ReentrancyGuard, ERC721URIStorage {
     for (uint i = 0; i < count; i++) {
       result[i] = ownedTokens[i];
     }
-
     return result;
   }
 
-  function getTotalTokens() public view returns (uint256) {
+  function getTotalTokens() external view returns (uint256) {
     return _totalTokens.current();
   }
 
-  function statusToString(BookingStatus status) internal pure returns (string memory) {
-    if (status == BookingStatus.Booked) return 'Booked';
-    if (status == BookingStatus.Cancelled) return 'Cancelled';
-    if (status == BookingStatus.CheckedIn) return 'CheckedIn';
-    return 'Expired';
-  }
-
-  function firstImage(string memory images) internal pure returns (string memory) {
-    bytes memory data = bytes(images);
-    if (data.length == 0) return '';
-    uint i = 0;
-    while (i < data.length && data[i] != ',') {
-      i++;
-    }
-    bytes memory result = new bytes(i);
-    for (uint j = 0; j < i; j++) {
-      result[j] = data[j];
-    }
-    return string(result);
-  }
-
-  function twoDigits(uint value) internal pure returns (string memory) {
-    if (value >= 10) return value.toString();
-    return string(abi.encodePacked('0', value.toString()));
-  }
-
-  function formatDate(uint timestamp) internal pure returns (string memory) {
-    uint secs = timestamp;
-    uint year = 1970;
-
-    uint[12] memory monthDays = [
-      uint(31),
-      28,
-      31,
-      30,
-      31,
-      30,
-      31,
-      31,
-      30,
-      31,
-      30,
-      31
-    ];
-
-    while (true) {
-      uint daysInYear = isLeapYear(year) ? 366 : 365;
-      if (secs < daysInYear * 1 days) break;
-      secs -= daysInYear * 1 days;
-      year++;
-    }
-
-    uint month = 0;
-    for (uint i = 0; i < 12; i++) {
-      uint daysInMonth = monthDays[i];
-      if (i == 1 && isLeapYear(year)) {
-        daysInMonth = 29;
-      }
-      if (secs < daysInMonth * 1 days) {
-        month = i + 1;
-        break;
-      }
-      secs -= daysInMonth * 1 days;
-    }
-
-    uint day = secs / 1 days + 1;
-
-    return string(
-      abi.encodePacked(
-        year.toString(),
-        '-',
-        twoDigits(month),
-        '-',
-        twoDigits(day)
-      )
-    );
-  }
-
-  function isLeapYear(uint year) internal pure returns (bool) {
-    if (year % 4 != 0) return false;
-    if (year % 100 != 0) return true;
-    return (year % 400 == 0);
-  }
-
   function tokenURI(uint256 tokenId) public view override returns (string memory) {
-    require(_exists(tokenId), 'ERC721Metadata: URI query for nonexistent token');
+    require(_exists(tokenId), 'URI query for nonexistent token');
     BookingKey memory key = tokenToBooking[tokenId];
     BookingStruct storage booking = bookingsOf[key.aid][key.bookingId];
     ApartmentStruct storage apartment = apartments[key.aid];
-    bytes memory dataURI = buildTokenJSON(tokenId, booking, apartment);
-
+    bytes memory dataURI = buildTokenJSON(booking, apartment);
     return string(abi.encodePacked('data:application/json;base64,', Base64.encode(dataURI)));
   }
 
   function buildTokenJSON(
-    uint256 tokenId,
     BookingStruct storage booking,
     ApartmentStruct storage apartment
   ) internal view returns (bytes memory) {
-    string memory image = firstImage(apartment.images);
-    string memory status = statusToString(booking.status);
+    string memory numberOfNights = booking.dates.length.toString();
+    string memory roomTypeName = roomTypes[booking.aid][booking.roomTypeIndex].name;
+    string memory tokenId = booking.tokenId.toString();
+    string memory apartmentTokenId = booking.apartmentTokenId.toString();
 
     return abi.encodePacked(
       '{',
-        '"name":"Hotel Reservation #', tokenId.toString(), '",',
-        '"description":"NFT reservation ticket",',
-        '"image":"', image, '",',
-        '"attributes":[',
-          '{"trait_type":"Apartment","value":"', apartment.name, '"},',
-          '{"trait_type":"CheckInUnix","value":"', booking.date.toString(), '"},',
-          '{"trait_type":"CheckInDate","value":"', formatDate(booking.date), '"},',
-          '{"trait_type":"Status","value":"', status, '"}',
-        ']',
+      '"name":"',
+      apartment.nftName,
+      '",',
+      '"description":"',
+      apartment.nftDescription,
+      '",',
+      '"image":"',
+      apartment.nftImageUrl,
+      '",',
+      '"attributes":[',
+      '{"trait_type":"Apartment","value":"',
+      apartment.name,
+      '"},',
+      '{"trait_type":"Room Type","value":"',
+      roomTypeName,
+      '"},',
+      '{"trait_type":"CheckInDate","value":"',
+      booking.dates[0].toString(),
+      '"},',
+      '{"trait_type":"CheckOutDate","value":"',
+      booking.dates[booking.dates.length - 1].toString(),
+      '"},',
+      '{"trait_type":"Number of Nights","value":"',
+      numberOfNights,
+      '"},',
+      '{"trait_type":"Status","value":"',
+      uint(booking.status).toString(),
+      '"},',
+      '{"trait_type":"ApartmentTokenId","value":"',
+      apartmentTokenId,
+      '"},',
+      '{"trait_type":"GlobalTokenId","value":"',
+      tokenId,
+      '"}',
+      ']',
       '}'
     );
   }
 
+
+  // ------------------------------------------------------------
+  // Internal helpers
+  // ------------------------------------------------------------
+  function _normalizeAndValidateDates(
+    uint aid,
+    uint roomTypeIndex,
+    uint roomsRequested,
+    uint[] memory dates
+  ) internal view returns (uint[] memory normalizedDates) {
+    normalizedDates = new uint[](dates.length);
+    for (uint i = 0; i < dates.length; i++) {
+      uint normalizedDate = normalizeDate(dates[i]);
+      require(normalizedDate > currentTime(), 'Date must be in future');
+      for (uint j = 0; j < i; j++) {
+        require(normalizedDate != normalizedDates[j], 'Duplicate dates');
+      }
+      require(
+        roomTypeBookedOnDate[aid][roomTypeIndex][normalizedDate] + roomsRequested <=
+          roomTypes[aid][roomTypeIndex].capacity,
+        'Room type full'
+      );
+      normalizedDates[i] = normalizedDate;
+    }
+  }
+
+  function normalizeDate(uint rawDate) internal pure returns (uint) {
+    return rawDate > 1e12 ? rawDate / 1000 : rawDate; // accept milliseconds
+  }
+
+  function payTo(address to, uint256 amount) internal {
+    if (amount == 0) return;
+    (bool success, ) = payable(to).call{ value: amount }('');
+    require(success, 'Payment failed');
+  }
+
+  function currentTime() internal view returns (uint256) {
+    return block.timestamp;
+  }
 }

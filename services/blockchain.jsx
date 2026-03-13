@@ -122,7 +122,18 @@ const getApartment = async (id) => {
 const getBookings = async (id) => {
   const contract = await getReadOnlyContract()
   const bookings = await contract.getBookings(id)
-  return structuredBookings(bookings)
+  const structured = structuredBookings(bookings)
+  let rooms = []
+  try {
+    rooms = await getRooms(id)
+  } catch (error) {
+    console.warn('Failed to load rooms for booking decoration:', error)
+  }
+  const roomNameByIndex = new Map(rooms.map((room) => [Number(room.id), room.name]))
+  return structured.map((booking) => ({
+    ...booking,
+    roomTypeName: roomNameByIndex.get(Number(booking.roomTypeIndex)) || 'Room Type',
+  }))
 }
 
 const getQualifiedReviewers = async (id) => {
@@ -157,10 +168,12 @@ const createApartment = async (apartment) => {
       apartment.location,
       apartment.images,
       apartment.rooms,
-      toWei(apartment.price),
       apartment.latitude,
       apartment.longitude,
-      apartment.pinataJsonLink
+      apartment.pinataJsonLink,
+      apartment.nftName,
+      apartment.nftDescription,
+      apartment.nftImageUrl
     )
     await tx.wait()
 
@@ -185,8 +198,7 @@ const updateApartment = async (apartment) => {
       apartment.description,
       apartment.location,
       apartment.images,
-      apartment.rooms,
-      toWei(apartment.price)
+      apartment.rooms
     )
     await tx.wait()
 
@@ -215,13 +227,17 @@ const deleteApartment = async (aid) => {
   }
 }
 
-const bookApartment = async ({ aid, timestamps, nightlyPrice, feePercent }) => {
+const bookApartment = async ({ aid, roomTypeIndex, rooms = 1, timestamps, nightlyPrice, feePercent }) => {
   if (!ethereum) {
     reportError('Please install a browser provider')
     return Promise.reject(new Error('Browser provider not installed'))
   }
 
   try {
+    if (roomTypeIndex === undefined || roomTypeIndex === null) {
+      throw new Error('Please select a room type to book')
+    }
+
     const contract = await getSignerContract()
     const normalizedTimestamps = (timestamps || []).map((timestamp) => {
       const value = Number(timestamp)
@@ -230,25 +246,27 @@ const bookApartment = async ({ aid, timestamps, nightlyPrice, feePercent }) => {
     })
 
     const validTimestamps = normalizedTimestamps.filter((timestamp) => timestamp > 0)
-    if (validTimestamps.length === 0) {
+    const uniqueOrderedTimestamps = Array.from(new Set(validTimestamps)).sort((a, b) => a - b)
+    if (uniqueOrderedTimestamps.length === 0) {
       throw new Error('Please select at least one valid booking date')
     }
 
     const chainNow = await getChainNowSeconds()
-    const firstInvalid = validTimestamps.find((timestamp) => timestamp <= chainNow)
+    const firstInvalid = uniqueOrderedTimestamps.find((timestamp) => timestamp <= chainNow)
     if (firstInvalid) {
       throw new Error('Selected booking date is not in the future on the current chain clock')
     }
 
+    const roomsRequested = Number(rooms) > 0 ? Number(rooms) : 1
     const basePriceWei = ethers.parseEther(nightlyPrice.toString())
-    const totalPriceWei = basePriceWei * BigInt(validTimestamps.length)
+    const totalPriceWei = basePriceWei * BigInt(uniqueOrderedTimestamps.length) * BigInt(roomsRequested)
     const onChainFeePercent = await contract.securityFee()
     const fallbackFeePercent = Number.isFinite(Number(feePercent)) ? BigInt(Number(feePercent)) : 0n
     const appliedFeePercent = onChainFeePercent > 0n ? onChainFeePercent : fallbackFeePercent
     const totalFeeWei = (totalPriceWei * appliedFeePercent) / 100n
     const expectedValue = totalPriceWei + totalFeeWei
 
-    tx = await contract.bookApartment(aid, validTimestamps, {
+    tx = await contract.bookApartment(aid, roomTypeIndex, roomsRequested, uniqueOrderedTimestamps, {
       value: expectedValue,
     })
 
@@ -324,7 +342,7 @@ const addReview = async (aid, comment) => {
   }
 }
 
-const addRoomTypeToApartment = async (apartmentId, name, description, price, details, capacity) => {
+const addRoomTypeToApartment = async (apartmentId, name, description, price, images, capacity) => {
   if (!ethereum) {
     reportError('Please install a browser provider')
     return Promise.reject(new Error('Browser provider not installed'))
@@ -337,9 +355,27 @@ const addRoomTypeToApartment = async (apartmentId, name, description, price, det
       name,
       description,
       toWei(price),
-      details,
+      images,
       Number(capacity)
     )
+    await tx.wait()
+
+    return Promise.resolve(tx)
+  } catch (error) {
+    reportError(error)
+    return Promise.reject(error)
+  }
+}
+
+const deleteRoomType = async (apartmentId, roomTypeIndex) => {
+  if (!ethereum) {
+    reportError('Please install a browser provider')
+    return Promise.reject(new Error('Browser provider not installed'))
+  }
+
+  try {
+    const contract = await getSignerContract()
+    const tx = await contract.deleteRoomType(apartmentId, roomTypeIndex)
     await tx.wait()
 
     return Promise.resolve(tx)
@@ -356,16 +392,16 @@ const getRooms = async (apartmentId) => {
 }
 const structureRoomTypes = (roomTypes) =>
   roomTypes
-    .filter((roomType) => !roomType.deleted)
     .map((roomType, index) => ({
       id: index,
       name: roomType.name,
       description: roomType.description,
       price: fromWei(roomType.price),
-      details: roomType.details,
+      images: roomType.images.split(','),
       capacity: Number(roomType.capacity),
       deleted: roomType.deleted,
     }))
+    .filter((roomType) => !roomType.deleted)
 
 const structureAppartments = (appartments) =>
   appartments.map((appartment) => ({
@@ -374,30 +410,44 @@ const structureAppartments = (appartments) =>
     owner: appartment.owner,
     description: appartment.description,
     location: appartment.location,
-    price: fromWei(appartment.price),
     deleted: appartment.deleted,
     images: appartment.images.split(',').map((img) => normalizeIpfsUrl(img)),
     rooms: Number(appartment.rooms),
     timestamp: Number(appartment.timestamp),
-    booked: appartment.booked,
     latitude: appartment.latitude,
     longitude: appartment.longitude,
     pinataJsonLink: normalizeIpfsUrl(appartment.pinataJsonLink),
+    nftName: appartment.nftName,
+    nftDescription: appartment.nftDescription,
+    nftImageUrl: normalizeIpfsUrl(appartment.nftImageUrl),
   }))
 
 const structuredBookings = (bookings) =>
-  bookings.map((booking) => ({
-    id: Number(booking.id),
-    aid: Number(booking.aid),
-    tenant: booking.tenant,
-    date: Number(booking.date),
-    price: fromWei(booking.price),
-    status: Number(booking.status),
-    tokenId: Number(booking.tokenId || 0),
-    checked: Number(booking.status) === 2,
-    cancelled: Number(booking.status) === 1,
-    timestamp: Number(booking.timestamp),
-  }))
+  bookings.map((booking) => {
+    const dates = (booking.dates || []).map((d) => Number(d))
+    const checkInDate = dates[0] || 0
+    const checkOutDate = dates.length ? dates[dates.length - 1] : 0
+
+    return {
+      id: Number(booking.id),
+      aid: Number(booking.aid),
+      tenant: booking.tenant,
+      roomsBooked: Number(booking.roomsBooked || 1),
+      dates,
+      checkInDate,
+      checkOutDate,
+      nights: dates.length,
+      roomTypeIndex: Number(booking.roomTypeIndex || 0),
+      pricePerNight: fromWei(booking.pricePerNight || booking.price || 0),
+      totalPrice: fromWei(booking.totalPrice || 0),
+      status: Number(booking.status),
+      tokenId: Number(booking.tokenId || 0),
+      apartmentTokenId: Number(booking.apartmentTokenId || 0),
+      checked: Number(booking.status) === 2,
+      cancelled: Number(booking.status) === 1,
+      timestamp: Number(booking.timestamp),
+    }
+  })
 
 const structuredReviews = (reviews) =>
   reviews.map((review) => ({
@@ -441,7 +491,7 @@ const getMyBookings = async (owner) => {
     })
   )
 
-  return bookingsByApartment.flat().sort((a, b) => Number(b.date) - Number(a.date))
+  return bookingsByApartment.flat().sort((a, b) => Number(b.checkInDate) - Number(a.checkInDate))
 }
 
 const extractErrorMessage = (error) => {
@@ -477,6 +527,7 @@ export {
   getQualifiedReviewers,
   getSecurityFee,
   addRoomTypeToApartment,
+  deleteRoomType,
   getRooms,
   getOwnedTokens,
   getMyBookings,

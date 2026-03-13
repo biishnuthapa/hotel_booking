@@ -1,9 +1,17 @@
 const { ethers } = require('hardhat')
 const fs = require('fs')
+const path = require('path')
 
 const toWei = (num) => ethers.parseEther(num.toString())
 
-const dataCount = 5
+const pinataJsonLinks = [
+  'https://chocolate-wrong-swordtail-863.mypinata.cloud/ipfs/bafkreia54nlz6luqj5h6uoqrfdxk22eyc2iyijbfojicnpyzxup4bjpdju',
+  'https://chocolate-wrong-swordtail-863.mypinata.cloud/ipfs/bafkreia54nlz6luqj5h6uoqrfdxk22eyc2iyijbfojicnpyzxup4bjpdju',
+  'https://chocolate-wrong-swordtail-863.mypinata.cloud/ipfs/bafkreigvt3lcpfrn3kltgzz2gllfs4lvhjfvxt4k7axo7zu5ake3umdpqa',
+  'https://chocolate-wrong-swordtail-863.mypinata.cloud/ipfs/bafkreicef7hg2sqabameo2xtvdlbqvhpetxxdui3njaeeitrtmidczhteq',
+  'https://chocolate-wrong-swordtail-863.mypinata.cloud/ipfs/bafkreifwlvb3jycqhectb4akvekqazj4yy5gsmf4zsbf2yrfleepicriaq',
+]
+const dataCount = pinataJsonLinks.length
 const maxPrice = 3.5
 const imagesUrls = [
   'https://a0.muscache.com/im/pictures/miso/Hosting-3524556/original/24e9b114-7db5-4fab-8994-bc16f263ad1d.jpeg?im_w=720',
@@ -56,19 +64,35 @@ const roomTypeTemplates = [
     name: 'Standard Suite',
     description: 'Ideal for solo travelers and couples.',
     price: 0.08,
-    details: 'http://localhost:3000/assets/rooms/standard.json',
+    images: 'https://a0.muscache.com/im/pictures/miso/Hosting-3524556/original/24e9b114-7db5-4fab-8994-bc16f263ad1d.jpeg?im_w=720,https://a0.muscache.com/im/pictures/miso/Hosting-5264493/original/10d2c21f-84c2-46c5-b20b-b51d1c2c971a.jpeg?im_w=720',
     capacity: 2,
   },
   {
     name: 'Family Loft',
     description: 'Extra beds and lounge area for families.',
     price: 0.14,
-    details: 'http://localhost:3000/assets/rooms/family.json',
+    images: 'https://a0.muscache.com/im/pictures/prohost-api/Hosting-584469386220279136/original/227d4c26-43d5-42da-ad84-d039515c0bad.jpeg?im_w=720,https://a0.muscache.com/im/pictures/miso/Hosting-610511843622686196/original/253bfa1e-8c53-4dc0-a3af-0a75728c0708.jpeg?im_w=720',
     capacity: 4,
   },
 ]
 
-const generateFakeApartment = (count) => {
+const metadataDir = path.join(__dirname, '..', 'public', 'assets', 'Metadata')
+
+const fetchMetadata = async (url) => {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch metadata: ${response.status}`)
+  }
+  const metadata = await response.json()
+  return {
+    name: typeof metadata?.name === 'string' ? metadata.name.trim() : '',
+    description: typeof metadata?.description === 'string' ? metadata.description.trim() : '',
+    image: typeof metadata?.image === 'string' ? metadata.image.trim() : '',
+  }
+}
+
+const generateFakeApartment = async (count) => {
+  fs.mkdirSync(metadataDir, { recursive: true })
   const apartments = []
   for (let i = 0; i < count; i++) {
     const id = i + 1
@@ -79,11 +103,16 @@ const generateFakeApartment = (count) => {
     const rooms = randomInt(2, 5)
     const latitude = (25 + Math.random() * 24).toFixed(6)
     const longitude = (-124 + Math.random() * 58).toFixed(6)
-    const pinataJsonLink = `http://localhost:3000/assets/Metadata/Hotel${((id - 1) % 5) + 1}.json`
     const images = []
 
     for (let i = 0; i < 5; i++) {
       images.push(shuffleArray(imagesUrls)[0])
+    }
+
+    const pinataJsonLink = pinataJsonLinks[i]
+    const metadata = await fetchMetadata(pinataJsonLink)
+    if (!metadata.name || !metadata.description || !metadata.image) {
+      throw new Error(`Invalid metadata at ${pinataJsonLink}`)
     }
 
     apartments.push({
@@ -91,12 +120,14 @@ const generateFakeApartment = (count) => {
       name,
       description,
       location,
-      price: toWei(price),
-      images: images.join(', '),
+      images: images.join(','),
       rooms,
       latitude,
       longitude,
       pinataJsonLink,
+      nftName: metadata.name,
+      nftDescription: metadata.description,
+      nftImageUrl: metadata.image,
     })
   }
 
@@ -110,21 +141,13 @@ async function createApartments(contract, apartment) {
     apartment.location,
     apartment.images,
     apartment.rooms,
-    apartment.price,
     apartment.latitude,
     apartment.longitude,
-    apartment.pinataJsonLink
+    apartment.pinataJsonLink,
+    apartment.nftName,
+    apartment.nftDescription,
+    apartment.nftImageUrl
   )
-  await tx.wait()
-}
-
-async function bookApartments(contract, aid, dates) {
-  const apartment = await contract.getApartment(aid)
-  const totalPrice = apartment.price * BigInt(dates.length)
-  const feePercent = await contract.securityFee()
-  const totalFee = (totalPrice * feePercent) / 100n
-
-  const tx = await contract.bookApartment(aid, dates, { value: totalPrice + totalFee })
   await tx.wait()
 }
 
@@ -135,7 +158,7 @@ async function seedRoomTypes(contract, apartmentId) {
       roomType.name,
       roomType.description,
       toWei(roomType.price),
-      roomType.details,
+      roomType.images,
       roomType.capacity
     )
     await tx.wait()
@@ -144,10 +167,35 @@ async function seedRoomTypes(contract, apartmentId) {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+async function clearData(contract, ownerSigner) {
+  const apartments = await contract.getApartments()
+  const apartmentIds = apartments.map((apartment) => apartment.id)
+
+  for (const apartmentId of apartmentIds) {
+    try {
+      const bookings = await contract.getBookings(apartmentId)
+      for (const booking of bookings) {
+        if (booking.status === 0) {
+          await contract.connect(ownerSigner).refundBooking(apartmentId, booking.id)
+          await delay(300)
+        }
+      }
+      const apartment = apartments.find((a) => a.id === apartmentId)
+      if (apartment && apartment.owner.toLowerCase() === ownerSigner.address.toLowerCase()) {
+        await contract.connect(ownerSigner).deleteAppartment(apartmentId)
+        await delay(300)
+      }
+    } catch (error) {
+      console.error(`Error clearing apartment ${apartmentId}:`, error)
+    }
+  }
+}
+
 async function main() {
   let hospitalityBookingContract
 
   try {
+    const [deployer] = await ethers.getSigners()
     const contractAddresses = fs.readFileSync('./contracts/contractAddress.json', 'utf8')
     const { hospitalityBookingContract: hospitalityBookingAddress } = JSON.parse(contractAddresses)
 
@@ -155,38 +203,16 @@ async function main() {
       'HospitalityBookingNFT',
       hospitalityBookingAddress
     )
-    // Use chain time, not host machine time, so seeding works even after local time travel.
-    const latestBlock = await ethers.provider.getBlock('latest')
-    const chainNow = Number(latestBlock?.timestamp || Math.floor(Date.now() / 1000))
-    const oneDay = 24 * 60 * 60
-    const dates1 = [chainNow + oneDay, chainNow + oneDay * 2, chainNow + oneDay * 3]
 
-    // Process #1
-    await Promise.all(
-      generateFakeApartment(dataCount).map(async (apartment) => {
-        await createApartments(hospitalityBookingContract, apartment)
-      })
-    )
+    await clearData(hospitalityBookingContract, deployer)
+    console.log('Previous data cleared (refunded + deleted where owner matched)...')
 
-    // Process #1b - Add room types for each seeded apartment
-    await Promise.all(
-      Array(dataCount)
-        .fill()
-        .map(async (_, i) => {
-          await seedRoomTypes(hospitalityBookingContract, i + 1)
-        })
-    )
-
-    await delay(2500) // Wait for 2.5 seconds
-
-    // Process #2
-    await Promise.all(
-      Array(dataCount)
-        .fill()
-        .map(async (_, i) => {
-          await bookApartments(hospitalityBookingContract, i + 1, dates1)
-        })
-    )
+    const apartments = await generateFakeApartment(dataCount)
+    for (const apartment of apartments) {
+      await createApartments(hospitalityBookingContract.connect(deployer), apartment)
+      await seedRoomTypes(hospitalityBookingContract.connect(deployer), apartment.id)
+      await delay(200)
+    }
 
     console.log('Items dummy data seeded...')
   } catch (error) {

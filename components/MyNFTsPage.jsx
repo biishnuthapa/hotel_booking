@@ -65,12 +65,41 @@ const NFTList = () => {
   const getAttribute = (attributes, key) =>
     attributes.find((attr) => attr?.trait_type === key)?.value
 
+  const toNumber = (value) => {
+    const num = Number(value)
+    return Number.isFinite(num) ? num : undefined
+  }
+
+  const statusLabel = (value) => {
+    const normalized = typeof value === 'string' ? value.trim().toLowerCase() : value
+    if (normalized === 0 || normalized === '0' || normalized === 'booked') return 'Booked'
+    if (normalized === 1 || normalized === '1' || normalized === 'cancelled') return 'Cancelled'
+    if (normalized === 2 || normalized === '2' || normalized === 'checkedin' || normalized === 'checked in')
+      return 'Checked In'
+    if (normalized === 3 || normalized === '3' || normalized === 'expired') return 'Expired'
+    return value ?? 'N/A'
+  }
+
   const renderDetails = (token) => {
-    const checkInDateLabel = getAttribute(token.attributes || [], 'CheckInDate')
-    const checkInUnix = getAttribute(token.attributes || [], 'CheckInUnix') || getAttribute(token.attributes || [], 'CheckIn')
+    const checkInUnix =
+      toNumber(getAttribute(token.attributes || [], 'CheckInDate')) ??
+      toNumber(getAttribute(token.attributes || [], 'CheckInUnix')) ??
+      toNumber(getAttribute(token.attributes || [], 'CheckIn'))
+    const checkOutUnix =
+      toNumber(getAttribute(token.attributes || [], 'CheckOutDate')) ??
+      toNumber(getAttribute(token.attributes || [], 'CheckOut'))
     const apartment = getAttribute(token.attributes || [], 'Apartment')
-    const status = getAttribute(token.attributes || [], 'Status')
-    const checkInDate = checkInDateLabel || (checkInUnix ? formatDate(toMillis(checkInUnix)) : 'N/A')
+    const apartmentTokenId =
+      getAttribute(token.attributes || [], 'ApartmentTokenId') ??
+      getAttribute(token.attributes || [], 'BookingId') ??
+      getAttribute(token.attributes || [], 'Booking #')
+    const rawStatus = getAttribute(token.attributes || [], 'Status')
+    const nights =
+      getAttribute(token.attributes || [], 'NumberOfNights') ??
+      getAttribute(token.attributes || [], 'Number of Nights')
+    const totalPrice = getAttribute(token.attributes || [], 'TotalPrice')
+    const checkInDate = checkInUnix ? formatDate(toMillis(checkInUnix)) : 'N/A'
+    const checkOutDate = checkOutUnix ? formatDate(toMillis(checkOutUnix)) : 'N/A'
 
     return (
       <div className="mt-3 space-y-1 text-sm text-slate-600">
@@ -81,11 +110,29 @@ const NFTList = () => {
           <span className="font-semibold text-slate-800">Check-in:</span> {checkInDate}
         </p>
         <p>
-          <span className="font-semibold text-slate-800">Status:</span> {status || 'N/A'}
+          <span className="font-semibold text-slate-800">Check-out:</span> {checkOutDate}
         </p>
+        <p>
+          <span className="font-semibold text-slate-800">Status:</span> {statusLabel(rawStatus)}
+        </p>
+        {apartmentTokenId && (
+          <p>
+            <span className="font-semibold text-slate-800">Booking #:</span> {apartmentTokenId}
+          </p>
+        )}
         <p>
           <span className="font-semibold text-slate-800">Token ID:</span> {token.id}
         </p>
+        {nights && (
+          <p>
+            <span className="font-semibold text-slate-800">Nights:</span> {nights}
+          </p>
+        )}
+        {totalPrice && (
+          <p>
+            <span className="font-semibold text-slate-800">Total Price:</span> {totalPrice} ETH
+          </p>
+        )}
       </div>
     )
   }

@@ -4,7 +4,6 @@ import { useRouter } from 'next/router'
 import { globalActions } from '@/store/globalSlices'
 import { useDispatch, useSelector } from 'react-redux'
 import {
-  Title,
   ImageGrid,
   Description,
   Calendar,
@@ -77,7 +76,16 @@ export default function Room({
       </Head>
 
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-8 sm:px-6">
-        <Title apartment={apartment} />
+        <div className="space-y-2">
+          <h1 className="text-3xl font-semibold capitalize text-slate-900">{apartment?.name}</h1>
+          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+            <span>{apartment?.rooms} {apartment?.rooms == 1 ? 'room' : 'rooms'}</span>
+            <span className="h-1 w-1 rounded-full bg-slate-300" />
+            <span>{apartment?.location}</span>
+            <span className="h-1 w-1 rounded-full bg-slate-300" />
+            <span className="font-semibold text-[#00773d]">{apartment?.price} ETH / night</span>
+          </div>
+        </div>
         <ImageGrid
           first={apartment?.images[0]}
           second={apartment?.images[1]}
@@ -88,7 +96,7 @@ export default function Room({
         <Features />
         <Description apartment={apartment} />
         <Calendar apartment={apartment} timestamps={timestamps} />
-        <RoomList apartmentId={apartment?.id || roomId} />
+        <RoomList apartmentId={apartment?.id || roomId} apartmentOwner={apartment?.owner} />
         <Actions apartment={apartment} />
         <CustomGoogleMap center={center} zoom={11} apiKey={process.env.NEXT_PUBLIC_API_KEY} />
         <div className="space-y-4">
@@ -122,22 +130,28 @@ export default function Room({
 
 export const getServerSideProps = async (context) => {
   const { roomId } = context.query
-  const apartmentData = await getApartment(roomId)
-  const bookingsData = await getBookings(roomId)
-  const timestampsData = bookingsData
-    .filter((booking) => !booking.cancelled)
-    .map((booking) => Number(booking.date))
-  const qualifiedReviewers = await getQualifiedReviewers(roomId)
-  const reviewsData = await getReviews(roomId)
-  const securityFee = await getSecurityFee()
 
-  return {
-    props: {
-      apartmentData: JSON.parse(JSON.stringify(apartmentData)),
-      timestampsData: JSON.parse(JSON.stringify(timestampsData)),
-      reviewsData: JSON.parse(JSON.stringify(reviewsData)),
-      qualifiedReviewers: JSON.parse(JSON.stringify(qualifiedReviewers)),
-      securityFee: JSON.parse(JSON.stringify(securityFee)),
-    },
+  try {
+    const apartmentData = await getApartment(roomId)
+    const bookingsData = await getBookings(roomId)
+    const timestampsData = bookingsData
+      .filter((booking) => !booking.cancelled)
+      .flatMap((booking) => (booking.dates || []).map((d) => Number(d)))
+    const qualifiedReviewers = await getQualifiedReviewers(roomId)
+    const reviewsData = await getReviews(roomId)
+    const securityFee = await getSecurityFee()
+
+    return {
+      props: {
+        apartmentData: JSON.parse(JSON.stringify(apartmentData)),
+        timestampsData: JSON.parse(JSON.stringify(timestampsData)),
+        reviewsData: JSON.parse(JSON.stringify(reviewsData)),
+        qualifiedReviewers: JSON.parse(JSON.stringify(qualifiedReviewers)),
+        securityFee: JSON.parse(JSON.stringify(securityFee)),
+      },
+    }
+  } catch (error) {
+    console.error('Failed to load apartment page data:', error?.reason || error?.message || error)
+    return { notFound: true }
   }
 }

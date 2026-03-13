@@ -52,8 +52,14 @@ const BookingPage = () => {
           >
             <p className="font-semibold text-slate-900">{booking.apartmentName}</p>
             <p className="text-sm text-slate-500">{booking.apartmentLocation}</p>
-            <p className="text-sm text-slate-600">Date: {formatDate(booking.date)}</p>
-            <p className="text-sm text-slate-600">Price: {booking.price} ETH</p>
+            <p className="text-sm text-slate-600">Room Type: {booking.roomTypeName || `#${booking.roomTypeIndex}`}</p>
+            <p className="text-sm text-slate-600">
+              Dates: {formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}
+            </p>
+            <p className="text-sm text-slate-600">
+              Price: {booking.totalPrice} ETH ({booking.nights} night{booking.nights === 1 ? '' : 's'} at{' '}
+              {booking.pricePerNight} ETH)
+            </p>
             <p className="text-sm">
               Status:{' '}
               <span className="font-semibold text-slate-800">

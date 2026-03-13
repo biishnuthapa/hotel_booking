@@ -18,12 +18,11 @@ export default function EditApartment({ apartment }) {
   const [location, setLocation] = useState(apartment.location)
   const [rooms, setRooms] = useState(apartment.rooms)
   const [images, setImages] = useState('')
-  const [price, setPrice] = useState(apartment.price)
   const [links, setLinks] = useState(apartment.images)
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (!name || !location || !description || !rooms || links.length !== 5 || !price) {
+    if (!name || !location || !description || !rooms || links.length !== 5) {
       toast.error('Please complete all fields and keep exactly 5 image links.')
       return
     }
@@ -35,7 +34,6 @@ export default function EditApartment({ apartment }) {
       location: location.trim(),
       rooms: Number(rooms),
       images: links.slice(0, 5).join(','),
-      price,
     }
 
     toast.promise(
@@ -83,16 +81,6 @@ export default function EditApartment({ apartment }) {
             placeholder="Property Name"
             onChange={(e) => setName(e.target.value)}
             value={name}
-            required
-          />
-          <input
-            className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
-            type="number"
-            step={0.01}
-            min={0.01}
-            placeholder="Nightly Price (ETH)"
-            onChange={(e) => setPrice(e.target.value)}
-            value={price}
             required
           />
 
@@ -168,10 +156,16 @@ export default function EditApartment({ apartment }) {
 
 export const getServerSideProps = async (context) => {
   const { roomId } = context.query
-  const apartment = await getApartment(roomId)
-  return {
-    props: {
-      apartment: JSON.parse(JSON.stringify(apartment)),
-    },
+
+  try {
+    const apartment = await getApartment(roomId)
+    return {
+      props: {
+        apartment: JSON.parse(JSON.stringify(apartment)),
+      },
+    }
+  } catch (error) {
+    console.error('Failed to load apartment for edit:', error?.reason || error?.message || error)
+    return { notFound: true }
   }
 }

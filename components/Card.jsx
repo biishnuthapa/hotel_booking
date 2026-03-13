@@ -22,7 +22,11 @@ const Card = ({ appartment }) => {
         <div className="flex items-center justify-between text-sm">
           <p className="text-slate-500">{formatDate(appartment.timestamp)}</p>
           <b className="flex items-center justify-start space-x-1 font-semibold text-[#00773d]">
-            <span>{appartment.price} ETH / night</span>
+            {appartment.price > 0 ? (
+              <span>From {appartment.price} ETH / night</span>
+            ) : (
+              <span>Price unavailable</span>
+            )}
           </b>
         </div>
       </div>

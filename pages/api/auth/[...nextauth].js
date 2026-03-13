@@ -44,7 +44,13 @@ export default async function auth(req, res) {
     }),
   ]
 
-  const isDefaultSigninPage = req.method === 'GET' && req.query.nextauth.includes('signin')
+  const nextAuthQuery = req.query?.nextauth
+  const nextAuthParts = Array.isArray(nextAuthQuery)
+    ? nextAuthQuery
+    : typeof nextAuthQuery === 'string'
+      ? [nextAuthQuery]
+      : []
+  const isDefaultSigninPage = req.method === 'GET' && nextAuthParts.includes('signin')
 
   if (isDefaultSigninPage) providers.pop()
 

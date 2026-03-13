@@ -10,10 +10,12 @@ import { checkInApartment, refundBooking, getChainNowSeconds } from '@/services/
 const formatToastError = (error) =>
   error?.shortMessage || error?.reason || error?.message || 'Encountered error'
 
-const Booking = ({ booking, maxDateOut }) => {
+const Booking = ({ booking }) => {
   const router = useRouter()
   const { address } = useAccount()
   const [chainNowSec, setChainNowSec] = useState(null)
+  const checkInDate = booking.checkInDate || booking.dates?.[0] || 0
+  const checkOutDate = booking.checkOutDate || booking.dates?.[booking.dates.length - 1] || checkInDate
 
   useEffect(() => {
     const loadChainTime = async () => {
@@ -27,7 +29,9 @@ const Booking = ({ booking, maxDateOut }) => {
     loadChainTime()
   }, [])
 
-  const canCheckInNow = chainNowSec ? booking.date <= chainNowSec : toMillis(booking.date) <= Date.now()
+  const canCheckInNow = chainNowSec
+    ? checkInDate <= chainNowSec
+    : toMillis(checkInDate) <= Date.now()
 
   const handleCheckIn = () => {
     toast.promise(
@@ -80,13 +84,12 @@ const Booking = ({ booking, maxDateOut }) => {
       booking={booking}
       functions={functions}
       owner={address}
-      maxDateOut={maxDateOut}
       canCheckInNow={canCheckInNow}
     />
   )
 }
 
-const TenantView = ({ booking, functions, owner, maxDateOut, canCheckInNow }) => {
+const TenantView = ({ booking, functions, owner, canCheckInNow }) => {
   return (
     <div className="my-3 flex w-full items-center justify-between rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
       <Link
@@ -100,8 +103,15 @@ const TenantView = ({ booking, functions, owner, maxDateOut, canCheckInNow }) =>
           className="rounded-full shadow-gray-500 shadow-sm"
         />
         <div className="flex flex-col">
+          {booking.roomTypeName && (
+            <span className="text-sm font-semibold text-slate-800">{booking.roomTypeName}</span>
+          )}
           <span>
-            {formatDate(booking.date)} - {formatDate(maxDateOut)}
+            {formatDate(booking.checkInDate || booking.dates?.[0] || 0)} -{' '}
+            {formatDate(booking.checkOutDate || booking.dates?.[booking.dates.length - 1] || 0)}
+          </span>
+          <span className="text-sm text-slate-600">
+            {booking.nights || booking.dates?.length || 0} night(s) · {booking.totalPrice} ETH
           </span>
           <span className="text-gray-500 text-sm">{truncate(booking.tenant, 4, 4, 11)}</span>
         </div>

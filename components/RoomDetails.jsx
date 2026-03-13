@@ -1,75 +1,9 @@
-import React, { useState, useEffect } from 'react'
-import { normalizeIpfsUrl } from '@/utils/helper'
+import React, { useState } from 'react'
 
-const RoomDetails = ({ onClose, jsonLink }) => {
-  const [roomData, setRoomData] = useState(null)
+const RoomDetails = ({ onClose, room }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [error, setError] = useState('')
 
-  useEffect(() => {
-    const fetchRoomData = async () => {
-      if (!jsonLink) {
-        setError('Room details link is missing.')
-        return
-      }
-
-      try {
-        setError('')
-        const response = await fetch(normalizeIpfsUrl(jsonLink))
-        if (!response.ok) {
-          throw new Error(`Failed to fetch room details (${response.status})`)
-        }
-        const data = await response.json()
-        const normalizedImages = (data.otherImageUrls || [])
-          .map((url) => normalizeIpfsUrl(url))
-          .filter(Boolean)
-
-        setRoomData({
-          ...data,
-          mainImageUrl: normalizeIpfsUrl(data.mainImageUrl || normalizedImages[0] || ''),
-          otherImageUrls: normalizedImages,
-          facilities: data.facilities || [],
-          sharedBathroom: data.sharedBathroom || [],
-          views: data.views || [],
-        })
-        setCurrentImageIndex(0)
-      } catch (fetchError) {
-        setError(fetchError.message || 'Could not load room details.')
-      }
-    }
-
-    fetchRoomData()
-  }, [jsonLink])
-
-  const handlePrevImage = () => {
-    if (!roomData?.otherImageUrls?.length) return
-    setCurrentImageIndex((prevIndex) =>
-      prevIndex === 0 ? roomData.otherImageUrls.length - 1 : prevIndex - 1
-    )
-  }
-
-  const handleNextImage = () => {
-    if (!roomData?.otherImageUrls?.length) return
-    setCurrentImageIndex((prevIndex) =>
-      prevIndex === roomData.otherImageUrls.length - 1 ? 0 : prevIndex + 1
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="w-[88vw] max-w-3xl rounded-3xl bg-white p-6 text-slate-800">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Room Details</h3>
-          <button onClick={onClose} className="rounded-md px-3 py-1 text-sm text-slate-600 hover:bg-slate-100">
-            Close
-          </button>
-        </div>
-        <p className="text-sm text-red-600">{error}</p>
-      </div>
-    )
-  }
-
-  if (!roomData) {
+  if (!room) {
     return (
       <div className="w-[88vw] max-w-3xl rounded-3xl bg-white p-6 text-slate-800">
         <p className="text-sm text-slate-500">Loading room details...</p>
@@ -77,13 +11,28 @@ const RoomDetails = ({ onClose, jsonLink }) => {
     )
   }
 
-  const gallery = roomData.otherImageUrls.length ? roomData.otherImageUrls : [roomData.mainImageUrl]
-  const activeImage = gallery[currentImageIndex] || roomData.mainImageUrl
+  const gallery = room.images || []
+
+  const handlePrevImage = () => {
+    if (!gallery.length) return
+    setCurrentImageIndex((prevIndex) =>
+      prevIndex === 0 ? gallery.length - 1 : prevIndex - 1
+    )
+  }
+
+  const handleNextImage = () => {
+    if (!gallery.length) return
+    setCurrentImageIndex((prevIndex) =>
+      prevIndex === gallery.length - 1 ? 0 : prevIndex + 1
+    )
+  }
+
+  const activeImage = gallery[currentImageIndex]
 
   return (
     <div className="w-[90vw] max-w-4xl rounded-3xl bg-white p-6">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-slate-900">{roomData.name || 'Room'}</h3>
+        <h3 className="text-xl font-semibold text-slate-900">{room.name || 'Room'}</h3>
         <button onClick={onClose} className="rounded-md px-3 py-1 text-sm text-slate-600 hover:bg-slate-100">
           Close
         </button>
@@ -128,37 +77,7 @@ const RoomDetails = ({ onClose, jsonLink }) => {
         </div>
 
         <div className="space-y-4 text-sm text-slate-700">
-          <p>{roomData.description}</p>
-          <p>
-            <span className="font-semibold text-slate-900">Size:</span> {roomData.size || 'N/A'}
-          </p>
-          <p>
-            <span className="font-semibold text-slate-900">Reviews:</span> {roomData.reviews || 'N/A'}
-          </p>
-          <p>
-            <span className="font-semibold text-slate-900">Smoking:</span>{' '}
-            {roomData.smoking ? 'Allowed' : 'Not allowed'}
-          </p>
-
-          <div>
-            <h4 className="mb-1 font-semibold text-slate-900">Facilities</h4>
-            <ul className="list-disc space-y-1 pl-5">
-              {roomData.facilities.map((facility, index) => (
-                <li key={index}>{facility}</li>
-              ))}
-              {roomData.facilities.length === 0 && <li>No facilities listed.</li>}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="mb-1 font-semibold text-slate-900">Bathroom</h4>
-            <ul className="list-disc space-y-1 pl-5">
-              {roomData.sharedBathroom.map((item, index) => (
-                <li key={index}>{item}</li>
-              ))}
-              {roomData.sharedBathroom.length === 0 && <li>No details listed.</li>}
-            </ul>
-          </div>
+          <p>{room.description}</p>
         </div>
       </div>
     </div>
