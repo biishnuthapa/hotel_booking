@@ -15,7 +15,6 @@ const Booking = ({ booking }) => {
   const { address } = useAccount()
   const [chainNowSec, setChainNowSec] = useState(null)
   const checkInDate = booking.checkInDate || booking.dates?.[0] || 0
-  const checkOutDate = booking.checkOutDate || booking.dates?.[booking.dates.length - 1] || checkInDate
 
   useEffect(() => {
     const loadChainTime = async () => {
