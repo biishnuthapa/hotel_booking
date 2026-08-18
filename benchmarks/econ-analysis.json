@@ -1,0 +1,70 @@
+{
+  "scenarios": [
+    {
+      "name": "Ethereum L1",
+      "gasPriceGwei": 20,
+      "nativeUsd": 3000,
+      "rows": [
+        {
+          "nights": 1,
+          "gas": 543895,
+          "costUsd": 32.633700000000005
+        },
+        {
+          "nights": 3,
+          "gas": 636141,
+          "costUsd": 38.16846
+        },
+        {
+          "nights": 7,
+          "gas": 825477,
+          "costUsd": 49.52862
+        }
+      ]
+    },
+    {
+      "name": "Polygon PoS",
+      "gasPriceGwei": 30,
+      "nativeUsd": 0.4,
+      "rows": [
+        {
+          "nights": 1,
+          "gas": 543895,
+          "costUsd": 0.0065267400000000005
+        },
+        {
+          "nights": 3,
+          "gas": 636141,
+          "costUsd": 0.007633692000000001
+        },
+        {
+          "nights": 7,
+          "gas": 825477,
+          "costUsd": 0.009905724000000001
+        }
+      ]
+    },
+    {
+      "name": "Arbitrum One",
+      "gasPriceGwei": 0.1,
+      "nativeUsd": 3000,
+      "rows": [
+        {
+          "nights": 1,
+          "gas": 543895,
+          "costUsd": 0.16316850000000002
+        },
+        {
+          "nights": 3,
+          "gas": 636141,
+          "costUsd": 0.19084230000000005
+        },
+        {
+          "nights": 7,
+          "gas": 825477,
+          "costUsd": 0.24764310000000006
+        }
+      ]
+    }
+  ]
+}

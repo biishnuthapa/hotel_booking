@@ -5,6 +5,7 @@ import { toast } from 'react-toastify'
 import { useRouter } from 'next/router'
 import { useAccount } from 'wagmi'
 import { createApartment } from '@/services/blockchain'
+import { pinNftMetadata } from '@/services/pinata'
 
 const formatToastError = (error) =>
   error?.shortMessage || error?.reason || error?.message || 'Encountered error'
@@ -25,6 +26,47 @@ export default function AddApartmentPage() {
   const [metadataPreview, setMetadataPreview] = useState(null)
   const [metadataError, setMetadataError] = useState('')
   const [metadataLoading, setMetadataLoading] = useState(false)
+
+  const [nftImageFile, setNftImageFile] = useState(null)
+  const [nftImagePreview, setNftImagePreview] = useState('')
+  const [pinning, setPinning] = useState(false)
+
+  const onNftImageChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose an image file.')
+      return
+    }
+    setNftImageFile(file)
+    setNftImagePreview(URL.createObjectURL(file))
+  }
+
+  const handlePinNft = async () => {
+    if (!name.trim() || !description.trim()) {
+      toast.error('Fill in the property name and description first — they become the NFT name and description.')
+      return
+    }
+    if (!nftImageFile) {
+      toast.error('Choose an NFT image to upload.')
+      return
+    }
+    setPinning(true)
+    try {
+      const result = await pinNftMetadata({
+        image: nftImageFile,
+        name: name.trim(),
+        description: description.trim(),
+      })
+      setPinataJsonLink(result.uri) // ipfs://<metadata-cid>; preview effect resolves it
+      toast.success('NFT image + metadata pinned to IPFS.')
+    } catch (error) {
+      const msg = error?.response?.data?.error || error?.message || 'Pinning failed'
+      toast.error(msg)
+    } finally {
+      setPinning(false)
+    }
+  }
 
   useEffect(() => {
     const trimmed = pinataJsonLink.trim()
@@ -210,10 +252,43 @@ export default function AddApartmentPage() {
               required
             />
           </div>
+          <div className="rounded-2xl border border-dashed border-[#00773d]/40 bg-[#00773d]/5 p-4">
+            <p className="mb-1 text-sm font-semibold text-slate-800">NFT check-in pass image</p>
+            <p className="mb-3 text-xs text-slate-500">
+              Upload an image and we&apos;ll pin it plus the metadata JSON to IPFS via Pinata, then
+              auto-fill the link below. Uses the property name and description above.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onNftImageChange}
+                className="text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white"
+              />
+              {nftImagePreview && (
+                <img
+                  src={nftImagePreview}
+                  alt="NFT preview"
+                  className="h-16 w-16 rounded-xl object-cover"
+                />
+              )}
+              <button
+                type="button"
+                onClick={handlePinNft}
+                disabled={pinning}
+                className={`rounded-xl bg-[#00773d] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 sm:ml-auto ${
+                  pinning ? 'cursor-not-allowed opacity-60' : ''
+                }`}
+              >
+                {pinning ? 'Pinning to IPFS…' : 'Pin NFT to IPFS'}
+              </button>
+            </div>
+          </div>
+
           <input
             className="rounded-xl border border-slate-300 p-3 outline-none focus:border-[#00773d]"
             type="url"
-            placeholder="NFT Metadata JSON URL (Pinata)"
+            placeholder="NFT Metadata JSON URL (auto-filled after pinning, or paste your own)"
             onChange={(e) => setPinataJsonLink(e.target.value)}
             value={pinataJsonLink}
             required

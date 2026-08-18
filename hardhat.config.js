@@ -15,16 +15,23 @@ module.exports = {
     },
   },
   networks: {
+    hardhat: {
+      initialDate: '2026-03-01T00:00:00.000Z',
+    },
     amoy: {
-      url: process.env.AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology',
+      // Polygon Amoy (chainId 80002) — current Polygon PoS testnet, Sepolia-anchored.
+      url: process.env.AMOY_RPC_URL || 'https://polygon-amoy.drpc.org',
+      chainId: 80002,
+      // Amoy base fee is ~0; it only needs the ~25 gwei minimum tip. Pin an
+      // explicit price so ethers' inflated fee estimate doesn't overspend.
+      gasPrice: 30_000_000_000, // 30 gwei
       accounts: privateKey ? [privateKey] : [],
     },
     bscTestnet: {
-      url: process.env.BSC_TESTNET_RPC_URL || 'https://bsc-testnet-rpc.publicnode.com',
-      accounts: privateKey ? [privateKey] : [],
-    },
-    mumbai: {
-      url: process.env.MUMBAI_RPC_URL || 'https://rpc-mumbai.maticvigil.com',
+      // publicnode's BSC-testnet endpoint intermittently fails TLS; Binance's
+      // own data-seed endpoint is reliable. Gas price floor ~0.1 gwei.
+      url: process.env.BSC_TESTNET_RPC_URL || 'https://data-seed-prebsc-1-s1.binance.org:8545',
+      chainId: 97,
       accounts: privateKey ? [privateKey] : [],
     },
   },

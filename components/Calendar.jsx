@@ -79,8 +79,12 @@ const Calendar = ({ apartment }) => {
   }, [checkInDate, checkOutDate])
 
   const minCheckInDate = useMemo(() => {
-    if (!chainNowSec) return new Date(Date.now() + 24 * 60 * 60 * 1000)
-    return new Date((chainNowSec + 60) * 1000)
+    // Bookings are day-granular: the contract stores each night as that day's
+    // start-of-day timestamp. Requiring the check-in to be the NEXT day
+    // guarantees start-of-day > chain-now regardless of timezone, so a user can
+    // never pick a "today" that is already behind the on-chain clock.
+    const base = chainNowSec ? chainNowSec * 1000 : Date.now()
+    return moment(base).add(1, 'day').startOf('day').toDate()
   }, [chainNowSec])
 
   const minCheckOutDate = useMemo(() => {

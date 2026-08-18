@@ -11,10 +11,29 @@ const fromWei = (num) => ethers.formatEther(num)
 let ethereum, tx
 const contractAddress = address.hospitalityBookingContract
 const localChainId = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 31337)
-const localChainName = localChainId === 31337 ? 'Hardhat Localhost' : 'Localhost'
 const localChainHex = `0x${localChainId.toString(16)}`
 const localRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545'
 const isLocalRpc = /127\.0\.0\.1|localhost/.test(localRpcUrl)
+
+// Chain metadata used when prompting MetaMask to switch/add the network.
+const CHAIN_META = {
+  31337: { name: 'Hardhat Localhost', currency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 } },
+  80002: {
+    name: 'Polygon Amoy',
+    currency: { name: 'POL', symbol: 'POL', decimals: 18 },
+    blockExplorerUrls: ['https://amoy.polygonscan.com'],
+  },
+  97: {
+    name: 'BSC Testnet',
+    currency: { name: 'tBNB', symbol: 'tBNB', decimals: 18 },
+    blockExplorerUrls: ['https://testnet.bscscan.com'],
+  },
+}
+const chainMeta = CHAIN_META[localChainId] || {
+  name: `Chain ${localChainId}`,
+  currency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+}
+const localChainName = chainMeta.name
 
 if (typeof window !== 'undefined') ethereum = window.ethereum
 const { setBookings, setReviews } = globalActions
@@ -26,7 +45,7 @@ const isUnknownChainError = (error) => {
 }
 
 const ensureLocalChain = async () => {
-  if (!ethereum || !isLocalRpc) return
+  if (!ethereum) return
 
   const currentHex = await ethereum.request({ method: 'eth_chainId' })
   if (currentHex?.toLowerCase() === localChainHex) return
@@ -47,8 +66,11 @@ const ensureLocalChain = async () => {
         {
           chainId: localChainHex,
           chainName: localChainName,
-          nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+          nativeCurrency: chainMeta.currency,
           rpcUrls: [localRpcUrl],
+          ...(chainMeta.blockExplorerUrls
+            ? { blockExplorerUrls: chainMeta.blockExplorerUrls }
+            : {}),
         },
       ],
     })
@@ -69,12 +91,43 @@ const assertContractCode = async (provider) => {
   }
 }
 
-const getRpcProvider = () => new ethers.JsonRpcProvider(localRpcUrl)
+// Public Amoy RPC endpoints are individually flaky/unreachable from some
+// networks (e.g. Cloudflare-fronted hosts time out). For non-local networks we
+// build a FallbackProvider over several endpoints so a single dead RPC cannot
+// break page loads; the configured NEXT_PUBLIC_RPC_URL is tried first.
+const AMOY_RPCS = Array.from(
+  new Set([
+    localRpcUrl,
+    'https://polygon-amoy.drpc.org',
+    'https://rpc-amoy.polygon.technology',
+    'https://polygon-amoy-bor-rpc.publicnode.com',
+  ])
+)
+
+const getRpcProvider = () => {
+  if (isLocalRpc) {
+    return new ethers.JsonRpcProvider(localRpcUrl, localChainId, { staticNetwork: true })
+  }
+  const configs = AMOY_RPCS.map((url, i) => ({
+    provider: new ethers.JsonRpcProvider(url, localChainId, { staticNetwork: true }),
+    priority: i + 1,
+    stallTimeout: 2500,
+    weight: 1,
+  }))
+  // quorum 1: return as soon as any endpoint answers.
+  return new ethers.FallbackProvider(configs, localChainId, { quorum: 1 })
+}
 
 const getChainNowSeconds = async () => {
-  const provider = getRpcProvider()
-  const latestBlock = await provider.getBlock('latest')
-  return Number(latestBlock?.timestamp || Math.floor(Date.now() / 1000))
+  try {
+    const provider = getRpcProvider()
+    const latestBlock = await provider.getBlock('latest')
+    if (latestBlock?.timestamp) return Number(latestBlock.timestamp)
+  } catch (error) {
+    console.warn('Could not read chain time; falling back to local clock:', error?.message)
+  }
+  // Fallback so the future-date guard is never silently skipped on RPC hiccups.
+  return Math.floor(Date.now() / 1000)
 }
 
 const getReadOnlyContract = async () => {
@@ -603,14 +656,25 @@ const getMyBookings = async (owner) => {
 const extractErrorMessage = (error) => {
   if (!error) return 'Unknown error'
   if (typeof error === 'string') return error
-  return (
+  const raw =
     error?.reason ||
     error?.shortMessage ||
     error?.error?.message ||
     error?.data?.message ||
     error?.message ||
     'Unknown error'
-  )
+  // MetaMask/RPC often hides a real contract revert reason on gas estimation and
+  // reports only "missing revert data". Translate to the most likely causes so
+  // the user is not left guessing.
+  if (/missing revert data|cannot estimate gas|CALL_EXCEPTION/i.test(raw)) {
+    return (
+      'Transaction would fail. Most likely: (1) your check-in date is not far ' +
+      'enough in the future on the chain clock — pick a date a few days out; or ' +
+      '(2) your wallet is not on Polygon Amoy (chain 80002); or (3) the room/date ' +
+      'is fully booked. Original error: ' + raw
+    )
+  }
+  return raw
 }
 
 const reportError = (error) => {

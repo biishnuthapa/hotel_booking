@@ -1,0 +1,352 @@
+{
+  "contractVariant": "HospitalityBookingNFTV2 (V2)",
+  "network": "hardhat",
+  "chainId": "31337",
+  "iterations": 5,
+  "feeScenarios": [
+    {
+      "name": "Ethereum L1 (20 gwei, ETH=$3000)",
+      "gasPriceGwei": 20,
+      "nativeUsd": 3000
+    },
+    {
+      "name": "Polygon PoS (30 gwei, POL=$0.40)",
+      "gasPriceGwei": 30,
+      "nativeUsd": 0.4
+    },
+    {
+      "name": "Arbitrum One (0.1 gwei, ETH=$3000)",
+      "gasPriceGwei": 0.1,
+      "nativeUsd": 3000
+    }
+  ],
+  "gas": {
+    "deploy": {
+      "n": 1,
+      "min": 4841593,
+      "mean": 4841593,
+      "max": 4841593
+    },
+    "createAppartment": {
+      "n": 5,
+      "min": 370147,
+      "mean": 373567,
+      "max": 387247
+    },
+    "addRoomTypeToApartment": {
+      "n": 5,
+      "min": 169587,
+      "mean": 169587,
+      "max": 169587
+    },
+    "bookApartment (1 night)": {
+      "n": 5,
+      "min": 420177,
+      "mean": 427017,
+      "max": 454377
+    },
+    "bookApartment (3 nights)": {
+      "n": 5,
+      "min": 519263,
+      "mean": 519263,
+      "max": 519263
+    },
+    "bookApartment (7 nights)": {
+      "n": 5,
+      "min": 708599,
+      "mean": 708599,
+      "max": 708599
+    },
+    "tokenURI (estimateGas, view)": {
+      "n": 5,
+      "min": 140466,
+      "mean": 140624,
+      "max": 140862
+    },
+    "refundBooking (3 nights)": {
+      "n": 5,
+      "min": 126384,
+      "mean": 126384,
+      "max": 126384
+    },
+    "checkInApartment": {
+      "n": 5,
+      "min": 116856,
+      "mean": 116856,
+      "max": 116856
+    },
+    "checkout": {
+      "n": 5,
+      "min": 35452,
+      "mean": 35452,
+      "max": 35452
+    },
+    "addReview": {
+      "n": 5,
+      "min": 187512,
+      "mean": 187512,
+      "max": 187512
+    },
+    "claimFunds (no-show)": {
+      "n": 5,
+      "min": 89482,
+      "mean": 89482,
+      "max": 89482
+    }
+  },
+  "confirmLatencyMs": {
+    "createAppartment": {
+      "n": 5,
+      "min": 4,
+      "mean": 7,
+      "max": 16
+    },
+    "addRoomTypeToApartment": {
+      "n": 5,
+      "min": 4,
+      "mean": 5,
+      "max": 8
+    },
+    "bookApartment (1 night)": {
+      "n": 5,
+      "min": 4,
+      "mean": 5,
+      "max": 7
+    },
+    "bookApartment (3 nights)": {
+      "n": 5,
+      "min": 5,
+      "mean": 7,
+      "max": 10
+    },
+    "bookApartment (7 nights)": {
+      "n": 5,
+      "min": 10,
+      "mean": 13,
+      "max": 19
+    },
+    "refundBooking (3 nights)": {
+      "n": 5,
+      "min": 4,
+      "mean": 12,
+      "max": 37
+    },
+    "checkInApartment": {
+      "n": 5,
+      "min": 2,
+      "mean": 3,
+      "max": 4
+    },
+    "checkout": {
+      "n": 5,
+      "min": 2,
+      "mean": 3,
+      "max": 4
+    },
+    "addReview": {
+      "n": 5,
+      "min": 2,
+      "mean": 3,
+      "max": 6
+    },
+    "claimFunds (no-show)": {
+      "n": 5,
+      "min": 2,
+      "mean": 3,
+      "max": 4
+    }
+  },
+  "fiatCostUSD": {
+    "deploy": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 290.4956
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0581
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 1.4525
+      }
+    ],
+    "createAppartment": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 22.414
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0045
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.1121
+      }
+    ],
+    "addRoomTypeToApartment": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 10.1752
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.002
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0509
+      }
+    ],
+    "bookApartment (1 night)": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 25.621
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0051
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.1281
+      }
+    ],
+    "bookApartment (3 nights)": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 31.1558
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0062
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.1558
+      }
+    ],
+    "bookApartment (7 nights)": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 42.5159
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0085
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.2126
+      }
+    ],
+    "tokenURI (estimateGas, view)": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 8.4374
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0017
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0422
+      }
+    ],
+    "refundBooking (3 nights)": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 7.583
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0015
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0379
+      }
+    ],
+    "checkInApartment": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 7.0114
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0014
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0351
+      }
+    ],
+    "checkout": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 2.1271
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0004
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0106
+      }
+    ],
+    "addReview": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 11.2507
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0023
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0563
+      }
+    ],
+    "claimFunds (no-show)": [
+      {
+        "scenario": "Ethereum L1 (20 gwei, ETH=$3000)",
+        "usd": 5.3689
+      },
+      {
+        "scenario": "Polygon PoS (30 gwei, POL=$0.40)",
+        "usd": 0.0011
+      },
+      {
+        "scenario": "Arbitrum One (0.1 gwei, ETH=$3000)",
+        "usd": 0.0268
+      }
+    ]
+  },
+  "readScaling": [
+    {
+      "apartments": 1,
+      "getApartmentsEstimateGas": "55169"
+    },
+    {
+      "apartments": 10,
+      "getApartmentsEstimateGas": "249589"
+    },
+    {
+      "apartments": 25,
+      "getApartmentsEstimateGas": "575046"
+    },
+    {
+      "apartments": 50,
+      "getApartmentsEstimateGas": "575052"
+    },
+    {
+      "apartments": 100,
+      "getApartmentsEstimateGas": "575052"
+    }
+  ],
+  "generatedAt": "2026-07-24T02:44:17.061Z"
+}

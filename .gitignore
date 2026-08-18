@@ -32,3 +32,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# local env (contains private keys — never commit)
+.env
+
+# local tool config
+.claude/

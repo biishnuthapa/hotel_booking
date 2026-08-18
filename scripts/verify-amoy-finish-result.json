@@ -1,0 +1,54 @@
+{
+  "contract": "0x630dbDfa393bAd0c364E1AE559Cee5A6ED17768E",
+  "account": "0x4Db46B9F88A8121fD24764f90b6F839471D5de27",
+  "transitions": [
+    {
+      "at": "D before check-in",
+      "tokenId": "2",
+      "status": "0 (Booked)"
+    },
+    {
+      "at": "E after book",
+      "tokenId": "3",
+      "status": "0 (Booked)"
+    },
+    {
+      "at": "D after check-in (expect CheckedIn=2)",
+      "tokenId": "2",
+      "status": "2 (CheckedIn)"
+    },
+    {
+      "at": "D after checkout (expect Expired=3)",
+      "tokenId": "2",
+      "status": "3 (Expired)"
+    },
+    {
+      "at": "E after no-show claim (expect Expired=3)",
+      "tokenId": "3",
+      "status": "3 (Expired)"
+    }
+  ],
+  "txs": {
+    "bookE": "0x8517c0b2eb0cb82ecd22374260679e2fab0a9de35df25b8442b3ab2dc1d6a959",
+    "checkInD": "0x9ad1b7d5deb14f374e324d9396443bc5c2d9940508b9394854e6d935883c374f",
+    "addReview": "0xa3042f19db3085ab58b78cd37335981380e4b0b4a11b8ad44fb1427ed9d4c98e",
+    "checkoutD": "0x24fe9f04f911b5cea1e939f4a05f766109aea8ff74cc3ec48117f824dbcdbc3d",
+    "claimE": "0x244546bb59c0efe0b34a27f9aa238475be3f8bf07e8b8cad1a6a1b2bb64e8118"
+  },
+  "bookingIndexes": {
+    "D": 1,
+    "E": 2
+  },
+  "tokens": {
+    "D": "2",
+    "E": "3"
+  },
+  "reviewCount": 1,
+  "links": {
+    "contract": "https://amoy.polygonscan.com/address/0x630dbDfa393bAd0c364E1AE559Cee5A6ED17768E",
+    "checkInD": "https://amoy.polygonscan.com/tx/0x9ad1b7d5deb14f374e324d9396443bc5c2d9940508b9394854e6d935883c374f",
+    "addReview": "https://amoy.polygonscan.com/tx/0xa3042f19db3085ab58b78cd37335981380e4b0b4a11b8ad44fb1427ed9d4c98e",
+    "checkoutD": "https://amoy.polygonscan.com/tx/0x24fe9f04f911b5cea1e939f4a05f766109aea8ff74cc3ec48117f824dbcdbc3d",
+    "claimE": "https://amoy.polygonscan.com/tx/0x244546bb59c0efe0b34a27f9aa238475be3f8bf07e8b8cad1a6a1b2bb64e8118"
+  }
+}

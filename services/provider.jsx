@@ -31,36 +31,50 @@ const polygonMainnet = {
 }
 
 const localRpcUrl = process.env.NEXT_PUBLIC_RPC_URL || 'http://127.0.0.1:8545'
-const isLocalRpc = /127\.0\.0\.1|localhost/.test(localRpcUrl)
 const localChainId = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 31337)
-const localChainName = localChainId === 31337 ? 'Hardhat Localhost' : 'Localhost'
 
-const hardhatLocalChain = {
+// Per-network metadata so the wallet (RainbowKit/wagmi) targets the SAME chain
+// the app reads/writes on. Keyed by NEXT_PUBLIC_LOCAL_CHAIN_ID.
+const CHAINS_BY_ID = {
+  31337: {
+    id: 31337,
+    name: 'Hardhat Localhost',
+    network: 'hardhat-localhost',
+    nativeCurrency: { decimals: 18, name: 'Ethereum', symbol: 'ETH' },
+    rpcUrls: { public: { http: [localRpcUrl] }, default: { http: [localRpcUrl] } },
+    testnet: true,
+  },
+  80002: {
+    id: 80002,
+    name: 'Polygon Amoy',
+    network: 'polygon-amoy',
+    nativeCurrency: { decimals: 18, name: 'POL', symbol: 'POL' },
+    rpcUrls: { public: { http: [localRpcUrl] }, default: { http: [localRpcUrl] } },
+    blockExplorers: {
+      default: { name: 'PolygonScan', url: 'https://amoy.polygonscan.com' },
+    },
+    testnet: true,
+  },
+  137: polygonMainnet,
+}
+
+const activeChain = CHAINS_BY_ID[localChainId] || {
   id: localChainId,
-  name: localChainName,
-  network: 'hardhat-localhost',
-  nativeCurrency: {
-    decimals: 18,
-    name: 'Ethereum',
-    symbol: 'ETH',
-  },
-  rpcUrls: {
-    public: { http: [localRpcUrl] },
-    default: { http: [localRpcUrl] },
-  },
+  name: `Chain ${localChainId}`,
+  network: `chain-${localChainId}`,
+  nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
+  rpcUrls: { public: { http: [localRpcUrl] }, default: { http: [localRpcUrl] } },
   testnet: true,
 }
 
-const activeChains = isLocalRpc ? [hardhatLocalChain] : [polygonMainnet]
+// Custom / testnet chains (local, Amoy) use their configured RPC directly;
+// Polygon mainnet keeps the Alchemy + public providers.
+const usesCustomRpc = localChainId !== 137
 
 const { chains, publicClient } = configureChains(
-  activeChains,
-  isLocalRpc
-    ? [
-        jsonRpcProvider({
-          rpc: () => ({ http: localRpcUrl }),
-        }),
-      ]
+  [activeChain],
+  usesCustomRpc
+    ? [jsonRpcProvider({ rpc: () => ({ http: localRpcUrl }) })]
     : [alchemyProvider({ apiKey: process.env.NEXT_PUBLIC_ALCHEMY_ID }), publicProvider()]
 )
 
