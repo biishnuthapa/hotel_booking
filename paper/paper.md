@@ -1,4 +1,4 @@
-# Verifiable Reviews from Proof-of-Stay NFTs: An On-Chain Review-Integrity Mechanism for Decentralized Accommodation Booking
+# Auditable Booking and Host-Attestation Provenance for Decentralized Accommodation Reviews
 
 **Authors:** _[Your Name]_, _[Co-authors]_
 **Affiliation:** _[Department, University]_
@@ -15,6 +15,15 @@
 > self-review attack analyzed in §6. Target: an applied blockchain conference
 > (e.g., BLOCKCHAIN Congress or IEEE ICBC short paper), the tier of ref. [3].
 
+> **V3 revision note (2026-08-18).** The live transactions and gas measurements
+> in this manuscript concern the historical V1/V2 prototypes. They are not an
+> audit and do not establish production correctness. The implemented V3 design
+> replaces guest self-check-in with a guest-bound host EIP-712 authorization,
+> uses ERC-20 pull payments and exact indexed pages, and remains blocked from
+> mainnet pending an independent audit. Payment proof means proof of token
+> transfer; host-attested check-in means proof of a valid host signature
+> submitted by the bound guest. Neither is proof of physical presence.
+
 ---
 
 ## Abstract
@@ -22,15 +31,14 @@
 Fabricated and manipulated reviews are a persistent, well-documented weakness of
 centralized accommodation platforms, and decentralization alone does not fix it:
 recent on-chain NFT-rental systems tokenize *access rights* but leave the
-review corpus untreated. We present a mechanism that makes a guest review
-**verifiable at its source**. Each booking mints an ERC-721 *proof-of-stay* token
-whose metadata is generated entirely on-chain and advances by guest and host
-*actions* across the reservation lifecycle (Booked → Checked-In →
-Expired/Cancelled); the right to review a listing is conferred only by a
-completed, publicly auditable on-chain check-in recorded in that lifecycle. We
-analyze the mechanism's security honestly — it guarantees *verified-stay
-provenance* (every review binds to a real, paid booking) rather than full
-sybil-resistance — and we quantify the on-chain cost of its residual attack, host
+review corpus untreated. We present a mechanism that makes a guest review's
+**booking and attestation provenance auditable**. Each booking mints an ERC-721
+credential whose metadata advances across the reservation lifecycle; the right
+to review is conferred only after an on-chain check-in. In V3, that check-in
+requires a guest-bound host EIP-712 authorization. This proves payment and host
+attestation, not physical presence or review truth. We analyze the mechanism's
+security honestly — it provides *booking-attestation provenance* rather than
+physical-presence proof or full sybil-resistance — and quantify the residual host
 self-review collusion, showing it can be priced up but not eliminated without an
 identity layer. The mechanism is realized within a complete, escrow-backed
 booking system implemented in Solidity with a Next.js front end and deployed to
@@ -44,7 +52,7 @@ Layer-2. We position the work precisely against deployed NFT-rental systems that
 provide no review mechanism, and against the debate over whether NFTs belong in
 hotel distribution at all.
 
-**Keywords:** review integrity, proof-of-stay, blockchain, smart contracts, NFT,
+**Keywords:** review integrity, booking provenance, host attestation, blockchain, smart contracts, NFT,
 ERC-721, hospitality, decentralized applications, sybil resistance, gas cost.
 
 ---
@@ -61,17 +69,18 @@ construction — but it does not follow automatically. Recent decentralized
 NFT-rental systems tokenize a *booking* or an *access right*, yet still either
 omit reviews or would inherit the same "anyone can post" weakness if they added
 them. The question we ask is narrow and, we argue, under-served: **can a review
-be made verifiable at its source — provably tied to a real, completed stay —
+be made auditable at its source — tied to a paid booking and host attestation —
 using only on-chain state?**
 
-We answer with a *proof-of-stay* construction. Each booking mints an ERC-721
+We answer with a *booking-attestation credential*. Each booking mints an ERC-721
 token whose metadata is assembled on-chain from live contract state, so the
 token's status advances by guest and host *actions* across the reservation
 lifecycle (Booked → Checked-In → Expired/Cancelled) with no metadata server and
 no re-mint. The right to review a listing is conferred only by a completed,
-publicly auditable on-chain **check-in** recorded in that lifecycle — so every
-review is bound to a real, paid, inspectable booking. We are precise about what
-this buys: it establishes *verified-stay provenance*, not full sybil-resistance,
+publicly auditable on-chain **check-in** recorded in that lifecycle. In V3 the
+host signs that check-in for the bound guest. Every accepted review is therefore
+bound to a paid booking and host attestation. We are precise about what this
+buys: it does not establish physical presence, identity, truth, or full sybil-resistance,
 because a host can still book their own listing; we quantify the on-chain cost of
 that residual collusion and discuss where an identity layer would be required to
 close it. The construction is embedded in a complete escrow-backed booking
@@ -81,11 +90,11 @@ settlement, cancellation, and no-show flows — rather than in isolation.
 **Contributions.**
 
 1. **An on-chain review-integrity mechanism** (§3.3, §3.5): reviews gated by a
-   verifiable proof-of-stay check-in recorded in a dynamic, on-chain NFT
+   auditable host-attested check-in recorded in a dynamic, on-chain NFT
    lifecycle — a property absent from deployed NFT-rental systems [3], which
    provide no review mechanism at all.
 2. **An honest security analysis of the mechanism** (§6): we characterize its
-   guarantee as verified-stay provenance, identify host self-review collusion as
+   guarantee as booking-attestation provenance, identify host self-review collusion as
    the residual attack, and quantify its on-chain cost, delimiting what the
    mechanism does and does not defend against.
 3. **An end-to-end, publicly verifiable realization** (§4, §5.6): the mechanism
@@ -141,7 +150,7 @@ volume of conceptual work [6], [7], [8]. But the more specific gap we target is
 narrower and, we argue, more defensible: even the deployed NFT-rental systems
 [3] do not address *review integrity*, though fabricated reviews are a central
 criticism of the centralized platforms these systems aim to displace. We
-contribute a proof-of-stay construction that makes review provenance verifiable,
+contribute a booking-attestation construction that makes review provenance auditable,
 and measure its cost.
 
 ### 2.4 Enabling standards and tools
@@ -165,12 +174,12 @@ describe; absence of a report is not proof of absence.
 |---|---|---|---|---|---|
 | On-chain booking + escrow | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Per-booking NFT | ✗ | n.r. | ✓ (expirable ERC-7858 / soulbound) | ✗ | ✓ (ERC-721) |
-| NFT semantics | — | — | time-limited *access right* | — | *proof-of-stay*, action-driven status |
+| NFT semantics | — | — | time-limited *access right* | — | non-transferable booking credential, action-driven status |
 | Dynamic on-chain metadata by lifecycle *action* | ✗ | ✗ | ✗ (time-expiry only) | ✗ | ✓ |
 | Explicit check-in / checkout / no-show / refund settlement | partial | n.r. | ✗ (reserve → auto-expire → withdraw) | partial | ✓ |
-| Review gating by verified on-chain stay | ✗ | n.r. | ✗ (no reviews) | ✗ | ✓ |
+| Review gating by paid booking + host-attested check-in | ✗ | n.r. | ✗ (no reviews) | ✗ | ✓ (V3) |
 | Room capacity / pricing controls | n.r. | n.r. | ✓ (seasons, capacity) | ✗ | ✓ (per-date) |
-| Marketplace-read scaling approach | n.r. | n.r. | contract-per-listing (factory) | unbounded loop | bounded pagination |
+| Marketplace-read scaling approach | n.r. | n.r. | contract-per-listing (factory) | unbounded loop | V2 cursor scan; V3 exact indexed pages |
 | Per-operation gas evaluation | ✗ | n.r. | ✓ (Ethereum vs. IOTA) | ✗ | ✓ (+ V1/V2 optimization, −47.9%) |
 | Static security analysis (Slither) | ✗ | n.r. | ✓ | ✗ | ✓ |
 | Unit tests | n.r. | n.r. | ✓ | ✗ | ✓ |
@@ -183,14 +192,14 @@ gas-measured, Slither-analyzed, NFT-based rental system with a platform-cost
 argument, and [1] provides formal protocol verification. We therefore do **not**
 claim novelty for on-chain NFT booking, deployment-and-measurement, or security
 analysis as such. Our distinct elements are three: (i) an NFT that carries
-*proof-of-stay lifecycle status* driven by check-in/checkout actions, as opposed
+*booking-attestation lifecycle status* driven by check-in/checkout actions, as opposed
 to [3]'s time-expirable *access* token; (ii) an on-chain **review-integrity
 gate** — absent from [3], which implements no reviews; and (iii) a
 **fund-conservation-verified** settlement lifecycle (check-in, cancellation
 refund with collateral split, no-show claim) established by randomized invariant
 fuzzing and a tx-linked live run. Where [3] asks "which ledger is cheaper to run
-this on," we ask "can proof-of-stay provide verifiable review provenance, and at
-what cost." Their bounded-scaling factory pattern and our pagination are
+this on," we ask "can paid-booking and host-attestation state provide auditable review provenance, and at
+what cost." Their bounded-scaling factory pattern and V3's exact indexed pagination are
 alternative solutions to the same read-cost problem (§5.3).
 
 ---
@@ -252,7 +261,7 @@ terminal paths exist:
 All state changes precede external transfers (checks-effects-interactions), and
 settlement functions are reentrancy-guarded.
 
-### 3.5 Review integrity via proof-of-stay (core mechanism)
+### 3.5 Review integrity via booking and host-attestation provenance (core mechanism)
 
 This is the paper's central mechanism. The goal is a review whose *provenance* is
 verifiable from on-chain state alone, without trusting a platform operator.
@@ -265,20 +274,18 @@ other. The defender is any reader who wants to weight reviews by trustworthiness
 using only public chain data. We assume the underlying chain is honest-majority
 and that off-chain identity is unavailable (permissionless setting).
 
-**Mechanism.** Review eligibility is bound to the proof-of-stay lifecycle of
-§3.3. `addReview(aid, text)` requires the caller to hold a completed check-in
-record for listing `aid` — established when `checkInApartment` (callable only by
-the booking's guest, only within the on-chain stay window) advances the guest's
-booking to *Checked-In*. Thus every accepted review is transitively bound to a
-specific booking that was *paid for*, *reserved on a real date*, and *checked in*
-— all publicly auditable. Eligibility is deliberately tied to check-in (a
-guest-controlled action) rather than to checkout (a host-controlled action): the
-alternative would let a host suppress a negative review by withholding checkout,
-so we accept the weaker precondition to remove that griefing vector.
+**Mechanism.** In V3, `submitReview(bookingId, rating, uri, contentHash)` requires
+the booking's snapshotted guest, exactly one review, and a prior CheckedIn or
+Completed state. CheckedIn can be reached only when that guest submits a
+single-use EIP-712 authorization signed by the snapshotted host, bound to the
+chain, contract, booking, guest, nonce, and validity window. The review is thus
+bound to an exact paid booking and host attestation. Permissionless completion
+after checkout prevents a host from suppressing the terminal state.
 
-**Guarantee.** The mechanism provides *verified-stay provenance*: a review's
-existence proves a completed, paid booking by the reviewing address. This fully
-defeats adversary (A) — third-party review spam now costs a real booking rather
+**Guarantee.** The mechanism provides *booking-attestation provenance*: a review's
+existence proves a paid booking plus a valid host authorization submitted by the
+reviewing address. It does not prove physical presence or the truth of the review.
+It raises the cost of adversary (A) — third-party review spam now needs a booking and host cooperation rather
 than a free account — and makes every review's backing publicly inspectable,
 which no centralized platform offers. It does **not** provide sybil-resistance
 against adversaries (B) and (C): a host can book their own listing. Critically,
@@ -303,7 +310,7 @@ capacity infeasible by construction (verified in §5.5).
 ### 4.1 Provenance and scope
 
 The application is derived from the open-source *dappBnb* tutorial project
-(MIT-licensed) [9]. We disclose this explicitly. Our additions — the proof-of-stay
+(MIT-licensed) [9]. We disclose this explicitly. Our additions — the booking-attestation
 NFT with dynamic on-chain metadata, the room-type inventory model, the
 lifecycle/escrow settlement paths, the review-integrity gate, a storage-optimized
 contract variant, and the full evaluation and verification harness — constitute
@@ -328,9 +335,14 @@ We evaluate two variants to isolate a storage design choice (§5.2):
 - **V1** stores full listing descriptors and NFT name/description/image strings
   on-chain (nine string fields per listing).
 - **V2** stores a slim listing (name, location, one image URI, and a single IPFS
-  metadata pointer — four string fields) and replaces unbounded reads with
-  cursor-paginated ones. Booking and settlement logic are identical to V1 so
+  metadata pointer — four string fields) and replaces unbounded return values
+  with cursor pagination. Because V2 filters deleted IDs while scanning, the
+  returned page size does not strictly bound scan work. Booking and settlement logic are identical to V1 so
   that measured differences isolate the storage design.
+- **V3** maintains explicit per-guest, per-host/listing, room, and review ID
+  arrays. Each page reads at most its capped limit (50) without filtering during
+  the scan. V3 changes settlement and is therefore not included in the V1/V2
+  storage-isolation gas comparison.
 
 ### 4.4 Deployment
 
@@ -394,8 +406,10 @@ single-contract baseline and evaluate a different point in the design space —
 keeping a single contract (simpler indexing, one address to track) but replacing
 the unbounded read with cursor pagination. `getApartments()` in V1 returns all
 listings in one unbounded loop; its cost grows linearly and reaches ~4.03M gas
-at 100 listings, approaching block-gas limits. V2's paginated read is bounded by
-page size and stays flat.
+at 100 listings, approaching block-gas limits. V2's measured page stays flat in
+this dense-listing benchmark, but sparse/deleted ID scans can exceed the number
+of returned entries. Only V3's explicit ID-window pages strictly bound work by
+page size.
 
 **Table 2. Marketplace read cost vs. catalog size (estimateGas).**
 
@@ -414,7 +428,7 @@ per-listing deployment at the cost of paged reads. We report the pagination
 point as a practical alternative, not as a novel discovery of the underlying
 O(n) issue (Figure 3).
 
-![Figure 3. Marketplace read cost vs. catalog size: V1 unbounded read grows linearly; V2 pagination is bounded.](figures/fig3-read-scaling.svg)
+![Figure 3. Marketplace read cost vs. catalog size: V1 unbounded read grows linearly; V2 page cost stays flat for the measured dense-listing case but is not a strict sparse-scan bound.](figures/fig3-read-scaling.svg)
 
 ### 5.4 Fiat cost and the disintermediation argument
 
@@ -544,7 +558,7 @@ rings follow the same economics. Mitigations exist — minimum review-eligible
 booking value, platform- or DAO-set price floors, review weight proportional to
 escrowed value, time-locked review windows, or an identity layer
 (proof-of-personhood) — each trading off permissionlessness, cost, or privacy;
-we deliberately report the gate's honest guarantee (verified-stay binding and a
+we deliberately report the gate's honest guarantee (paid-booking and host-attestation binding, not physical presence, and a
 public audit trail: fabricated reviews are at least *visible* as bookings
 on-chain, unlike fabricated accounts on a centralized platform) rather than
 claim sybil-resistance the mechanism does not provide. Selecting and evaluating
@@ -584,8 +598,8 @@ application's provenance (§4.1) means only our additions are novel.
 - **Fiat pricing and multi-currency settlement** via price oracles and DEX/bridge
   routing (deferred: no reliable testnet oracle/DEX liquidity, and added
   oracle/swap attack surface requiring re-audit).
-- **Pull-payment settlement** and an **arbitrated dispute flow** replacing the
-  owner-refund lever.
+- **V3 implements pull-payment settlement and multisig arbitration**; independent
+  audit and public soak evidence remain required before production claims.
 - **A full statistical testnet cost campaign** and a second chain for
   cross-network cost comparison.
 - **Formal verification** of the settlement invariants and a third-party audit.
@@ -594,13 +608,13 @@ application's provenance (§4.1) means only our additions are novel.
 
 ## 8. Conclusion
 
-We addressed a specific, under-served question: whether an accommodation review
-can be made verifiable at its source using only on-chain state. Our answer is a
-proof-of-stay mechanism in which review eligibility is conferred by a completed,
+We addressed a specific, under-served question: whether an accommodation review's
+booking and attestation provenance can be audited using on-chain state. Our answer is a
+mechanism in which review eligibility is conferred by a host-attested,
 publicly auditable check-in recorded in a dynamic on-chain NFT lifecycle — a
 property that deployed NFT-rental systems, which tokenize access but omit
 reviews, do not provide. We were deliberately precise about its security: the
-mechanism delivers verified-stay *provenance*, defeating third-party review spam
+mechanism delivers booking-attestation *provenance*, raising the cost of third-party review spam
 and making every review's backing publicly inspectable, but not full
 sybil-resistance against a host reviewing their own listing — a residual attack
 whose on-chain cost we quantified and whose closure requires an identity or
@@ -609,7 +623,8 @@ a complete escrow-backed booking system, validated end-to-end on a public test
 network across three wallet roles with exact fund conservation, and shown to be
 affordable on Layer-2. We claim neither a new booking system nor a definitive
 rebuttal of the skeptics, but a concrete, honestly bounded step: verifiable
-review provenance is achievable on-chain, and cheap, though trustworthy ratings
+review provenance is achievable on-chain, though it is not proof of physical
+presence and trustworthy ratings
 in a permissionless setting ultimately meet the same identity problem that limits
 decentralized reputation generally.
 
@@ -626,7 +641,7 @@ decentralized reputation generally.
 - (b) Check-in (Booked→CheckedIn): `0x9ad1b7d5deb14f374e324d9396443bc5c2d9940508b9394854e6d935883c374f`
 - (c) Checkout (CheckedIn→Expired): `0x24fe9f04f911b5cea1e939f4a05f766109aea8ff74cc3ec48117f824dbcdbc3d`
 - (d) No-show claim (Booked→Expired): `0x244546bb59c0efe0b34a27f9aa238475be3f8bf07e8b8cad1a6a1b2bb64e8118`
-- (e) Add review (post proof-of-stay): `0xa3042f19db3085ab58b78cd37335981380e4b0b4a11b8ad44fb1427ed9d4c98e`
+- (e) Add review (historical V1 guest self-check-in gate, not physical-presence proof): `0xa3042f19db3085ab58b78cd37335981380e4b0b4a11b8ad44fb1427ed9d4c98e`
 
 All transactions are viewable at `https://amoy.polygonscan.com/tx/<hash>`.
 

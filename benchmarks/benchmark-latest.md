@@ -1,28 +1,41 @@
-# Gas benchmark — HospitalityBookingNFT (V1)
+# Gas benchmark — HospitalityBooking
 
-Network: hardhat (chainId 31337) · Iterations: 5 · Generated: 2026-07-24T02:39:30.602Z
+Network: hardhat · Generated: 2026-08-18T20:02:02.148Z
 
-| Operation | Gas (mean) | Gas (min–max) | Ethereum L1 (20 gwei, ETH=$3000) | Polygon PoS (30 gwei, POL=$0.40) | Arbitrum One (0.1 gwei, ETH=$3000) |
-|---|---|---|---|---|---|
-| deploy | 5,378,537 | 5,378,537–5,378,537 | $322.7122 | $0.0645 | $1.6136 |
-| createAppartment | 716,798 | 713,378–730,478 | $43.0079 | $0.0086 | $0.215 |
-| addRoomTypeToApartment | 169,609 | 169,609–169,609 | $10.1765 | $0.002 | $0.0509 |
-| bookApartment (1 night) | 427,039 | 420,199–454,399 | $25.6223 | $0.0051 | $0.1281 |
-| bookApartment (3 nights) | 519,285 | 519,285–519,285 | $31.1571 | $0.0062 | $0.1558 |
-| bookApartment (7 nights) | 708,621 | 708,621–708,621 | $42.5173 | $0.0085 | $0.2126 |
-| tokenURI (estimateGas, view) | 137,576 | 137,418–137,814 | $8.2546 | $0.0017 | $0.0413 |
-| refundBooking (3 nights) | 126,384 | 126,384–126,384 | $7.583 | $0.0015 | $0.0379 |
-| checkInApartment | 116,856 | 116,856–116,856 | $7.0114 | $0.0014 | $0.0351 |
-| checkout | 35,452 | 35,452–35,452 | $2.1271 | $0.0004 | $0.0106 |
-| addReview | 187,512 | 187,512–187,512 | $11.2507 | $0.0023 | $0.0563 |
-| claimFunds (no-show) | 89,482 | 89,482–89,482 | $5.3689 | $0.0011 | $0.0268 |
+## Runtime sizes (EVM limit 24,576 bytes)
 
-## Read scaling (unbounded loops)
-
-| Apartments | getApartments estimateGas |
+| Contract | Bytes |
 |---|---|
-| 1 | 63,025 |
-| 10 | 411,922 |
-| 25 | 998,739 |
-| 50 | 1,991,551 |
-| 100 | 4,032,611 |
+| HospitalityBooking | 23,215 |
+| ReviewRegistry | 5,650 |
+| BookingLens | 6,866 |
+| HospitalityBookingMetadata | 3,925 |
+
+## Per-operation gas
+
+| Operation | Gas (mean) | Ethereum L1 (20 gwei) | Polygon PoS (30 gwei) | Arbitrum One (0.1 gwei) |
+|---|---|---|---|---|
+| deploy core | 6,147,244 | $368.8346 | $0.0738 | $1.844173 |
+| deploy review registry | 1,278,510 | $76.7106 | $0.0153 | $0.383553 |
+| deploy lens | 1,537,792 | $92.2675 | $0.0185 | $0.461338 |
+| createListing | 190,071 | $11.4043 | $0.0023 | $0.057021 |
+| addRoomType | 262,625 | $15.7575 | $0.0032 | $0.078788 |
+| book (1 night) | 581,532 | $34.8919 | $0.0070 | $0.174460 |
+| book (3 nights) | 507,670 | $30.4602 | $0.0061 | $0.152301 |
+| book (7 nights) | 599,346 | $35.9608 | $0.0072 | $0.179804 |
+| checkIn (host-attested) | 139,474 | $8.3684 | $0.0017 | $0.041842 |
+| submitReview | 426,660 | $25.5996 | $0.0051 | $0.127998 |
+| completeStay | 99,598 | $5.9759 | $0.0012 | $0.029879 |
+| withdraw | 48,739 | $2.9243 | $0.0006 | $0.014622 |
+| cancelBooking | 128,236 | $7.6942 | $0.0015 | $0.038471 |
+| settleNoShow | 86,394 | $5.1836 | $0.0010 | $0.025918 |
+| openDispute | 131,027 | $7.8616 | $0.0016 | $0.039308 |
+| resolveDispute | 82,354 | $4.9412 | $0.0010 | $0.024706 |
+| tokenURI (view) | 158,786 | $9.5272 | $0.0019 | $0.047636 |
+
+## Cost of one fabricated counted review
+
+| | Booking value required | Non-refundable tax | Counted weight |
+|---|---|---|---|
+| Without mechanism | 1 atomic unit | 0 | 100% |
+| With mechanism | 75.00 USDC | 5.25 USDC | 100% (0% if self-booked) |

@@ -1,0 +1,27 @@
+{
+  "network": "amoy",
+  "chainId": 80002,
+  "deployedAt": "2026-08-18T20:44:50.016Z",
+  "deployer": "0x4Db46B9F88A8121fD24764f90b6F839471D5de27",
+  "contracts": {
+    "HospitalityBooking": "0x0Cf4D0d74b153453279eF24f00110DC02778b90a",
+    "ReviewRegistry": "0xEe866387e23C4Dc2Eb3cc65006c4c2ea5b394A58",
+    "BookingLens": "0xee4d50e5741A7dcBb1cDa407AB54F7d493084F90",
+    "HospitalityBookingMetadata": "0xc48DaE34A19425360447241602eA156d56E03c97",
+    "paymentToken": "0x45e17A2d9B2e650a26D180b920D99bcE281FcBaB"
+  },
+  "roles": {
+    "treasury": "0x4Db46B9F88A8121fD24764f90b6F839471D5de27",
+    "admin": "0x4Db46B9F88A8121fD24764f90b6F839471D5de27",
+    "pauser": "0x4Db46B9F88A8121fD24764f90b6F839471D5de27",
+    "arbitrator": "0x4Db46B9F88A8121fD24764f90b6F839471D5de27"
+  },
+  "parameters": {
+    "taxBps": 700,
+    "securityDepositBps": 500,
+    "disputeBondBps": 200,
+    "reviewEligibilityBps": 5000,
+    "reviewSaturationBps": 10000,
+    "reviewRepeatWeightBps": 2500
+  }
+}

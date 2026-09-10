@@ -2,48 +2,33 @@ import { ToastContainer } from 'react-toastify'
 import '@/styles/globals.css'
 import 'react-toastify/dist/ReactToastify.css'
 import '@rainbow-me/rainbowkit/styles.css'
-import 'react-datepicker/dist/react-datepicker.css'
-import { useEffect, useState } from 'react'
 import Providers from '@/services/provider'
-import { Footer, Header } from '@/components'
-import { Provider } from 'react-redux'
-import { store } from '@/store'
+import Header from '@/components/Header/Header'
+import Footer from '@/components/Footer/Footer'
 
 export default function App({ Component, pageProps }) {
-  const [showChild, setShowChild] = useState(false)
+  return (
+    <Providers pageProps={pageProps}>
+      <div className="min-h-screen bg-[#f6f8fb]">
+        <Header />
+        <main className="mx-auto w-full">
+          <Component {...pageProps} />
+        </main>
+        <Footer />
+      </div>
 
-  useEffect(() => {
-    setShowChild(true)
-  }, [])
-
-  if (!showChild || typeof window === 'undefined') {
-    return null
-  } else {
-    return (
-      <Providers pageProps={pageProps}>
-        <Provider store={store}>
-          <div className="min-h-screen bg-[#f6f8fb]">
-            <Header />
-            <main className="mx-auto w-full">
-              <Component {...pageProps} />
-            </main>
-            <Footer />
-          </div>
-
-          <ToastContainer
-            position="bottom-center"
-            autoClose={5000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme="dark"
-          />
-        </Provider>
-      </Providers>
-    )
-  }
+      <ToastContainer
+        position="bottom-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+    </Providers>
+  )
 }

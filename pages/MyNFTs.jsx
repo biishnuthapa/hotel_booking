@@ -1,382 +1,253 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import Modal from 'react-modal'
+import { ethers } from 'ethers'
 import { toast } from 'react-toastify'
-import { useAccount } from 'wagmi'
-import CreateRoomType from '@/components/CreateRoomType'
+import { useAccount, useChainId, useWalletClient } from 'wagmi'
+import QRCode from 'qrcode'
 import {
-  checkoutGuest,
-  claimNoShowFunds,
-  getApartments,
-  getBookings,
-  getChainNowSeconds,
-  getRevenueEvents,
-  getRooms,
-  getSecurityFee,
-  getTaxPercent,
+  BOOKING_STATUS,
+  getV3HostBookings,
+  getV3ListingWithRooms,
+  getV3Listings,
+  getV3PendingWithdrawal,
+  getV3TokenInfo,
+  sendV3Action,
+  signCheckInAuthorization,
 } from '@/services/blockchain'
-import { formatDate } from '@/utils/helper'
+import { epochDayToDateString } from '@/utils/dates'
 
-const formatToastError = (error) =>
-  error?.shortMessage || error?.reason || error?.message || 'Encountered error'
+const CHAIN_ID = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 80002)
 
-const NFTPage = () => {
+const errorMessage = (error) => error?.shortMessage || error?.message || 'Operation failed'
+const serializeAuthorization = (value) =>
+  JSON.stringify(value, (_key, item) => (typeof item === 'bigint' ? item.toString() : item), 2)
+
+function encodeAuthorization(value) {
+  if (typeof window === 'undefined') return ''
+  return btoa(unescape(encodeURIComponent(value))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+export default function PropertyManagement() {
   const { address } = useAccount()
+  const activeChainId = useChainId()
+  const { data: walletClient } = useWalletClient()
   const [properties, setProperties] = useState([])
+  const [bookings, setBookings] = useState([])
+  const [token, setToken] = useState(null)
+  const [pendingWithdrawal, setPendingWithdrawal] = useState(0n)
+  const [authorizations, setAuthorizations] = useState({})
+  const [roomDrafts, setRoomDrafts] = useState({})
   const [loading, setLoading] = useState(false)
-  const [chainNowSec, setChainNowSec] = useState(null)
-  const [activeRoomModal, setActiveRoomModal] = useState(null)
-  const [ownerEarnings, setOwnerEarnings] = useState(0)
 
-  useEffect(() => {
-    const loadChainTime = async () => {
-      try {
-        setChainNowSec(await getChainNowSeconds())
-      } catch (error) {
-        console.error('Failed to load chain time:', error)
-      }
+  const refresh = useCallback(async () => {
+    if (!address) {
+      setProperties([])
+      setBookings([])
+      return
     }
-
-    loadChainTime()
-  }, [])
-
-  useEffect(() => {
-    const loadProperties = async () => {
-      if (!address) {
-        setProperties([])
-        return
-      }
-
-      try {
-        setLoading(true)
-        const apartments = await getApartments()
-        const owned = apartments.filter(
-          (apartment) => apartment.owner?.toLowerCase() === address.toLowerCase()
-        )
-
-        const hydrated = await Promise.all(
-          owned.map(async (apartment) => {
-            let roomTypes = []
-            let bookings = []
-            try {
-              roomTypes = await getRooms(apartment.id)
-            } catch (error) {
-              console.error(`Failed to load rooms for apartment ${apartment.id}:`, error)
-            }
-            try {
-              bookings = await getBookings(apartment.id)
-            } catch (error) {
-              console.error(`Failed to load bookings for apartment ${apartment.id}:`, error)
-            }
-            return { ...apartment, roomTypes, bookings }
-          })
-        )
-
-        setProperties(hydrated)
-      } catch (error) {
-        console.error('Failed to load properties:', error)
-        setProperties([])
-      } finally {
-        setLoading(false)
-      }
+    setLoading(true)
+    try {
+      const [allListings, hostBookings, tokenInfo, withdrawal] = await Promise.all([
+        getV3Listings(CHAIN_ID, { includeInactive: true }),
+        getV3HostBookings(CHAIN_ID, address),
+        getV3TokenInfo(CHAIN_ID),
+        getV3PendingWithdrawal(CHAIN_ID, address),
+      ])
+      const owned = allListings.filter(
+        (listing) => listing.owner.toLowerCase() === address.toLowerCase()
+      )
+      const hydrated = await Promise.all(
+        owned.map(async (listing) => {
+          const { rooms } = await getV3ListingWithRooms(CHAIN_ID, listing.id)
+          return { listing, rooms }
+        })
+      )
+      setProperties(hydrated)
+      setBookings([...hostBookings].reverse())
+      setToken(tokenInfo)
+      setPendingWithdrawal(withdrawal)
+    } catch (error) {
+      toast.error(errorMessage(error))
+    } finally {
+      setLoading(false)
     }
-
-    loadProperties()
   }, [address])
 
   useEffect(() => {
-    const loadOwnerRevenue = async () => {
-      if (!address || properties.length === 0) {
-        setOwnerEarnings(0)
-        return
-      }
+    const timeout = setTimeout(refresh, 0)
+    return () => clearTimeout(timeout)
+  }, [refresh])
 
-      try {
-        const [events, taxPercent, securityFee] = await Promise.all([
-          getRevenueEvents(0),
-          getTaxPercent(),
-          getSecurityFee(),
-        ])
-
-        const bookingByKey = new Map()
-        properties.forEach((property) => {
-          property.bookings.forEach((booking) => {
-            bookingByKey.set(`${property.id}-${booking.id}`, booking)
-          })
-        })
-
-        const total = events.reduce((sum, event) => {
-          const booking = bookingByKey.get(`${event.aid}-${event.bookingId}`)
-          if (!booking) return sum
-          const totalPrice = Number(booking.totalPrice || 0)
-          if (!Number.isFinite(totalPrice) || totalPrice <= 0) return sum
-
-          if (event.type === 'checked_in') {
-            return sum + (totalPrice * (100 - taxPercent)) / 100
-          }
-          if (event.type === 'claimed') {
-            const fee = (totalPrice * securityFee) / 100
-            return sum + (totalPrice * (100 - taxPercent)) / 100 + fee
-          }
-          if (event.type === 'refunded') {
-            const fee = (totalPrice * securityFee) / 100
-            return sum + fee / 2
-          }
-          return sum
-        }, 0)
-
-        setOwnerEarnings(total)
-      } catch (error) {
-        console.error('Failed to compute owner earnings:', error)
-        setOwnerEarnings(0)
-      }
+  const run = async (method, args, success) => {
+    try {
+      if (Number(activeChainId) !== CHAIN_ID) throw new Error(`Switch to chain ${CHAIN_ID}`)
+      await sendV3Action(walletClient, CHAIN_ID, method, args)
+      toast.success(success)
+      await refresh()
+    } catch (error) {
+      toast.error(errorMessage(error))
     }
-
-    loadOwnerRevenue()
-  }, [address, properties])
-
-  const bookingRows = useMemo(
-    () =>
-      properties.flatMap((property) =>
-        property.bookings.map((booking) => ({
-          ...booking,
-          propertyId: property.id,
-          propertyName: property.name,
-          propertyLocation: property.location,
-        }))
-      ),
-    [properties]
-  )
-
-  const handleCheckout = (booking) => {
-    toast.promise(
-      new Promise((resolve, reject) => {
-        checkoutGuest(booking.propertyId, booking.id)
-          .then((tx) => resolve(tx))
-          .catch((error) => reject(error))
-      }),
-      {
-        pending: 'Approving checkout...',
-        success: 'Guest checked out successfully.',
-        error: {
-          render({ data }) {
-            return formatToastError(data)
-          },
-        },
-      }
-    )
   }
 
-  const handleClaim = (booking) => {
-    toast.promise(
-      new Promise((resolve, reject) => {
-        claimNoShowFunds(booking.propertyId, booking.id)
-          .then((tx) => resolve(tx))
-          .catch((error) => reject(error))
-      }),
-      {
-        pending: 'Approving claim...',
-        success: 'No-show funds claimed.',
-        error: {
-          render({ data }) {
-            return formatToastError(data)
-          },
-        },
-      }
-    )
+  const signAuthorization = async (bookingId) => {
+    try {
+      const authorization = await signCheckInAuthorization(walletClient, CHAIN_ID, bookingId)
+      const serialized = serializeAuthorization(authorization)
+      const deepLink = `${window.location.origin}/check-in?authorization=${encodeAuthorization(serialized)}`
+      const qrDataURL = await QRCode.toDataURL(deepLink, { errorCorrectionLevel: 'M', margin: 1 })
+      setAuthorizations((current) => ({
+        ...current,
+        [bookingId]: { serialized, deepLink, qrDataURL },
+      }))
+      toast.success('Authorization signed. Send it only to the booking guest.')
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
+  }
+
+  const updateRoomDraft = (listingId, field, value) => {
+    setRoomDrafts((current) => ({
+      ...current,
+      [listingId]: {
+        name: '',
+        metadataURI: '',
+        price: '',
+        capacity: 1,
+        ...(current[listingId] || {}),
+        [field]: value,
+      },
+    }))
+  }
+
+  const addRoom = async (listingId) => {
+    try {
+      const draft = roomDrafts[listingId]
+      if (!draft?.name || !draft?.metadataURI || !draft?.price) throw new Error('Complete all room fields')
+      const price = ethers.parseUnits(draft.price, token.decimals)
+      await sendV3Action(walletClient, CHAIN_ID, 'addRoomType', [
+        listingId,
+        draft.name,
+        draft.metadataURI,
+        price,
+        Number(draft.capacity),
+      ])
+      setRoomDrafts((current) => ({ ...current, [listingId]: null }))
+      toast.success('Room type added.')
+      await refresh()
+    } catch (error) {
+      toast.error(errorMessage(error))
+    }
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-slate-900">Property Management</h1>
-          <p className="text-sm text-slate-600">Manage listings, room types, and upcoming stays.</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-[#00773d]">V3 host</p>
+          <h1 className="text-3xl font-semibold text-slate-900">Property management</h1>
+          <p className="mt-1 text-sm text-slate-600">Deactivation preserves historical and active bookings.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/room/add"
-            className="rounded-xl bg-[#00773d] px-4 py-2 text-sm font-semibold text-white hover:brightness-110"
-          >
-            Create Property
-          </Link>
-          <Link
-            href="/MyBookings"
-            className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:border-[#00773d] hover:text-[#00773d]"
-          >
-            Go to My Trips
-          </Link>
-        </div>
+        <Link href="/manage/new" className="rounded-xl bg-[#00773d] px-4 py-2 font-semibold text-white">
+          Create V3 listing
+        </Link>
       </div>
 
-      {loading && <p className="text-sm text-slate-500">Loading your properties...</p>}
-
-      {!loading && properties.length > 0 && (
-        <div className="mb-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Total Properties</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{properties.length}</p>
+      {address && token && (
+        <div className="mb-6 flex items-center justify-between gap-4 rounded-2xl border bg-white p-5">
+          <div>
+            <p className="text-xs uppercase text-slate-500">Host withdrawal</p>
+            <p className="text-2xl font-semibold">{ethers.formatUnits(pendingWithdrawal, token.decimals)} {token.symbol}</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Total Bookings</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{bookingRows.length}</p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Owner Earnings (ETH)</p>
-            <p className="mt-2 text-2xl font-semibold text-slate-900">{ownerEarnings.toFixed(4)}</p>
-          </div>
+          <button
+            type="button"
+            disabled={pendingWithdrawal === 0n}
+            onClick={() => run('withdraw', [], 'Withdrawal finalized.')}
+            className="rounded-xl bg-[#00773d] px-4 py-2 font-semibold text-white disabled:opacity-50"
+          >
+            Withdraw
+          </button>
         </div>
       )}
 
-      {!loading && properties.length === 0 && (
-        <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-600">
-          You have no properties yet. Create one to start hosting.
-        </p>
-      )}
+      {!address && <p className="rounded-xl border border-dashed p-8 text-center">Connect the host wallet.</p>}
+      {loading && <p className="text-sm text-slate-500">Loading V3 host records…</p>}
 
-      <div className="grid gap-6">
-        {properties.map((property) => (
-          <div
-            key={property.id}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-lg font-semibold text-slate-900">{property.name}</p>
-                <p className="text-sm text-slate-500">{property.location}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href={`/room/${property.id}`}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-[#00773d] hover:text-[#00773d]"
-                >
-                  View
-                </Link>
-                <Link
-                  href={`/room/edit/${property.id}`}
-                  className="rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold text-slate-700 hover:border-[#00773d] hover:text-[#00773d]"
-                >
-                  Edit
-                </Link>
+      <section className="grid gap-6">
+        {properties.map(({ listing, rooms }) => {
+          const draft = roomDrafts[listing.id] || { name: '', metadataURI: '', price: '', capacity: 1 }
+          return (
+            <article key={listing.id} className="rounded-2xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-xl font-semibold">{listing.name}</h2>
+                  <p className="text-sm text-slate-500">Listing #{listing.id.toString()} · {rooms.length} room type(s)</p>
+                </div>
                 <button
-                  onClick={() => setActiveRoomModal(property.id)}
-                  className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:brightness-110"
+                  type="button"
+                  onClick={() => run('setListingActive', [listing.id, !listing.active], listing.active ? 'Listing deactivated.' : 'Listing activated.')}
+                  className="rounded-xl border px-3 py-2 text-sm font-semibold"
                 >
-                  Add Room Type
+                  {listing.active ? 'Deactivate' : 'Reactivate'}
                 </button>
               </div>
-            </div>
-
-            <div className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-3">
-              <div>
-                <p className="font-semibold text-slate-800">Rooms</p>
-                <p>{property.rooms} total</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {rooms.map((room) => (
+                  <div key={room.id} className="rounded-xl bg-slate-50 p-3 text-sm">
+                    <strong>{room.name}</strong> · {ethers.formatUnits(room.pricePerNight, token.decimals)} {token.symbol}
+                    {!room.active && <span className="ml-2 text-slate-500">Inactive</span>}
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="font-semibold text-slate-800">Room Types</p>
-                <p>{property.roomTypes?.length || 0}</p>
+              <div className="mt-5 grid gap-2 rounded-xl border border-dashed p-4 sm:grid-cols-4">
+                <input value={draft.name} onChange={(event) => updateRoomDraft(listing.id, 'name', event.target.value)} placeholder="Room name" className="rounded-lg border p-2 text-sm" />
+                <input value={draft.metadataURI} onChange={(event) => updateRoomDraft(listing.id, 'metadataURI', event.target.value)} placeholder="ipfs:// metadata" className="rounded-lg border p-2 text-sm" />
+                <input value={draft.price} onChange={(event) => updateRoomDraft(listing.id, 'price', event.target.value)} placeholder={`Price ${token.symbol}`} className="rounded-lg border p-2 text-sm" />
+                <div className="flex gap-2">
+                  <input type="number" min="1" value={draft.capacity} onChange={(event) => updateRoomDraft(listing.id, 'capacity', event.target.value)} className="w-20 rounded-lg border p-2 text-sm" />
+                  <button type="button" onClick={() => addRoom(listing.id)} className="rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white">Add</button>
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-slate-800">Bookings</p>
-                <p>{property.bookings.length}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            </article>
+          )
+        })}
+      </section>
 
-      <div className="mt-10">
-        <h2 className="text-xl font-semibold text-slate-900">Action Center</h2>
-        <p className="text-sm text-slate-600">Handle upcoming stays and no-shows.</p>
-
-        <div className="mt-4 grid gap-3">
-          {bookingRows.length === 0 && (
-            <p className="rounded-xl border border-dashed border-slate-300 p-6 text-slate-600">
-              No bookings yet.
-            </p>
-          )}
-          {bookingRows.map((booking) => {
-            const checkOutDate = booking.checkOutDate || 0
-            const checkInDate = booking.checkInDate || 0
-            const canCheckout = booking.status === 2 && chainNowSec && chainNowSec > checkOutDate
-            const canClaim = booking.status === 0 && chainNowSec && chainNowSec > checkInDate
-
+      <section className="mt-10">
+        <h2 className="text-2xl font-semibold">Bookings requiring host attention</h2>
+        <div className="mt-4 grid gap-4">
+          {bookings.map((booking) => {
+            const status = BOOKING_STATUS[Number(booking.status)]
+            const authorization = authorizations[booking.id]
             return (
-              <div
-                key={`${booking.propertyId}-${booking.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {booking.propertyName} · {booking.roomTypeName || `Room #${booking.roomTypeIndex}`}
-                  </p>
-                  <p className="text-xs text-slate-500">{booking.propertyLocation}</p>
-                  <p className="text-xs text-slate-600">
-                    {formatDate(booking.checkInDate)} - {formatDate(booking.checkOutDate)}
-                  </p>
+              <article key={booking.id} className="rounded-2xl border bg-white p-5">
+                <div className="flex flex-wrap justify-between gap-4">
+                  <div>
+                    <p className="font-semibold">Booking #{booking.id.toString()} · {status}</p>
+                    <p className="text-sm text-slate-600">
+                      Guest {booking.guest.slice(0, 8)}… · {epochDayToDateString(booking.checkInDay)} → {epochDayToDateString(booking.checkOutDay)}
+                    </p>
+                  </div>
+                  {status === 'Booked' && (
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => signAuthorization(booking.id)} className="rounded-xl bg-[#00773d] px-3 py-2 text-sm font-semibold text-white">Sign check-in</button>
+                      <button type="button" onClick={() => run('revokeCheckInAuthorization', [booking.id], 'Authorizations revoked.')} className="rounded-xl border px-3 py-2 text-sm font-semibold">Revoke nonce</button>
+                      <button type="button" onClick={() => run('settleNoShow', [booking.id], 'No-show settled.')} className="rounded-xl border px-3 py-2 text-sm font-semibold">Settle no-show</button>
+                    </div>
+                  )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                    {booking.status === 2
-                      ? 'Checked In'
-                      : booking.status === 1
-                      ? 'Cancelled'
-                      : booking.status === 3
-                      ? 'Expired'
-                      : 'Booked'}
-                  </span>
-                  <button
-                    onClick={() => handleCheckout(booking)}
-                    disabled={!canCheckout}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      canCheckout
-                        ? 'bg-[#00773d] text-white hover:brightness-110'
-                        : 'cursor-not-allowed bg-slate-200 text-slate-500'
-                    }`}
-                  >
-                    Checkout Guest
-                  </button>
-                  <button
-                    onClick={() => handleClaim(booking)}
-                    disabled={!canClaim}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      canClaim
-                        ? 'bg-slate-900 text-white hover:brightness-110'
-                        : 'cursor-not-allowed bg-slate-200 text-slate-500'
-                    }`}
-                  >
-                    Claim No-Show Funds
-                  </button>
-                </div>
-              </div>
+                {authorization && (
+                  <div className="mt-4 rounded-xl bg-slate-50 p-4">
+                    <p className="text-xs font-semibold uppercase text-slate-500">Guest-bound authorization</p>
+                    <textarea readOnly value={authorization.serialized} className="mt-2 h-36 w-full rounded-lg border p-2 font-mono text-[10px]" />
+                    <img src={authorization.qrDataURL} alt="Guest check-in QR code" className="mt-3 h-44 w-44 rounded-lg border bg-white p-2" />
+                    <a href={authorization.deepLink} className="mt-2 block break-all text-xs font-semibold text-[#00773d] underline">Open guest check-in deep link</a>
+                  </div>
+                )}
+              </article>
             )
           })}
         </div>
-      </div>
-
-      <Modal
-        isOpen={activeRoomModal !== null}
-        onRequestClose={() => setActiveRoomModal(null)}
-        style={{
-          content: {
-            top: '50%',
-            left: '50%',
-            right: 'auto',
-            bottom: 'auto',
-            transform: 'translate(-50%, -50%)',
-            width: 'min(92vw, 560px)',
-            borderRadius: '22px',
-            border: '1px solid #e2e8f0',
-            padding: 0,
-          },
-        }}
-      >
-        {activeRoomModal !== null && (
-          <CreateRoomType apartmentId={activeRoomModal} onClose={() => setActiveRoomModal(null)} />
-        )}
-      </Modal>
+      </section>
     </div>
   )
 }
-
-export default NFTPage

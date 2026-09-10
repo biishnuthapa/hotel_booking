@@ -1,4 +1,0 @@
-{
-    "include": ["pages/api/auth/[...nextauth].js"]
-  }
-  

@@ -1,8 +1,5 @@
 import Link from 'next/link'
-import { ConnectBtn } from '..'
-import { useAccount } from 'wagmi'
-import { useEffect, useState } from 'react'
-import { getContractOwner } from '@/services/blockchain'
+import ConnectBtn from '../ConnectBtn'
 
 const Header = () => {
   return (
@@ -30,32 +27,6 @@ const Header = () => {
 }
 
 const NavLinks = ({ mobile = false }) => {
-  const { address } = useAccount()
-  const [isAdmin, setIsAdmin] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-    const loadOwner = async () => {
-      if (!address) {
-        if (mounted) setIsAdmin(false)
-        return
-      }
-      try {
-        const owner = await getContractOwner()
-        if (mounted) {
-          setIsAdmin(owner?.toLowerCase() === address.toLowerCase())
-        }
-      } catch (error) {
-        console.error('Failed to fetch contract owner:', error)
-        if (mounted) setIsAdmin(false)
-      }
-    }
-
-    loadOwner()
-    return () => {
-      mounted = false
-    }
-  }, [address])
   const baseClass =
     'rounded-full px-4 py-2 text-sm font-medium transition hover:bg-slate-100 hover:text-slate-900'
 
@@ -70,19 +41,15 @@ const NavLinks = ({ mobile = false }) => {
       <Link href="/MyNFTs" className={`${baseClass} text-slate-700`}>
         Property Management
       </Link>
-      {isAdmin && (
-        <Link href="/SearchPage" className={`${baseClass} text-slate-700`}>
-          Admin
-        </Link>
-      )}
-      {address && (
-        <Link
-          href="/room/add"
-          className="rounded-full bg-[#00773d] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
-        >
-          List Property
-        </Link>
-      )}
+      <Link href="/admin" className={`${baseClass} text-slate-700`}>
+        Protocol Roles
+      </Link>
+      <Link
+        href="/manage/new"
+        className="rounded-full bg-[#00773d] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
+      >
+        List Property
+      </Link>
     </nav>
   )
 }

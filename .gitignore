@@ -7,6 +7,13 @@
 
 # testing
 /coverage
+/coverage.json
+/artifacts
+/cache
+/contracts/deployments/31337.json
+/playwright-report
+/test-results
+*.tsbuildinfo
 
 # next.js
 /.next/
@@ -35,6 +42,11 @@ yarn-error.log*
 
 # local env (contains private keys — never commit)
 .env
+.env.*
+!.env.example
+
+# local scratch files
+/.tmp/
 
 # local tool config
 .claude/

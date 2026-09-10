@@ -1,34 +1,84 @@
-Running the Application: Supply the following keys in your .env variable:
-i) NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
-ii) NEXT_PUBLIC_LOCAL_CHAIN_ID=31337
-iii) NEXT_PUBLIC_ALCHEMY_ID=<YOUR_ALCHEMY_PROJECT_ID>
-iv) NEXT_PUBLIC_PROJECT_ID=<WALLET_CONNECT_PROJECT_ID>
-v) NEXTAUTH_URL=http://localhost:3000
-vi) NEXTAUTH_SECRET=somereallysecretsecret
-vii) YOUR_ALCHEMY_PROJECT_ID: Get Key Here WALLET_CONNECT_PROJECT_ID: Get Key Here
+# HospitalityBooking V3
 
-Follow these steps to run the application:
-i) Install the package modules by running the command: yarn install
-ii) Start the Hardhat server: yarn blockchain
-iii) Run the contract deployment script: yarn deploy
-iv) Run the contract seeding script (apartments + room types): yarn seed
-v) Spin up the Next.js development server: yarn dev
+HospitalityBooking V3 is an immutable Polygon booking escrow. New writes use a
+single USDC-style ERC-20, UTC epoch-day ranges, host-signed EIP-712 check-in,
+pull withdrawals, one review per booking, non-transferable booking passes, and
+multisig arbitration. The original V1 deployment is displayed separately and
+read-only; its records are not migrated.
 
-Recommended Node version: 18 or 20 LTS (Hardhat does not support Node 24).
+## Local development
 
-NFT Metadata (Pinata JSON)
-i) Each property requires a Pinata JSON link with name, description, and image.
-ii) The NFT image/name/description are stored on-chain at property creation and are immutable.
-iii) Booking details are added dynamically on-chain as NFT attributes (check-in/out, nights, status).
+Requirements: Node 22, npm 10+, and a WalletConnect project ID. Copy
+`.env.example` to `.env.local` and do not reuse the historically committed
+deployment key.
 
-Per-Apartment Token IDs
-i) Each booking stores both a global ERC721 token ID and a per-apartment token ID.
-ii) The UI shows the per-apartment booking number for easier tracking.
+```bash
+nvm use
+npm ci --legacy-peer-deps
+npx hardhat node
+npm run deploy:v3:local
+```
 
-Home Page Pricing
-i) The home page shows the lowest room price for each property.
-ii) Add room types to make prices appear.
+Copy the V3 and mock-token addresses from
+`contracts/deployments/31337.json` into the local public environment variables,
+then run:
 
-Localhost troubleshooting:
-i) If you see `Booking date must be in the future` on localhost after prior testing, restart the node (`yarn blockchain`) to reset chain time.
-ii) Keep MetaMask on chainId `31337` for local mode.
+```bash
+npm run dev
+```
+
+SIWE is mandatory in production. Development may set
+`NEXT_PUBLIC_ENABLE_SIWE=false` while exercising a local chain, but the pinning
+API still requires a wallet session.
+
+## Verification
+
+```bash
+npm run lint
+npm run typecheck
+npm run test:unit
+npm run test:contracts
+npm run test:coverage
+npm run build
+npm run test:e2e
+forge test -vvv
+```
+
+The V3 suite covers canonical/exclusive date ranges, interior capacity,
+signature replay and domain binding, the complete no-show window, deactivation,
+odd-value accounting, failed withdrawals, disputes, pausing, metadata escaping,
+review uniqueness, non-transferability, and bounded pages. Foundry invariants
+cover liabilities, escrow accounting, capacity, terminal-settlement uniqueness,
+authorization/review single-use, and bounded pagination.
+
+## Deployment policy
+
+Amoy is the first release target. `scripts/deploy-v3.js` deploys a mock USDC on
+Amoy when no payment token is supplied, writes chain-specific deployment data,
+and verifies source when PolygonScan credentials are available.
+
+Polygon mainnet is intentionally blocked. The mainnet command requires both:
+
+- `MAINNET_RELEASE_APPROVED=true`
+- an `AUDITED_V3_ARTIFACT_HASH` matching the compiled artifact
+
+Those values may be set only after an independent audit, remediation of all
+critical/high findings, documentation of accepted medium findings, a frozen
+commit, and a 14-day multi-wallet Amoy soak test. Privileged roles must be
+multisigs.
+
+## Security operations still requiring human coordination
+
+The repository cannot rotate external accounts by itself. Before any public
+deployment, create a new deployment wallet, move remaining assets from the
+compromised wallet, revoke old Pinata credentials, rotate NextAuth,
+WalletConnect, Redis, RPC, and API secrets, and coordinate a `git filter-repo`
+history rewrite with every collaborator. See `docs/RELEASE.md`.
+
+## Proof terminology
+
+An on-chain payment proves token transfer into escrow. A successful V3 check-in
+proves that the snapshotted host signed an authorization which the snapshotted
+guest submitted in the allowed window. Neither fact alone proves physical
+presence. Reviews therefore have auditable booking and host-attestation
+provenance, not proof-of-personhood or guaranteed physical-stay truth.
