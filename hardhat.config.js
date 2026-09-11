@@ -1,7 +1,6 @@
 require('dotenv').config()
 require('@nomicfoundation/hardhat-ethers')
 require('@nomicfoundation/hardhat-chai-matchers')
-require('@nomicfoundation/hardhat-verify')
 require('solidity-coverage')
 
 function normalizePrivateKey(value) {
@@ -14,7 +13,7 @@ const deployerPrivateKey = normalizePrivateKey(process.env.DEPLOYER_PRIVATE_KEY)
 
 module.exports = {
   solidity: {
-    version: '0.8.20',
+    version: '0.8.30',
     settings: {
       // Polygon PoS activated Shanghai EIPs, including PUSH0 (EIP-3855), in PIP-23.
       evmVersion: 'shanghai',
@@ -47,12 +46,6 @@ module.exports = {
       url: process.env.POLYGON_RPC_URL || 'https://polygon-rpc.com',
       chainId: 137,
       accounts: deployerPrivateKey ? [deployerPrivateKey] : [],
-    },
-  },
-  etherscan: {
-    apiKey: {
-      polygonAmoy: process.env.POLYGONSCAN_API_KEY || '',
-      polygon: process.env.POLYGONSCAN_API_KEY || '',
     },
   },
 }

@@ -6,7 +6,12 @@ const path = require('path')
 const DAY = 86_400
 const artifact = JSON.parse(
   fs.readFileSync(
-    path.join(__dirname, '..', 'artifacts', 'contracts', 'HospitalityBookingV3.sol', 'HospitalityBookingV3.json')
+    path.join(__dirname, '..', 'artifacts', 'contracts', 'HospitalityBooking.sol', 'HospitalityBooking.json')
+  )
+)
+const registryArtifact = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, '..', 'artifacts', 'contracts', 'ReviewRegistry.sol', 'ReviewRegistry.json')
   )
 )
 const tokenArtifact = JSON.parse(
@@ -22,8 +27,9 @@ test('V3 local chain covers booking, check-in, withdrawals, terminal paths, revi
   const host = await provider.getSigner(1)
   const guest = await provider.getSigner(2)
   const guestAddress = await guest.getAddress()
-  const booking = new ethers.Contract(deployment.hospitalityBookingV3, artifact.abi, provider)
-  const token = new ethers.Contract(deployment.paymentToken, tokenArtifact.abi, provider)
+  const booking = new ethers.Contract(deployment.contracts.HospitalityBooking, artifact.abi, provider)
+  const registry = new ethers.Contract(deployment.contracts.ReviewRegistry, registryArtifact.abi, provider)
+  const token = new ethers.Contract(deployment.contracts.paymentToken, tokenArtifact.abi, provider)
 
   await (await booking.connect(host).createListing('E2E Hotel', 'ipfs://listing', 'ipfs://image', 5, 0, 0)).wait()
   await (await booking.connect(host).addRoomType(1, 'Suite', 'ipfs://room', 100_000_000n, 3)).wait()
@@ -35,7 +41,7 @@ test('V3 local chain covers booking, check-in, withdrawals, terminal paths, revi
   await (await booking.connect(guest).book(1, 1, 1, checkInDay, checkInDay + 2)).wait()
   const first = await booking.getBooking(1)
   const domain = {
-    name: 'HospitalityBookingV3',
+    name: 'HospitalityBooking',
     version: '1',
     chainId: 31337,
     verifyingContract: await booking.getAddress(),
@@ -58,13 +64,20 @@ test('V3 local chain covers booking, check-in, withdrawals, terminal paths, revi
   }
   const signature = await host.signTypedData(domain, types, authorization)
   await provider.send('evm_setNextBlockTimestamp', [Number(first.scheduledCheckIn)])
-  await (await booking.connect(guest).checkIn(1, first.scheduledCheckIn, first.checkInDeadline, 0, signature)).wait()
+  await (await booking.connect(guest).checkInAttested(
+    1,
+    first.scheduledCheckIn,
+    first.checkInDeadline,
+    0,
+    signature
+  )).wait()
   expect(Number((await booking.getBooking(1)).status)).toBe(2)
+  await (await booking.connect(guest).withdraw()).wait()
+  const reviewHash = ethers.keccak256(ethers.toUtf8Bytes('{"review":"great"}'))
+  await (await registry.connect(guest).submitReview(1, 5, 'ipfs://review', reviewHash)).wait()
   await provider.send('evm_setNextBlockTimestamp', [Number(first.scheduledCheckout + 86_401n)])
   await (await booking.connect(guest).completeStay(1)).wait()
   await (await booking.connect(host).withdraw()).wait()
-  const reviewHash = ethers.keccak256(ethers.toUtf8Bytes('{"review":"great"}'))
-  await (await booking.connect(guest).submitReview(1, 5, 'ipfs://review', reviewHash)).wait()
 
   const now = await provider.getBlock('latest')
   checkInDay = Math.floor(Number(now.timestamp) / DAY) + 3
@@ -81,6 +94,9 @@ test('V3 local chain covers booking, check-in, withdrawals, terminal paths, revi
   const later = await provider.getBlock('latest')
   const disputeDay = Math.floor(Number(later.timestamp) / DAY) + 3
   await (await booking.connect(guest).book(1, 1, 1, disputeDay, disputeDay + 1)).wait()
+  const disputed = await booking.getBooking(4)
+  const bond = (disputed.escrowedAmount * BigInt(deployment.parameters.disputeBondBps) + 9_999n) / 10_000n
+  await (await token.connect(guest).approve(await booking.getAddress(), bond)).wait()
   await (await booking.connect(guest).openDispute(4, ethers.id('evidence'))).wait()
   await (await booking.connect(admin).resolveDispute(4, 0, ethers.id('reason'))).wait()
   expect(Number((await booking.getBooking(4)).status)).toBe(6)

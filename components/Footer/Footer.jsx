@@ -1,9 +1,28 @@
+import Link from 'next/link'
+import { ACTIVE_CHAIN_ID, explorerAddressUrl, getChainConfig } from '@/config/chains'
+
 const Footer = () => {
+  const chain = getChainConfig(ACTIVE_CHAIN_ID)
+  const contractUrl = explorerAddressUrl(ACTIVE_CHAIN_ID, chain.bookingAddress)
   return (
-    <footer className="border-t border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-slate-500 sm:px-6">
-        <p>Hospitality NFT &copy; {new Date().getFullYear()}</p>
-        <p>Built for decentralized stays and NFT-based check-ins.</p>
+    <footer className="mt-auto border-t border-slate-200 bg-white/80">
+      <div className="mx-auto grid max-w-7xl gap-5 px-4 py-8 text-sm text-slate-500 sm:px-6 md:grid-cols-[1fr_auto] md:items-end">
+        <div>
+          <p className="font-semibold text-slate-800">HospitalityBooking V3</p>
+          <p className="mt-1 max-w-xl leading-6">
+            Stable-token escrow with host-attested check-in. On-chain status does not independently prove physical presence.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end">
+          <Link href="/legacy" className="hover:text-slate-900">Legacy V1</Link>
+          <Link href="/admin" className="hover:text-slate-900">Protocol roles</Link>
+          {contractUrl && (
+            <a href={contractUrl} target="_blank" rel="noreferrer" className="hover:text-slate-900">
+              {chain.shortName} contract ↗
+            </a>
+          )}
+          <span>&copy; {new Date().getFullYear()}</span>
+        </div>
       </div>
     </footer>
   )

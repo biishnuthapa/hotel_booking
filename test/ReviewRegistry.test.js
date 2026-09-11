@@ -12,7 +12,7 @@ const BPS = 10_000n
 const ELIGIBILITY_BPS = 5_000 // R1: a review needs >= 50% of the reference value
 const SATURATION_BPS = 10_000 // R2: weight saturates at 100% of the reference value
 const REPEAT_WEIGHT_BPS = 2_500 // R3c: repeat reviews of the same host cap at 25%
-const UNATTESTED_WEIGHT_BPS = 5_000 // R4: a self-asserted check-in counts at 50%
+const UNATTESTED_WEIGHT_BPS = 5_000 // R4: retained discount for unattested records
 
 const URI = 'ipfs://bafyreigh2akiscaildcexampleexampleexampleexample'
 const HASH = ethers.keccak256(ethers.toUtf8Bytes('review-content'))
@@ -106,13 +106,9 @@ async function stay(fixture, options = {}) {
     }
   )
   await setNextTimestamp(record.scheduledCheckIn)
-  if (options.attested === false) {
-    await fixture.booking.connect(guest).checkIn(bookingId)
-  } else {
-    await fixture.booking
-      .connect(guest)
-      .checkInAttested(bookingId, record.scheduledCheckIn, record.checkInDeadline, record.authorizationNonce, signature)
-  }
+  await fixture.booking
+    .connect(guest)
+    .checkInAttested(bookingId, record.scheduledCheckIn, record.checkInDeadline, record.authorizationNonce, signature)
   return bookingId
 }
 
@@ -231,25 +227,6 @@ describe('ReviewRegistry', function () {
     expect(await fixture.registry.weightedRating(1)).to.equal(10_000n)
   })
 
-  it('R4: a guest can always check in alone, at reduced review weight', async () => {
-    const fixture = await deployFixture()
-    const id = await stay(fixture, { attested: false })
-    const record = await fixture.booking.getBooking(id)
-    expect(record.hostAttested).to.equal(false)
-    expect(record.status).to.equal(2n)
-    await fixture.registry.connect(fixture.guest).submitReview(id, 5, URI, HASH)
-    expect(await weightOf(fixture, id)).to.equal(BigInt(UNATTESTED_WEIGHT_BPS))
-  })
-
-  it('R4: a host cannot suppress a review by refusing to sign', async () => {
-    const fixture = await deployFixture()
-    const id = await stay(fixture, { attested: false })
-    await fixture.registry.connect(fixture.guest).submitReview(id, 1, URI, HASH)
-    const review = await fixture.registry.getReview(id)
-    expect(review.rating).to.equal(1)
-    expect(Number(review.weightBps)).to.be.greaterThan(0)
-  })
-
   it('permits exactly one review per booking', async () => {
     const fixture = await deployFixture()
     const id = await stay(fixture)
@@ -257,6 +234,16 @@ describe('ReviewRegistry', function () {
     await expect(
       fixture.registry.connect(fixture.guest).submitReview(id, 5, URI, HASH)
     ).to.be.revertedWithCustomError(fixture.registry, 'InvalidState')
+  })
+
+  it('R4: host-attested check-in retains full attestation weight', async () => {
+    const fixture = await deployFixture()
+    const id = await stay(fixture)
+    const record = await fixture.booking.getBooking(id)
+    expect(record.hostAttested).to.equal(true)
+    expect(await fixture.registry.unattestedWeightBps()).to.equal(UNATTESTED_WEIGHT_BPS)
+    await fixture.registry.connect(fixture.guest).submitReview(id, 5, URI, HASH)
+    expect(await weightOf(fixture, id)).to.equal(10_000n)
   })
 
   it('only the booking guest may review, and only after a stay', async () => {
@@ -319,7 +306,13 @@ describe('ReviewRegistry', function () {
 
   it('rejects an invalid configuration', async () => {
     const fixture = await deployFixture()
-    const args = [await fixture.booking.getAddress(), 0, SATURATION_BPS, REPEAT_WEIGHT_BPS, UNATTESTED_WEIGHT_BPS]
+    const args = [
+      await fixture.booking.getAddress(),
+      0,
+      SATURATION_BPS,
+      REPEAT_WEIGHT_BPS,
+      UNATTESTED_WEIGHT_BPS,
+    ]
     await expect(ethers.deployContract('ReviewRegistry', args)).to.be.reverted
   })
 })

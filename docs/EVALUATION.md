@@ -7,15 +7,15 @@ Historical prototype results are not an audit or a production-correctness claim.
 
 | Artifact | Command | Feeds paper section |
 |---|---|---|
-| 29-case unit suite | `npx hardhat test test/HospitalityBookingNFT.test.js` | Implementation / correctness |
-| 7-case V2 suite (parity + pagination) | `npx hardhat test test/HospitalityBookingNFTV2.test.js` | Optimization |
-| Randomized invariant fuzzer (2 seeds) | `npx hardhat test test/Invariants.test.js` | Correctness / safety guarantees |
+| Historical V1 unit suite | `_superseded/test/HospitalityBookingNFT.test.js` | Historical implementation |
+| Historical V2 suite | `_superseded/test/HospitalityBookingNFTV2.test.js` | Historical optimization |
+| Historical randomized fuzzer | `_superseded/test/Invariants.test.js` | Historical correctness evidence |
 | Per-op gas + fiat benchmark | `npx hardhat run scripts/benchmark.js` | Evaluation — cost |
 | V2 (optimized) benchmark | `BENCH_CONTRACT=V2 npx hardhat run scripts/benchmark.js` | Evaluation — optimization |
 | V1↔V2 comparison table | `node scripts/compare-benchmarks.js` | Evaluation — optimization |
 | Static-analysis findings | `docs/SECURITY.md` | Security analysis |
-| V3 contract suite | `npx hardhat test test/HospitalityBookingV3.test.js` | V3 remediation |
-| V3 Foundry invariants | `forge test -vvv` | V3 liabilities/capacity |
+| V3 contract suites | `npm run test:contracts` | V3 remediation |
+| V3 Foundry invariants | `npm run test:foundry` | V3 liabilities/capacity |
 | API/React units | `npm run test:unit` | V3 frontend and upload boundary |
 
 Outputs land in `../benchmarks/` (JSON + paper-ready Markdown tables).
@@ -62,5 +62,6 @@ Outputs land in `../benchmarks/` (JSON + paper-ready Markdown tables).
   reentrancy) that would require re-auditing, so they are documented as future
   work rather than implemented — keeping the evaluated core fully verifiable
   on-chain.
-- V3 now implements pull-payment settlement and multisig arbitration; audit and
-  soak evidence remain future release requirements.
+- V3 now implements pull-payment settlement and multisig arbitration. The Amoy
+  soak is active; its full 14-day result and the independent audit remain
+  release requirements.

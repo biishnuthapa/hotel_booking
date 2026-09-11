@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.30;
 
-import './HospitalityBooking.sol';
+import {HospitalityBooking} from './HospitalityBooking.sol';
 
 /**
  * @title ReviewRegistry
@@ -27,11 +27,11 @@ import './HospitalityBooking.sol';
  *      listing's own asking price and nothing beyond it.
  *
  *      R4 — Attestation weight.
- *      Check-in is always guest-controlled, so a host can never withhold it to
- *      suppress a review. A host may additionally countersign arrival (EIP-712);
- *      when two parties with opposing interests both assert the stay, the record
- *      is stronger evidence of physical presence and carries full weight. A
- *      self-asserted check-in still counts, at `unattestedWeightBps`.
+ *      The registry retains an explicit attestation factor. A record carrying
+ *      a host attestation receives full weight; an unattested record receives
+ *      `unattestedWeightBps`. V3 currently exposes only host-attested check-in,
+ *      but preserving this rule keeps the review mechanism and stored-booking
+ *      provenance explicit.
  *
  *      R3 — Relationship discounts (observable self-dealing only).
  *      Weight is zeroed for a self-booking (guest == host) and for a reciprocal
@@ -276,10 +276,7 @@ contract ReviewRegistry {
       weight = repeatWeightBps;
     }
 
-    // R4: attestation discount. The guest alone controls check-in, so a host can
-    // never block a review; but a check-in only the guest asserted is weaker
-    // evidence of presence than one the host countersigned, and is weighted
-    // accordingly rather than rejected.
+    // R4: an unattested check-in is weaker evidence than a host-attested one.
     if (!b.hostAttested) {
       weight = (weight * unattestedWeightBps) / BPS_DENOMINATOR;
     }

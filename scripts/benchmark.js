@@ -22,6 +22,7 @@ const DISPUTE_BOND_BPS = 200n
 const ELIGIBILITY_BPS = 5_000
 const SATURATION_BPS = 10_000
 const REPEAT_WEIGHT_BPS = 2_500
+const UNATTESTED_WEIGHT_BPS = 5_000
 
 const URI = 'ipfs://bafyreigh2akiscaildcexampleexampleexampleexample'
 const HASH = ethers.keccak256(ethers.toUtf8Bytes('review'))
@@ -66,6 +67,7 @@ async function main() {
 
   const registry = await ethers.deployContract('ReviewRegistry', [
     await booking.getAddress(), ELIGIBILITY_BPS, SATURATION_BPS, REPEAT_WEIGHT_BPS,
+    UNATTESTED_WEIGHT_BPS,
   ])
   await registry.waitForDeployment()
   record('deploy review registry', await registry.deploymentTransaction().wait())
@@ -111,7 +113,7 @@ async function main() {
     )
     await setNextTimestamp(rec.scheduledCheckIn)
     return (await booking.connect(signer)
-      .checkIn(id, rec.scheduledCheckIn, rec.checkInDeadline, rec.authorizationNonce, sig)).wait()
+      .checkInAttested(id, rec.scheduledCheckIn, rec.checkInDeadline, rec.authorizationNonce, sig)).wait()
   }
 
   // --- Guest lifecycle ------------------------------------------------------

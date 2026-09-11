@@ -2,7 +2,7 @@
 
 ## Trust and release boundary
 
-`HospitalityBookingV3` is immutable. Admin, pauser, and arbitrator roles are
+`HospitalityBooking` is immutable. Admin, pauser, and arbitrator roles are
 assigned at construction and must be production multisigs. The arbitrator can
 select only a full guest refund or the predefined host payout for an unsettled
 dispute. Mainnet deployment is prohibited before an independent audit.
@@ -49,9 +49,7 @@ npm run test:contracts
 forge test -vvv
 npm run test:unit
 npm audit --omit=dev
-slither contracts/HospitalityBookingV3.sol \
-  --solc-remaps "@openzeppelin/=node_modules/@openzeppelin/" \
-  --exclude-dependencies --fail-high
+npm run test:slither
 ```
 
 Required invariants:

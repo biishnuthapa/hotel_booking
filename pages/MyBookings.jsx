@@ -1,24 +1,62 @@
 import { useCallback, useEffect, useState } from 'react'
+import Head from 'next/head'
 import Link from 'next/link'
-import { ethers } from 'ethers'
 import { toast } from 'react-toastify'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import {
+  EmptyState,
+  LoadingState,
+  PageHeader,
+  StatusBadge,
+  TransactionStatus,
+  WalletPrompt,
+} from '@/components/AppUI'
+import { ACTIVE_CHAIN_ID, getChainConfig, isV3Configured } from '@/config/chains'
+import {
   BOOKING_STATUS,
+  approveAndOpenDispute,
+  getV3DisputeInfo,
   getV3GuestBookings,
   getV3PendingWithdrawal,
   getV3TokenInfo,
+  hasReviewed,
+  hashEvidenceReference,
   reviewContentHash,
   sendV3Action,
   submitCheckIn,
+  submitReview as submitReviewToRegistry,
 } from '@/services/blockchain'
-import { epochDayToDateString } from '@/utils/dates'
+import { formatEpochDay } from '@/utils/dates'
+import { formatTokenAmount } from '@/utils/token'
 
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 80002)
-
+const POST_CHECKOUT_DISPUTE_WINDOW = 86_400
 const errorMessage = (error) => error?.shortMessage || error?.message || 'Transaction failed'
 
+function formatTimestamp(seconds) {
+  if (!seconds) return 'Not available'
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(Number(seconds) * 1000))
+}
+
+function parseAuthorization(value) {
+  const parsed = JSON.parse(value || '')
+  if (!parsed.signature || !/^0x[0-9a-fA-F]{130}$/.test(parsed.signature)) {
+    throw new Error('Authorization signature is missing or invalid')
+  }
+  return {
+    bookingId: BigInt(parsed.bookingId),
+    validAfter: BigInt(parsed.validAfter),
+    validUntil: BigInt(parsed.validUntil),
+    nonce: BigInt(parsed.nonce),
+    signature: parsed.signature,
+  }
+}
+
 export default function MyBookings() {
+  const chain = getChainConfig(ACTIVE_CHAIN_ID)
+  const configured = isV3Configured(ACTIVE_CHAIN_ID)
   const { address } = useAccount()
   const activeChainId = useChainId()
   const { data: walletClient } = useWalletClient()
@@ -26,67 +64,119 @@ export default function MyBookings() {
   const [token, setToken] = useState(null)
   const [pendingWithdrawal, setPendingWithdrawal] = useState(0n)
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(null)
   const [authorization, setAuthorization] = useState({})
   const [reviews, setReviews] = useState({})
   const [reviewHashes, setReviewHashes] = useState({})
+  const [reviewedBookings, setReviewedBookings] = useState({})
+  const [disputes, setDisputes] = useState({})
+  const [evidence, setEvidence] = useState({})
+  const [transactionState, setTransactionState] = useState(null)
+  const [busyAction, setBusyAction] = useState(null)
+  const [currentTimestamp, setCurrentTimestamp] = useState(0)
+
+  useEffect(() => {
+    const tick = () => setCurrentTimestamp(Math.floor(Date.now() / 1000))
+    const initialTick = setTimeout(tick, 0)
+    const interval = setInterval(tick, 30_000)
+    return () => {
+      clearTimeout(initialTick)
+      clearInterval(interval)
+    }
+  }, [])
+
+  const ensureWriteReady = () => {
+    if (!walletClient) throw new Error('Connect your wallet first')
+    if (Number(activeChainId) !== ACTIVE_CHAIN_ID) throw new Error(`Switch your wallet to ${chain.name}`)
+  }
 
   const refresh = useCallback(async () => {
-    if (!address) {
+    if (!address || !configured) {
       setBookings([])
       setPendingWithdrawal(0n)
+      setReviewedBookings({})
       return
     }
     setLoading(true)
+    setLoadError(null)
     try {
       const [nextBookings, tokenInfo, withdrawal] = await Promise.all([
-        getV3GuestBookings(CHAIN_ID, address),
-        getV3TokenInfo(CHAIN_ID),
-        getV3PendingWithdrawal(CHAIN_ID, address),
+        getV3GuestBookings(ACTIVE_CHAIN_ID, address),
+        getV3TokenInfo(ACTIVE_CHAIN_ID),
+        getV3PendingWithdrawal(ACTIVE_CHAIN_ID, address),
+      ])
+      const [reviewStates, disputeStates] = await Promise.all([
+        Promise.all(nextBookings.map(async (booking) => [booking.id.toString(), await hasReviewed(ACTIVE_CHAIN_ID, booking.id)])),
+        Promise.all(
+          nextBookings
+            .filter((booking) => Number(booking.status) === 5)
+            .map(async (booking) => [booking.id.toString(), await getV3DisputeInfo(ACTIVE_CHAIN_ID, booking.id)])
+        ),
       ])
       setBookings([...nextBookings].reverse())
       setToken(tokenInfo)
       setPendingWithdrawal(withdrawal)
+      setReviewedBookings(Object.fromEntries(reviewStates))
+      setDisputes(Object.fromEntries(disputeStates))
     } catch (error) {
-      toast.error(errorMessage(error))
+      setLoadError(errorMessage(error))
     } finally {
       setLoading(false)
     }
-  }, [address])
+  }, [address, configured])
 
   useEffect(() => {
     const timeout = setTimeout(refresh, 0)
     return () => clearTimeout(timeout)
   }, [refresh])
 
-  const run = async (method, args, success) => {
+  const run = async (method, args, success, key = method) => {
+    setBusyAction(key)
+    setTransactionState(null)
     try {
-      if (Number(activeChainId) !== CHAIN_ID) throw new Error(`Switch to chain ${CHAIN_ID}`)
-      await sendV3Action(walletClient, CHAIN_ID, method, args)
+      ensureWriteReady()
+      await sendV3Action(walletClient, ACTIVE_CHAIN_ID, method, args, setTransactionState)
       toast.success(success)
       await refresh()
     } catch (error) {
       toast.error(errorMessage(error))
+    } finally {
+      setBusyAction(null)
     }
   }
 
   const checkIn = async (bookingId) => {
+    const key = `check-in-${bookingId}`
+    setBusyAction(key)
+    setTransactionState(null)
     try {
-      const parsed = JSON.parse(authorization[bookingId] || '')
-      await submitCheckIn(
-        walletClient,
-        CHAIN_ID,
-        {
-          bookingId: BigInt(parsed.bookingId),
-          validAfter: BigInt(parsed.validAfter),
-          validUntil: BigInt(parsed.validUntil),
-          nonce: BigInt(parsed.nonce),
-          signature: parsed.signature,
-        }
-      )
+      ensureWriteReady()
+      const parsed = parseAuthorization(authorization[bookingId])
+      if (parsed.bookingId !== BigInt(bookingId)) throw new Error('Authorization belongs to another booking')
+      await submitCheckIn(walletClient, ACTIVE_CHAIN_ID, parsed, setTransactionState)
       toast.success('Host-authorized check-in finalized.')
       await refresh()
     } catch (error) {
       toast.error(errorMessage(error))
+    } finally {
+      setBusyAction(null)
+    }
+  }
+
+  const openDispute = async (booking) => {
+    const key = `dispute-${booking.id}`
+    setBusyAction(key)
+    setTransactionState(null)
+    try {
+      ensureWriteReady()
+      const evidenceHash = hashEvidenceReference(evidence[booking.id])
+      await approveAndOpenDispute(walletClient, ACTIVE_CHAIN_ID, booking.id, evidenceHash, setTransactionState)
+      toast.success('Dispute opened. The bond is held until resolution.')
+      await refresh()
+    } catch (error) {
+      toast.error(errorMessage(error))
+    } finally {
+      setBusyAction(null)
     }
   }
 
@@ -113,143 +203,179 @@ export default function MyBookings() {
   }
 
   const submitReview = async (booking) => {
+    const key = `review-${booking.id}`
+    setBusyAction(key)
+    setTransactionState(null)
     try {
+      ensureWriteReady()
       const { content, hash } = previewReviewHash(booking)
       if (!content.review) throw new Error('Write a review first')
       const response = await fetch('/api/pinata/pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Hospitality-CSRF': '1' },
-        body: JSON.stringify({
-          type: 'json',
-          content,
-          pinName: `review-booking-${booking.id}.json`,
-        }),
+        body: JSON.stringify({ type: 'json', content, pinName: `review-booking-${booking.id}.json` }),
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Review pinning failed')
-      await submitReviewToRegistry(walletClient, CHAIN_ID, {
-        bookingId: booking.id,
-        rating: Number(content.rating),
-        uri: result.uri,
-        contentHash: hash,
-      })
+      await submitReviewToRegistry(
+        walletClient,
+        ACTIVE_CHAIN_ID,
+        { bookingId: booking.id, rating: Number(content.rating), uri: result.uri, contentHash: hash },
+        setTransactionState
+      )
       toast.success('Review pinned and recorded on-chain.')
       await refresh()
     } catch (error) {
       toast.error(errorMessage(error))
+    } finally {
+      setBusyAction(null)
     }
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-[#00773d]">V3</p>
-          <h1 className="text-3xl font-semibold text-slate-900">My trips and booking passes</h1>
-          <p className="mt-1 text-sm text-slate-600">Host authorization is required for check-in.</p>
-        </div>
-      </div>
+    <>
+      <Head><title>My trips · HospitalityBooking V3</title></Head>
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
+        <PageHeader
+          eyebrow="Guest dashboard · V3"
+          title="Trips, passes, and settlements"
+          description="Manage guest actions against the finalized V3 lifecycle. Every write is confirmed before this page refreshes its on-chain state."
+          actions={<Link href="/" className="button-secondary inline-flex">Explore stays</Link>}
+        />
 
-      {address && token && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5">
-          <div>
-            <p className="text-xs uppercase text-slate-500">Withdrawable balance</p>
-            <p className="text-2xl font-semibold text-slate-900">
-              {ethers.formatUnits(pendingWithdrawal, token.decimals)} {token.symbol}
-            </p>
-          </div>
-          <button
-            type="button"
-            disabled={pendingWithdrawal === 0n}
-            onClick={() => run('withdraw', [], 'Withdrawal finalized.')}
-            className="rounded-xl bg-[#00773d] px-4 py-2 font-semibold text-white disabled:opacity-50"
-          >
-            Withdraw
-          </button>
-        </div>
-      )}
+        {!configured && <EmptyState title="V3 deployment not configured" description={`Add the finalized ${chain.name} addresses before loading guest records.`} />}
+        {configured && !address && <WalletPrompt description="Connect the guest wallet that created the bookings." />}
+        {loadError && <p className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}</p>}
 
-      {!address && <p className="rounded-xl border border-dashed p-8 text-center">Connect a wallet to load V3 trips.</p>}
-      {loading && <p className="text-sm text-slate-500">Loading V3 bookings…</p>}
-      {!loading && address && bookings.length === 0 && (
-        <p className="rounded-xl border border-dashed p-8 text-center">No V3 bookings found.</p>
-      )}
-
-      <div className="grid gap-5">
-        {bookings.map((booking) => {
-          const status = BOOKING_STATUS[Number(booking.status)]
-          const reviewDraft = reviews[booking.id] || { rating: 5, text: '' }
-          return (
-            <article key={booking.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs uppercase text-slate-500">Booking #{booking.id.toString()}</p>
-                  <h2 className="mt-1 text-lg font-semibold">Listing #{booking.listingId.toString()}</h2>
-                  <p className="text-sm text-slate-600">
-                    {epochDayToDateString(booking.checkInDay)} → {epochDayToDateString(booking.checkOutDay)} (exclusive)
-                  </p>
-                </div>
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold">{status}</span>
+        {address && token && (
+          <section className="mb-7 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-lg shadow-slate-900/10">
+            <div className="flex flex-wrap items-center justify-between gap-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-300">Available to withdraw</p>
+                <p className="mt-2 text-3xl font-semibold">{formatTokenAmount(pendingWithdrawal, token.decimals, token.symbol)}</p>
+                <p className="mt-2 text-sm text-slate-400">Credits stay on-chain until this wallet pulls them.</p>
               </div>
+              <button type="button" disabled={pendingWithdrawal === 0n || Boolean(busyAction)} onClick={() => run('withdraw', [], 'Withdrawal finalized.', 'withdraw')} className="inline-flex rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-slate-950 disabled:opacity-40">
+                {busyAction === 'withdraw' ? 'Withdrawing…' : 'Withdraw balance'}
+              </button>
+            </div>
+          </section>
+        )}
 
-              {status === 'Booked' && (
-                <div className="mt-5 grid gap-3">
-                  <textarea
-                    value={authorization[booking.id] || ''}
-                    onChange={(event) =>
-                      setAuthorization((current) => ({ ...current, [booking.id]: event.target.value }))
-                    }
-                    placeholder="Paste the host-signed check-in authorization JSON"
-                    className="min-h-[90px] rounded-xl border border-slate-300 p-3 text-xs"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <button type="button" onClick={() => checkIn(booking.id)} className="rounded-xl bg-[#00773d] px-4 py-2 text-sm font-semibold text-white">
-                      Submit check-in
-                    </button>
-                    <button type="button" onClick={() => run('cancelBooking', [booking.id], 'Booking cancelled.')} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold">
-                      Cancel before check-in
-                    </button>
-                    <button type="button" onClick={() => run('settleNoShow', [booking.id], 'No-show settled.')} className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold">
-                      Settle no-show if window closed
-                    </button>
+        <TransactionStatus transaction={transactionState} chainId={chain.id} />
+        {loading && <LoadingState label="Loading guest bookings…" />}
+        {!loading && configured && address && bookings.length === 0 && (
+          <EmptyState title="No V3 trips yet" description="Your future and historical V3 bookings will appear here." actionHref="/" actionLabel="Find a property" />
+        )}
+
+        <div className="mt-6 grid gap-5">
+          {bookings.map((booking) => {
+            const id = booking.id.toString()
+            const status = BOOKING_STATUS[Number(booking.status)]
+            const now = currentTimestamp
+            const checkIn = Number(booking.scheduledCheckIn)
+            const checkInDeadline = Number(booking.checkInDeadline)
+            const disputeWindowEnd = Number(booking.scheduledCheckout) + POST_CHECKOUT_DISPUTE_WINDOW
+            const dispute = disputes[id]
+            const canCancel = status === 'Booked' && now < checkIn
+            const canCheckIn = status === 'Booked' && now >= checkIn && now <= checkInDeadline
+            const canNoShow = status === 'Booked' && now > checkInDeadline
+            const canOpenDispute = status === 'Booked' || (status === 'CheckedIn' && now <= disputeWindowEnd)
+            const canComplete = status === 'CheckedIn' && now > disputeWindowEnd
+            const canTimeout = status === 'Disputed' && dispute?.deadline > 0 && now > dispute.deadline
+            const canReview = ['CheckedIn', 'Completed', 'ResolvedGuest', 'ResolvedHost'].includes(status)
+            const reviewDraft = reviews[id] || { rating: 5, text: '' }
+            const bond = token
+              ? (booking.escrowedAmount * BigInt(token.disputeBondBps) + 9_999n) / 10_000n
+              : 0n
+
+            return (
+              <article key={id} className="app-card overflow-hidden">
+                <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
+                  <div>
+                    <p className="eyebrow">Booking #{id}</p>
+                    <h2 className="mt-2 text-xl font-semibold text-slate-950">Listing #{booking.listingId.toString()}</h2>
+                    <p className="mt-2 text-sm text-slate-600">{formatEpochDay(booking.checkInDay)} → {formatEpochDay(booking.checkOutDay)} <span className="text-slate-400">(exclusive)</span></p>
                   </div>
+                  <StatusBadge status={status} />
                 </div>
-              )}
 
-              {(status === 'CheckedIn' || status === 'Completed') && !booking.reviewSubmitted && (
-                <div className="mt-5 rounded-xl bg-slate-50 p-4">
-                  <div className="grid gap-3 sm:grid-cols-[100px_1fr]">
-                    <select
-                      value={reviewDraft.rating}
-                      onChange={(event) => updateReview(booking.id, 'rating', event.target.value)}
-                      className="rounded-xl border border-slate-300 p-3"
-                    >
-                      {[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating}/5</option>)}
-                    </select>
-                    <textarea
-                      value={reviewDraft.text}
-                      onChange={(event) => updateReview(booking.id, 'text', event.target.value)}
-                      placeholder="Review stored as canonical JSON on IPFS"
-                      className="rounded-xl border border-slate-300 p-3"
-                    />
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
-                    <button type="button" onClick={() => previewReviewHash(booking)} className="rounded-xl border px-3 py-2 text-sm font-semibold">Calculate hash</button>
-                    <button type="button" onClick={() => submitReview(booking)} className="rounded-xl bg-[#00773d] px-3 py-2 text-sm font-semibold text-white">Pin and submit</button>
-                    {reviewHashes[booking.id] && <code className="break-all text-[10px]">{reviewHashes[booking.id]}</code>}
-                  </div>
+                <div className="grid gap-4 bg-slate-50/70 px-5 py-4 text-sm sm:grid-cols-3 sm:px-6">
+                  <div><p className="text-xs uppercase tracking-wide text-slate-500">Escrowed</p><p className="mt-1 font-semibold text-slate-900">{token ? formatTokenAmount(booking.escrowedAmount, token.decimals, token.symbol) : '—'}</p></div>
+                  <div><p className="text-xs uppercase tracking-wide text-slate-500">Check-in opens</p><p className="mt-1 font-semibold text-slate-900">{formatTimestamp(checkIn)}</p></div>
+                  <div><p className="text-xs uppercase tracking-wide text-slate-500">Scheduled checkout</p><p className="mt-1 font-semibold text-slate-900">{formatTimestamp(booking.scheduledCheckout)}</p></div>
                 </div>
-              )}
 
-              {status === 'CheckedIn' && (
-                <button type="button" onClick={() => run('completeStay', [booking.id], 'Stay completed.')} className="mt-4 rounded-xl border px-4 py-2 text-sm font-semibold">
-                  Complete after checkout
-                </button>
-              )}
-            </article>
-          )
-        })}
+                <div className="p-5 sm:p-6">
+                  {status === 'Booked' && (
+                    <section className="rounded-2xl border border-slate-200 p-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div><h3 className="font-semibold text-slate-950">Host-authorized check-in</h3><p className="mt-1 text-xs leading-5 text-slate-500">Submission is available from {formatTimestamp(checkIn)} through {formatTimestamp(checkInDeadline)}.</p></div>
+                        <Link href="/check-in" className="text-xs font-semibold text-teal-700 hover:underline">Open dedicated page →</Link>
+                      </div>
+                      <textarea value={authorization[id] || ''} onChange={(event) => setAuthorization((current) => ({ ...current, [id]: event.target.value }))} placeholder="Paste the guest-bound authorization JSON from the host" className="field mt-4 min-h-24 font-mono text-xs" />
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button type="button" disabled={!canCheckIn || Boolean(busyAction) || !authorization[id]} onClick={() => checkIn(id)} className="button-primary inline-flex">{busyAction === `check-in-${id}` ? 'Checking in…' : 'Submit check-in'}</button>
+                        {canCancel && <button type="button" disabled={Boolean(busyAction)} onClick={() => run('cancelBooking', [booking.id], 'Booking cancelled.', `cancel-${id}`)} className="button-secondary inline-flex">Cancel booking</button>}
+                        {canNoShow && <button type="button" disabled={Boolean(busyAction)} onClick={() => run('settleNoShow', [booking.id], 'No-show settled.', `no-show-${id}`)} className="button-secondary inline-flex">Settle no-show</button>}
+                      </div>
+                    </section>
+                  )}
+
+                  {status === 'CheckedIn' && (
+                    <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950">
+                      <p className="font-semibold">Security deposit returned; stay payout remains escrowed.</p>
+                      <p className="mt-1 text-xs leading-5">A dispute may be opened through {formatTimestamp(disputeWindowEnd)}. If none is opened, anyone may complete the stay after that time.</p>
+                      {canComplete && <button type="button" disabled={Boolean(busyAction)} onClick={() => run('completeStay', [booking.id], 'Stay completed.', `complete-${id}`)} className="button-primary mt-3 inline-flex">Complete stay</button>}
+                    </div>
+                  )}
+
+                  {canOpenDispute && (
+                    <details className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                      <summary className="cursor-pointer font-semibold text-amber-950">Open a bonded dispute</summary>
+                      <p className="mt-2 text-xs leading-5 text-amber-900">The opener deposits {token ? formatTokenAmount(bond, token.decimals, token.symbol) : 'a configured bond'}. It is refunded if the opener wins and forfeited to the other party if the opener loses or misses the resolution deadline.</p>
+                      <label className="mt-3 block text-sm font-medium text-amber-950">Evidence URI or public reference<input value={evidence[id] || ''} onChange={(event) => setEvidence((current) => ({ ...current, [id]: event.target.value }))} placeholder="ipfs://… or another immutable reference" className="field" /></label>
+                      {evidence[id] && <code className="mt-2 block break-all text-[10px] text-amber-900">Hash: {hashEvidenceReference(evidence[id])}</code>}
+                      <button type="button" disabled={!evidence[id]?.trim() || Boolean(busyAction)} onClick={() => openDispute(booking)} className="button-danger mt-3 inline-flex">{busyAction === `dispute-${id}` ? 'Opening dispute…' : 'Approve bond and open'}</button>
+                    </details>
+                  )}
+
+                  {status === 'Disputed' && dispute && (
+                    <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+                      <h3 className="font-semibold">Settlement is frozen</h3>
+                      <p className="mt-1 text-xs">Arbitrator deadline: {formatTimestamp(dispute.deadline)}</p>
+                      <code className="mt-2 block break-all text-[10px]">Evidence hash: {dispute.evidenceHash}</code>
+                      {canTimeout ? (
+                        <button type="button" disabled={Boolean(busyAction)} onClick={() => run('resolveDisputeAfterDeadline', [booking.id], 'Timed-out dispute resolved in the non-opener’s favor.', `timeout-${id}`)} className="button-danger mt-3 inline-flex">Resolve expired dispute</button>
+                      ) : (
+                        <p className="mt-2 text-xs">Permissionless timeout resolution becomes available after the deadline.</p>
+                      )}
+                    </section>
+                  )}
+
+                  {canReview && !reviewedBookings[id] && (
+                    <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <h3 className="font-semibold text-slate-950">Publish your one review</h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">The canonical JSON is pinned first; its exact keccak256 hash is then recorded on-chain.</p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
+                        <select aria-label={`Rating for booking ${id}`} value={reviewDraft.rating} onChange={(event) => updateReview(id, 'rating', event.target.value)} className="field mt-0">{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} / 5</option>)}</select>
+                        <textarea value={reviewDraft.text} onChange={(event) => updateReview(id, 'text', event.target.value)} placeholder="Describe the stay" maxLength={5000} className="field mt-0 min-h-24" />
+                      </div>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <button type="button" onClick={() => previewReviewHash(booking)} className="button-secondary inline-flex">Calculate hash</button>
+                        <button type="button" disabled={!reviewDraft.text.trim() || Boolean(busyAction)} onClick={() => submitReview(booking)} className="button-primary inline-flex">{busyAction === `review-${id}` ? 'Publishing…' : 'Pin and submit'}</button>
+                      </div>
+                      {reviewHashes[id] && <code className="mt-3 block break-all rounded-lg bg-white p-2 text-[10px]">{reviewHashes[id]}</code>}
+                    </section>
+                  )}
+
+                  {reviewedBookings[id] && <p className="mt-4 text-sm font-medium text-emerald-700">Review recorded for this booking.</p>}
+                </div>
+              </article>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

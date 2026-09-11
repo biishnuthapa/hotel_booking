@@ -3,8 +3,7 @@ import { ethers } from 'ethers'
 import { toast } from 'react-toastify'
 import { useAccount, useChainId, useWalletClient } from 'wagmi'
 import { getV3RoleState, sendV3Action } from '@/services/blockchain'
-
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 80002)
+import { ACTIVE_CHAIN_ID } from '@/config/chains'
 
 export function RoleControls({ roles, onPause, onResolve }) {
   const [bookingId, setBookingId] = useState('')
@@ -53,7 +52,7 @@ export default function AdminPage() {
   const [roles, setRoles] = useState({ isPauser: false, isArbitrator: false, paused: false })
 
   const refresh = useCallback(async () => {
-    setRoles(await getV3RoleState(CHAIN_ID, address))
+    setRoles(await getV3RoleState(ACTIVE_CHAIN_ID, address))
   }, [address])
   useEffect(() => {
     const timeout = setTimeout(() => refresh().catch(() => {}), 0)
@@ -61,12 +60,12 @@ export default function AdminPage() {
   }, [refresh])
 
   const ensureChain = () => {
-    if (Number(activeChainId) !== CHAIN_ID) throw new Error(`Switch to chain ${CHAIN_ID}`)
+    if (Number(activeChainId) !== ACTIVE_CHAIN_ID) throw new Error(`Switch to chain ${ACTIVE_CHAIN_ID}`)
   }
   const pause = async (method) => {
     try {
       ensureChain()
-      await sendV3Action(walletClient, CHAIN_ID, method)
+      await sendV3Action(walletClient, ACTIVE_CHAIN_ID, method)
       toast.success(`V3 ${method} finalized.`)
       await refresh()
     } catch (error) {
@@ -76,7 +75,7 @@ export default function AdminPage() {
   const resolve = async (bookingId, outcome, reason) => {
     try {
       ensureChain()
-      await sendV3Action(walletClient, CHAIN_ID, 'resolveDispute', [
+      await sendV3Action(walletClient, ACTIVE_CHAIN_ID, 'resolveDispute', [
         BigInt(bookingId),
         Number(outcome),
         ethers.keccak256(ethers.toUtf8Bytes(reason.trim())),

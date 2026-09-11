@@ -38,3 +38,23 @@ export function eachStayDay(checkInDay, checkOutDay) {
   for (let day = Number(checkInDay); day < Number(checkOutDay); day += 1) result.push(day)
   return result
 }
+
+export function todayUTCDateString(now = Date.now()) {
+  return new Date(now).toISOString().slice(0, 10)
+}
+
+export function addDaysToDateString(value, days) {
+  const epochDay = dateStringToEpochDay(value)
+  return epochDayToDateString(epochDay + Number(days))
+}
+
+export function formatEpochDay(epochDay, options = {}) {
+  const date = new Date(Number(epochDay) * SECONDS_PER_DAY * 1000)
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+    ...options,
+  }).format(date)
+}

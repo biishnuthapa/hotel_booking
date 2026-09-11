@@ -14,12 +14,19 @@ not performed by application code.
 
 ## Amoy
 
-1. Set a new `DEPLOYER_PRIVATE_KEY` and the four multisig/treasury addresses.
+1. Set a new `DEPLOYER_PRIVATE_KEY`. Set the four multisig/treasury addresses
+   before any production deployment.
 2. Run `npm run verify` on Node 22.
-3. Run `npm run deploy:v3:amoy` and commit `contracts/deployments/80002.json`.
-4. Verify V3, its immutable renderer, and mock token source on PolygonScan.
+3. Run `npm run deploy:amoy` (or deploy the same constructor sequence manually)
+   and commit the generated `contracts/deployments/80002.json`.
+4. Run `npm run verify:amoy`. Sourcify verification is keyless; PolygonScan
+   verification additionally requires `POLYGONSCAN_API_KEY`.
 5. Publish explorer links, constructor roles, artifact hash, and deployment block.
-6. Run the multi-wallet soak for at least 14 days while monitoring RPC failures,
+6. Copy the generated V3 addresses and deployment block into the Amoy
+   `NEXT_PUBLIC_*` variables and rebuild the frontend. Never reuse a superseded
+   address from git history.
+7. Run `npm run soak:start:amoy` once, then `npm run soak:amoy` at least daily
+   for 14 days while monitoring RPC failures,
    upload abuse, withdrawals, disputes, pauses, and the liability invariant.
 
 ## Mainnet gate
@@ -29,8 +36,11 @@ not performed by application code.
 - Resolve all critical/high findings and document every accepted medium finding.
 - Re-run all CI, Foundry, Slither, and soak scenarios.
 - Review multisig thresholds, owners, recovery process, and treasury address out of band.
-- Set `AUDITED_V3_ARTIFACT_HASH` and `MAINNET_RELEASE_APPROVED=true` only in the
-  controlled deployment environment, then run `npm run deploy:v3:polygon`.
+- On the clean audited commit, run `npm run audit:freeze` and have the auditor
+  review the resulting candidate manifest.
+- Set `AUDIT_COMPLETE=true` and `AUDITED_MANIFEST_PATH` only in the controlled
+  deployment environment, then run `npm run deploy:polygon`.
 
-The deploy script rejects mainnet if the approval flag is absent or the compiled
-artifact does not match the audited hash.
+The deploy script rejects mainnet if the audit flag or manifest is absent, the
+working tree or commit differs, any protocol creation bytecode differs, the
+payment token is missing, or a privileged address is the deployer EOA.

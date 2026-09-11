@@ -7,7 +7,7 @@ module.exports = defineConfig({
   use: { baseURL: 'http://127.0.0.1:3100', trace: 'retain-on-failure' },
   webServer: [
     {
-      command: 'npx hardhat node --port 9545',
+      command: 'node_modules/.bin/hardhat node --port 9545',
       url: 'http://127.0.0.1:9545',
       timeout: 120_000,
       reuseExistingServer: !process.env.CI,

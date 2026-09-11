@@ -20,13 +20,19 @@
     "test:contracts": "hardhat test",
     "test:coverage": "hardhat coverage",
     "test:e2e": "playwright test",
-    "deploy:v3:local": "hardhat run scripts/deploy-v3.js --network localhost",
-    "deploy:v3:amoy": "hardhat run scripts/deploy-v3.js --network amoy",
-    "deploy:v3:polygon": "hardhat run scripts/deploy-v3.js --network polygon",
+    "test:foundry": "forge test -vvv",
+    "test:slither": "slither . --exclude-dependencies --fail-high",
+    "audit:prod": "npm audit --omit=dev --audit-level=moderate",
+    "audit:freeze": "hardhat run scripts/create-audit-manifest.js",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
     "deploy:amoy": "hardhat run scripts/deploy.js --network amoy",
-    "lifecycle:amoy": "hardhat run scripts/amoy-lifecycle.js --network amoy",
-    "amoy": "npm run deploy:amoy && npm run lifecycle:amoy"
+    "verify:amoy": "hardhat run scripts/verify-deployment.js --network amoy",
+    "deploy:polygon": "hardhat run scripts/deploy.js --network polygon",
+    "verify:polygon": "hardhat run scripts/verify-deployment.js --network polygon",
+    "soak:start:amoy": "SOAK_ACTION=start hardhat run scripts/amoy-soak.js --network amoy",
+    "soak:amoy": "hardhat run scripts/amoy-soak.js --network amoy",
+    "amoy": "npm run deploy:amoy && npm run verify:amoy"
   },
   "dependencies": {
     "@rainbow-me/rainbowkit": "2.2.11",
@@ -34,13 +40,13 @@
     "@tanstack/react-query": "5.101.4",
     "dotenv": "17.4.2",
     "ethers": "6.17.0",
-    "next": "16.3.1",
+    "next": "16.3.4",
     "next-auth": "4.24.15",
     "qrcode": "1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-toastify": "11.1.0",
-    "sharp": "0.35.3",
+    "sharp": "0.35.4",
     "siwe": "3.0.0",
     "valtio": "1.13.2",
     "viem": "2.55.18",
@@ -49,7 +55,6 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "2.1.2",
     "@nomicfoundation/hardhat-ethers": "3.1.3",
-    "@nomicfoundation/hardhat-verify": "2.1.3",
     "@openzeppelin/contracts": "5.4.0",
     "@playwright/test": "1.62.1",
     "@testing-library/dom": "10.4.1",
@@ -62,7 +67,7 @@
     "autoprefixer": "10.5.4",
     "chai": "4.5.0",
     "eslint": "9.39.5",
-    "eslint-config-next": "16.3.1",
+    "eslint-config-next": "16.3.4",
     "hardhat": "2.29.1",
     "jsdom": "30.0.1",
     "postcss": "8.5.26",
@@ -73,12 +78,27 @@
     "vitest": "4.1.11"
   },
   "overrides": {
+    "@walletconnect/ethereum-provider": "2.24.0",
+    "adm-zip": "0.6.1",
     "axios": "1.19.0",
     "bn.js": "5.2.5",
+    "cookie": "0.7.2",
+    "diff": "8.0.3",
+    "fast-uri": "3.1.6",
+    "hono": "4.13.7",
     "jose": "4.15.9",
+    "js-yaml": "4.3.2",
     "lodash": "4.18.1",
     "picomatch": "2.3.2",
+    "sc-istanbul": {
+      "js-yaml": "3.15.2"
+    },
+    "serialize-javascript": "7.1.1",
     "sha.js": "2.4.12",
+    "tmp": "0.2.7",
+    "hardhat": {
+      "undici": "6.28.0"
+    },
     "uuid": "11.1.1",
     "ws": "8.21.3"
   }

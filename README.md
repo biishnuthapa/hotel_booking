@@ -16,7 +16,7 @@ deployment key.
 nvm use
 npm ci --legacy-peer-deps
 npx hardhat node
-npm run deploy:v3:local
+npm run deploy:local
 ```
 
 Copy the V3 and mock-token addresses from
@@ -53,19 +53,29 @@ authorization/review single-use, and bounded pagination.
 
 ## Deployment policy
 
-Amoy is the first release target. `scripts/deploy-v3.js` deploys a mock USDC on
+Amoy is the first release target. `scripts/deploy.js` deploys a mock USDC on
 Amoy when no payment token is supplied, writes chain-specific deployment data,
-and verifies source when PolygonScan credentials are available.
+and records bytecode hashes and constructor arguments. `npm run verify:amoy`
+verifies through Sourcify v2 and, when `POLYGONSCAN_API_KEY` is configured,
+PolygonScan.
 
-Polygon mainnet is intentionally blocked. The mainnet command requires both:
+Polygon mainnet is intentionally blocked. The mainnet command requires:
 
-- `MAINNET_RELEASE_APPROVED=true`
-- an `AUDITED_V3_ARTIFACT_HASH` matching the compiled artifact
+- `AUDIT_COMPLETE=true`
+- `AUDITED_MANIFEST_PATH` pointing to a manifest for the current clean commit
+- creation-bytecode hashes matching every audited protocol contract
+- non-deployer treasury, admin, pauser, and arbitrator addresses
 
 Those values may be set only after an independent audit, remediation of all
 critical/high findings, documentation of accepted medium findings, a frozen
 commit, and a 14-day multi-wallet Amoy soak test. Privileged roles must be
 multisigs.
+
+The final contract revision has not yet been deployed. The prior Amoy addresses
+were produced before the latest review/dispute changes and must not be used for
+V3 writes. After manually deploying this commit, copy the generated addresses
+and deployment block into the matching `NEXT_PUBLIC_*` variables, then rebuild
+the frontend. Release-gate status is recorded in `docs/VERIFICATION.md`.
 
 ## Security operations still requiring human coordination
 

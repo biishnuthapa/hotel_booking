@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.30;
 
-import '@openzeppelin/contracts/access/AccessControl.sol';
-import '@openzeppelin/contracts/utils/Pausable.sol';
-import '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
-import '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
-import '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
-import './HospitalityBookingMetadata.sol';
+import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
+import {Pausable} from '@openzeppelin/contracts/utils/Pausable.sol';
+import {ReentrancyGuard} from '@openzeppelin/contracts/utils/ReentrancyGuard.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {IERC20Metadata} from '@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
+import {ERC721} from '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+import {EIP712} from '@openzeppelin/contracts/utils/cryptography/EIP712.sol';
+import {HospitalityBookingMetadata} from './HospitalityBookingMetadata.sol';
 
 /**
  * @title HospitalityBooking
@@ -522,22 +522,9 @@ contract HospitalityBooking is
   }
 
   /**
-   * @notice Check in without a host signature.
-   * @dev The guest alone controls arrival, so a host can never withhold
-   *      check-in to suppress a review. The booking is marked unattested and
-   *      downstream reputation logic may weight it lower than an attested one.
-   */
-  function checkIn(uint256 bookingId) external whenNotPaused {
-    Booking storage booking = _requireBooking(bookingId);
-    _requireCheckInWindow(booking);
-    _completeCheckIn(booking, bookingId, false);
-  }
-
-  /**
    * @notice Check in with the host's EIP-712 authorization.
-   * @dev Two parties with opposing interests both assert the stay, so the
-   *      record carries more evidential weight. The authorization is
-   *      single-use, guest-bound, time-bounded and revocable.
+   * @dev The authorization is single-use, guest-bound, time-bounded and
+   *      revocable. There is intentionally no guest-only check-in path.
    */
   function checkInAttested(
     uint256 bookingId,
@@ -855,7 +842,7 @@ contract HospitalityBooking is
 
   function _refreshListingMaxPrice(uint256 listingId) internal {
     uint256[] storage ids = _listingRoomTypeIds[listingId];
-    uint256 best;
+    uint256 best = 0;
     for (uint256 i = 0; i < ids.length; i++) {
       RoomType storage rt = _roomTypes[ids[i]];
       if (rt.active && rt.pricePerNight > best) best = rt.pricePerNight;

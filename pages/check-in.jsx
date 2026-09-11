@@ -3,8 +3,7 @@ import { useRouter } from 'next/router'
 import { toast } from 'react-toastify'
 import { useChainId, useWalletClient } from 'wagmi'
 import { submitCheckIn } from '@/services/blockchain'
-
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 80002)
+import { ACTIVE_CHAIN_ID } from '@/config/chains'
 
 function decodeAuthorization(value) {
   if (!value) return ''
@@ -32,9 +31,10 @@ export default function CheckInPage() {
   const submit = async () => {
     setSubmitting(true)
     try {
-      if (Number(activeChainId) !== CHAIN_ID) throw new Error(`Switch to chain ${CHAIN_ID}`)
+      if (!walletClient) throw new Error('Connect the guest wallet')
+      if (Number(activeChainId) !== ACTIVE_CHAIN_ID) throw new Error(`Switch to chain ${ACTIVE_CHAIN_ID}`)
       const parsed = JSON.parse(displayedAuthorization)
-      await submitCheckIn(walletClient, CHAIN_ID, {
+      await submitCheckIn(walletClient, ACTIVE_CHAIN_ID, {
         bookingId: BigInt(parsed.bookingId),
         validAfter: BigInt(parsed.validAfter),
         validUntil: BigInt(parsed.validUntil),

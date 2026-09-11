@@ -5,13 +5,16 @@ export const toMillis = (timestamp) => {
 }
 
 export const normalizeIpfsUrl = (value) => {
-  if (!value || typeof value !== 'string') return ''
+  if (!value || typeof value !== 'string') return '/assets/image2.jpg'
   const trimmed = value.trim()
   if (trimmed.startsWith('ipfs://')) {
-    const cidOrPath = trimmed.replace('ipfs://', '')
-    return `https://ipfs.io/ipfs/${cidOrPath}`
+    const cidOrPath = trimmed.replace(/^ipfs:\/\/(ipfs\/)?/, '')
+    const configured = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://ipfs.io/ipfs'
+    const gateway = configured.replace(/\/$/, '')
+    return `${gateway}/${cidOrPath}`
   }
-  return trimmed
+  if (/^https:\/\//i.test(trimmed) || trimmed.startsWith('/')) return trimmed
+  return '/assets/image2.jpg'
 }
 
 export const formatDate = (timestamp) => {
@@ -19,6 +22,11 @@ export const formatDate = (timestamp) => {
   const date = new Date(toMillis(timestamp))
   return date.toLocaleDateString('en-US', options)
 }
+
+export const shortAddress = (address) =>
+  /^0x[0-9a-fA-F]{40}$/.test(address || '')
+    ? `${address.slice(0, 6)}…${address.slice(-4)}`
+    : String(address || '')
 
 export const truncate = (text, startChars, endChars, maxLength) => {
   if (text.length > maxLength) {

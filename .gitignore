@@ -10,7 +10,10 @@
 /coverage.json
 /artifacts
 /cache
+/cache-foundry
+/out-foundry
 /contracts/deployments/31337.json
+/contracts/contractAddress.json
 /playwright-report
 /test-results
 *.tsbuildinfo
@@ -47,6 +50,8 @@ yarn-error.log*
 
 # local scratch files
 /.tmp/
+/.soak/
+/audit-manifest.candidate.json
 
 # local tool config
 .claude/

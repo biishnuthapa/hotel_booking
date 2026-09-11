@@ -307,6 +307,7 @@ describe('HospitalityBooking', () => {
 
   it('accepts one guest-bound host EIP-712 authorization and rejects replay', async () => {
     const fixture = await deployFixture()
+    expect(fixture.booking.interface.getFunction('checkIn(uint256)')).to.equal(null)
     const { cost } = await bookStay(fixture)
     const auth = await signAuthorization(fixture, 1n)
     await setNextTimestamp(auth.validAfter)

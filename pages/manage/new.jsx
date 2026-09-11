@@ -3,8 +3,7 @@ import { useRouter } from 'next/router'
 import { toast } from 'react-toastify'
 import { useChainId, useWalletClient } from 'wagmi'
 import { sendV3Action } from '@/services/blockchain'
-
-const CHAIN_ID = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 80002)
+import { ACTIVE_CHAIN_ID } from '@/config/chains'
 
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -47,7 +46,7 @@ export default function CreateV3Listing() {
     setSubmitting(true)
     try {
       if (!walletClient) throw new Error('Connect the host wallet')
-      if (Number(activeChainId) !== CHAIN_ID) throw new Error(`Switch to chain ${CHAIN_ID}`)
+      if (Number(activeChainId) !== ACTIVE_CHAIN_ID) throw new Error(`Switch to chain ${ACTIVE_CHAIN_ID}`)
       if (!image) throw new Error('Choose a property image')
       const imagePin = await pin({
         type: 'file',
@@ -66,7 +65,7 @@ export default function CreateV3Listing() {
         content: metadata,
         pinName: `${form.name}-listing.json`,
       })
-      await sendV3Action(walletClient, CHAIN_ID, 'createListing', [
+      await sendV3Action(walletClient, ACTIVE_CHAIN_ID, 'createListing', [
         form.name,
         metadataPin.uri,
         imagePin.uri,

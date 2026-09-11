@@ -1,33 +1,35 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.30;
 
-import '../contracts/HospitalityBookingV3.sol';
-import '../contracts/MockUSDC.sol';
+import {HospitalityBooking} from '../contracts/HospitalityBooking.sol';
+import {ReviewRegistry} from '../contracts/ReviewRegistry.sol';
+import {BookingLens} from '../contracts/BookingLens.sol';
+import {MockUSDC} from '../contracts/MockUSDC.sol';
 
 interface Vm {
   function warp(uint256 timestamp) external;
-
   function addr(uint256 privateKey) external returns (address);
-
   function prank(address sender) external;
-
   function sign(
     uint256 privateKey,
     bytes32 digest
   ) external returns (uint8 v, bytes32 r, bytes32 s);
 }
 
-contract V3InvariantHandler {
+contract HospitalityBookingInvariantHandler {
   Vm private constant vm = Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
 
   MockUSDC public immutable token;
-  HospitalityBookingV3 public immutable booking;
+  HospitalityBooking public immutable booking;
+  ReviewRegistry public immutable reviews;
+  BookingLens public immutable lens;
   uint256 private constant HOST_PRIVATE_KEY = 0xBEEF;
   address public immutable host;
   uint32 public minDay;
   uint32 public maxDay;
   mapping(uint256 => uint8) public terminalSettlementCount;
   mapping(bytes32 => uint8) public authorizationUseCount;
+  mapping(uint256 => uint256) public disputedPrincipal;
   bool public authorizationReuseDetected;
   bool public reviewReuseDetected;
   bool public paginationBoundViolation;
@@ -35,7 +37,7 @@ contract V3InvariantHandler {
   constructor() {
     host = vm.addr(HOST_PRIVATE_KEY);
     token = new MockUSDC();
-    booking = new HospitalityBookingV3(
+    booking = new HospitalityBooking(
       address(token),
       address(this),
       700,
@@ -45,6 +47,8 @@ contract V3InvariantHandler {
       address(this),
       address(this)
     );
+    reviews = new ReviewRegistry(booking, 5_000, 10_000, 2_500, 5_000);
+    lens = new BookingLens(booking, reviews);
     vm.prank(host);
     booking.createListing('Invariant Hotel', 'ipfs://listing', 'ipfs://image', 10, 0, 0);
     vm.prank(host);
@@ -78,17 +82,20 @@ contract V3InvariantHandler {
     uint256 count = booking.totalBookings();
     if (count == 0) return;
     uint256 bookingId = (seed % count) + 1;
-    try booking.openDispute(bookingId, keccak256(abi.encode(seed, hostOutcome))) {
-      try
-        booking.resolveDispute(
+    try booking.getBooking(bookingId) returns (HospitalityBooking.Booking memory record) {
+      disputedPrincipal[bookingId] = record.status == HospitalityBooking.BookingStatus.CheckedIn
+        ? record.basePrice
+        : record.escrowedAmount;
+      try booking.openDispute(bookingId, keccak256(abi.encode(seed, hostOutcome))) {
+        try booking.resolveDispute(
           bookingId,
           hostOutcome
-            ? HospitalityBookingV3.DisputeOutcome.HostPayout
-            : HospitalityBookingV3.DisputeOutcome.GuestRefund,
+            ? HospitalityBooking.DisputeOutcome.HostPayout
+            : HospitalityBooking.DisputeOutcome.GuestRefund,
           keccak256(abi.encode('reason', seed))
-        )
-      {
-        terminalSettlementCount[bookingId] += 1;
+        ) {
+          terminalSettlementCount[bookingId] += 1;
+        } catch {}
       } catch {}
     } catch {}
   }
@@ -97,11 +104,9 @@ contract V3InvariantHandler {
     uint256 count = booking.totalBookings();
     if (count == 0) return;
     uint256 bookingId = (seed % count) + 1;
-    try booking.getBooking(bookingId) returns (HospitalityBookingV3.Booking memory record) {
-      if (record.status != HospitalityBookingV3.BookingStatus.Booked) return;
-      if (block.timestamp <= record.checkInDeadline) {
-        vm.warp(uint256(record.checkInDeadline) + 1);
-      }
+    try booking.getBooking(bookingId) returns (HospitalityBooking.Booking memory record) {
+      if (record.status != HospitalityBooking.BookingStatus.Booked) return;
+      if (block.timestamp <= record.checkInDeadline) vm.warp(uint256(record.checkInDeadline) + 1);
       try booking.settleNoShow(bookingId) {
         terminalSettlementCount[bookingId] += 1;
       } catch {}
@@ -112,9 +117,9 @@ contract V3InvariantHandler {
     uint256 count = booking.totalBookings();
     if (count == 0) return;
     uint256 bookingId = (seed % count) + 1;
-    try booking.getBooking(bookingId) returns (HospitalityBookingV3.Booking memory record) {
+    try booking.getBooking(bookingId) returns (HospitalityBooking.Booking memory record) {
       if (
-        record.status == HospitalityBookingV3.BookingStatus.Booked &&
+        record.status == HospitalityBooking.BookingStatus.Booked &&
         block.timestamp <= record.checkInDeadline
       ) {
         if (block.timestamp < record.scheduledCheckIn) vm.warp(record.scheduledCheckIn);
@@ -129,40 +134,30 @@ contract V3InvariantHandler {
         bytes32 authorizationKey = keccak256(
           abi.encode(bookingId, record.authorizationNonce, digest)
         );
-        try
-          booking.checkIn(
+        try booking.checkInAttested(
+          bookingId,
+          record.scheduledCheckIn,
+          record.checkInDeadline,
+          record.authorizationNonce,
+          signature
+        ) {
+          authorizationUseCount[authorizationKey] += 1;
+          if (authorizationUseCount[authorizationKey] > 1) authorizationReuseDetected = true;
+          try booking.checkInAttested(
             bookingId,
             record.scheduledCheckIn,
             record.checkInDeadline,
             record.authorizationNonce,
             signature
-          )
-        {
-          authorizationUseCount[authorizationKey] += 1;
-          if (authorizationUseCount[authorizationKey] > 1) {
-            authorizationReuseDetected = true;
-          }
-
-          // Re-submit the exact same authorization to exercise replay resistance.
-          try
-            booking.checkIn(
-              bookingId,
-              record.scheduledCheckIn,
-              record.checkInDeadline,
-              record.authorizationNonce,
-              signature
-            )
-          {
-            authorizationUseCount[authorizationKey] += 1;
+          ) {
             authorizationReuseDetected = true;
           } catch {}
         } catch {}
       }
 
-      HospitalityBookingV3.Booking memory current = booking.getBooking(bookingId);
-      if (current.status == HospitalityBookingV3.BookingStatus.CheckedIn) {
-        uint256 completionTime =
-          uint256(current.scheduledCheckout) + 1 days + 1;
+      HospitalityBooking.Booking memory current = booking.getBooking(bookingId);
+      if (current.status == HospitalityBooking.BookingStatus.CheckedIn) {
+        uint256 completionTime = uint256(current.scheduledCheckout) + 1 days + 1;
         if (block.timestamp < completionTime) vm.warp(completionTime);
         try booking.completeStay(bookingId) {
           terminalSettlementCount[bookingId] += 1;
@@ -176,19 +171,19 @@ contract V3InvariantHandler {
     if (count == 0) return;
     uint256 bookingId = (seed % count) + 1;
     bytes32 contentHash = keccak256(abi.encode('review', bookingId));
-    try booking.submitReview(bookingId, 5, 'ipfs://review', contentHash) {
-      try booking.submitReview(bookingId, 5, 'ipfs://review', contentHash) {
+    try reviews.submitReview(bookingId, 5, 'ipfs://review', contentHash) {
+      try reviews.submitReview(bookingId, 5, 'ipfs://review', contentHash) {
         reviewReuseDetected = true;
       } catch {}
     } catch {}
   }
 
   function readBoundedPage(uint256 cursorSeed, uint8 limitSeed) external {
-    uint256 count = booking.totalBookings();
+    uint256 count = booking.guestBookingCount(address(this));
     uint256 cursor = count == 0 ? 0 : cursorSeed % (count + 1);
     uint256 limit = 1 + uint256(limitSeed % 50);
-    try booking.getGuestBookingIdsPage(address(this), cursor, limit) returns (
-      uint256[] memory page,
+    try lens.getGuestBookingsPage(address(this), cursor, limit) returns (
+      HospitalityBooking.Booking[] memory page,
       uint256 nextCursor
     ) {
       if (
@@ -206,11 +201,27 @@ contract V3InvariantHandler {
   }
 }
 
-contract HospitalityBookingV3InvariantTest {
-  V3InvariantHandler public handler;
+contract HospitalityBookingInvariantTest {
+  struct FuzzSelector {
+    address addr;
+    bytes4[] selectors;
+  }
+
+  struct FuzzArtifactSelector {
+    string artifact;
+    bytes4[] selectors;
+  }
+
+  struct FuzzInterface {
+    address addr;
+    string[] artifacts;
+  }
+
+  Vm private constant vm = Vm(address(uint160(uint256(keccak256('hevm cheat code')))));
+  HospitalityBookingInvariantHandler public handler;
 
   function setUp() public {
-    handler = new V3InvariantHandler();
+    handler = new HospitalityBookingInvariantHandler();
   }
 
   function targetContracts() external view returns (address[] memory targets) {
@@ -218,24 +229,62 @@ contract HospitalityBookingV3InvariantTest {
     targets[0] = address(handler);
   }
 
+  // Foundry probes the complete StdInvariant configuration interface. Returning
+  // explicit empty collections keeps this standalone test free of forge-std.
+  function targetArtifactSelectors() external pure returns (FuzzArtifactSelector[] memory values) {
+    values = new FuzzArtifactSelector[](0);
+  }
+
+  function targetArtifacts() external pure returns (string[] memory values) {
+    values = new string[](0);
+  }
+
+  function excludeArtifacts() external pure returns (string[] memory values) {
+    values = new string[](0);
+  }
+
+  function targetSenders() external pure returns (address[] memory values) {
+    values = new address[](0);
+  }
+
+  function excludeSenders() external pure returns (address[] memory values) {
+    values = new address[](0);
+  }
+
+  function excludeContracts() external pure returns (address[] memory values) {
+    values = new address[](0);
+  }
+
+  function targetInterfaces() external pure returns (FuzzInterface[] memory values) {
+    values = new FuzzInterface[](0);
+  }
+
+  function targetSelectors() external pure returns (FuzzSelector[] memory values) {
+    values = new FuzzSelector[](0);
+  }
+
+  function excludeSelectors() external pure returns (FuzzSelector[] memory values) {
+    values = new FuzzSelector[](0);
+  }
+
   function invariant_tokenBalanceCoversAllLiabilities() public view {
-    HospitalityBookingV3 booking = handler.booking();
+    HospitalityBooking booking = handler.booking();
     MockUSDC token = handler.token();
     assert(token.balanceOf(address(booking)) >= booking.liabilityBalance());
   }
 
   function invariant_activeEscrowMatchesUnsettledBookings() public view {
-    HospitalityBookingV3 booking = handler.booking();
+    HospitalityBooking booking = handler.booking();
     uint256 expectedEscrow;
     uint256 count = booking.totalBookings();
     for (uint256 id = 1; id <= count; id++) {
-      HospitalityBookingV3.Booking memory record = booking.getBooking(id);
-      if (record.status == HospitalityBookingV3.BookingStatus.Booked) {
+      HospitalityBooking.Booking memory record = booking.getBooking(id);
+      if (record.status == HospitalityBooking.BookingStatus.Booked) {
         expectedEscrow += record.escrowedAmount;
-      } else if (record.status == HospitalityBookingV3.BookingStatus.CheckedIn) {
+      } else if (record.status == HospitalityBooking.BookingStatus.CheckedIn) {
         expectedEscrow += record.basePrice;
-      } else if (record.status == HospitalityBookingV3.BookingStatus.Disputed) {
-        expectedEscrow += record.escrowedAmount;
+      } else if (record.status == HospitalityBooking.BookingStatus.Disputed) {
+        expectedEscrow += handler.disputedPrincipal(id);
         expectedEscrow +=
           (record.escrowedAmount * booking.disputeBondBps() + 9_999) /
           10_000;
@@ -245,17 +294,14 @@ contract HospitalityBookingV3InvariantTest {
   }
 
   function invariant_capacityNeverExceedsRoomLimit() public view {
-    HospitalityBookingV3 booking = handler.booking();
-    uint32 start = handler.minDay();
-    uint32 end = handler.maxDay();
-    for (uint32 day = start; day < end; day++) {
+    HospitalityBooking booking = handler.booking();
+    for (uint32 day = handler.minDay(); day < handler.maxDay(); day++) {
       assert(booking.occupiedRoomsOnDay(1, day) <= 10);
     }
   }
 
   function invariant_eachBookingHasAtMostOneTerminalSettlement() public view {
-    HospitalityBookingV3 booking = handler.booking();
-    uint256 count = booking.totalBookings();
+    uint256 count = handler.booking().totalBookings();
     for (uint256 id = 1; id <= count; id++) {
       assert(handler.terminalSettlementCount(id) <= 1);
     }

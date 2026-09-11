@@ -18,7 +18,7 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --legacy-peer-deps
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run audit:prod
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit
@@ -34,7 +34,7 @@ jobs:
         with: { node-version-file: .nvmrc, cache: npm }
       - run: npm ci --legacy-peer-deps
       - uses: foundry-rs/foundry-toolchain@v1
-      - run: forge test -vvv
+      - run: npm run test:foundry
 
   slither:
     runs-on: ubuntu-latest
@@ -44,11 +44,7 @@ jobs:
         with: { node-version-file: .nvmrc, cache: npm }
       - run: npm ci --legacy-peer-deps
       - run: pipx install slither-analyzer
-      - run: >-
-          slither contracts/HospitalityBookingV3.sol
-          --solc-remaps "@openzeppelin/=node_modules/@openzeppelin/"
-          --exclude-dependencies
-          --fail-high
+      - run: npm run test:slither
 
   e2e:
     runs-on: ubuntu-latest

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.30;
 
-import '@openzeppelin/contracts/utils/Base64.sol';
-import '@openzeppelin/contracts/utils/Strings.sol';
+import {Base64} from '@openzeppelin/contracts/utils/Base64.sol';
+import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 /**
- * @notice Stateless renderer deployed once by HospitalityBookingV3.
+ * @notice Stateless renderer deployed once by HospitalityBooking.
  * @dev Keeping rendering outside the escrow contract reduces the V3 runtime
  *      bytecode without introducing an upgrade or administration surface.
  */

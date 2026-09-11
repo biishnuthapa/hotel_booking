@@ -6,30 +6,28 @@ import { polygon, polygonAmoy } from 'wagmi/chains'
 import { defineChain, http } from 'viem'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
+import { ACTIVE_CHAIN_ID, getChainConfig } from '@/config/chains'
 
-const configuredChainId = Number(process.env.NEXT_PUBLIC_LOCAL_CHAIN_ID || 80002)
-const configuredRpc = process.env.NEXT_PUBLIC_RPC_URL
+const chainConfig = getChainConfig(ACTIVE_CHAIN_ID)
 const hardhat = defineChain({
   id: 31337,
   name: 'Hardhat Localhost',
   nativeCurrency: { decimals: 18, name: 'Ether', symbol: 'ETH' },
-  rpcUrls: { default: { http: [configuredRpc || 'http://127.0.0.1:8545'] } },
+  rpcUrls: { default: { http: [chainConfig.rpcUrl] } },
   testnet: true,
 })
 const chainById = { 31337: hardhat, 80002: polygonAmoy, 137: polygon }
-const activeChain = chainById[configuredChainId] || polygonAmoy
-const activeRpc =
-  configuredRpc ||
-  (configuredChainId === 137
-    ? process.env.NEXT_PUBLIC_POLYGON_RPC_URL
-    : process.env.NEXT_PUBLIC_AMOY_RPC_URL) ||
-  activeChain.rpcUrls.default.http[0]
+const baseChain = chainById[ACTIVE_CHAIN_ID] || polygonAmoy
+const activeChain = {
+  ...baseChain,
+  rpcUrls: { ...baseChain.rpcUrls, default: { http: [chainConfig.rpcUrl] } },
+}
 
 export const wagmiConfig = getDefaultConfig({
   appName: 'HospitalityBooking',
-  projectId: process.env.NEXT_PUBLIC_PROJECT_ID || 'development-project-id',
+  projectId: process.env.NEXT_PUBLIC_PROJECT_ID || 'walletconnect-project-id-required',
   chains: [activeChain],
-  transports: { [activeChain.id]: http(activeRpc) },
+  transports: { [activeChain.id]: http(chainConfig.rpcUrl, { timeout: 12_000 }) },
   ssr: true,
 })
 
@@ -40,8 +38,22 @@ const siweOptions = () => ({
 })
 
 export default function Providers({ children, pageProps }) {
-  const [queryClient] = useState(() => new QueryClient())
-  const rainbow = <RainbowKitProvider theme={darkTheme()}>{children}</RainbowKitProvider>
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { staleTime: 15_000, retry: 1, refetchOnWindowFocus: false },
+          mutations: { retry: 0 },
+        },
+      })
+  )
+  const rainbow = (
+    <RainbowKitProvider
+      theme={darkTheme({ accentColor: '#0f766e', accentColorForeground: '#ffffff' })}
+    >
+      {children}
+    </RainbowKitProvider>
+  )
   return (
     <WagmiProvider config={wagmiConfig}>
       <SessionProvider refetchInterval={0} session={pageProps.session}>

@@ -1,4 +1,5 @@
 import { ToastContainer } from 'react-toastify'
+import Head from 'next/head'
 import '@/styles/globals.css'
 import 'react-toastify/dist/ReactToastify.css'
 import '@rainbow-me/rainbowkit/styles.css'
@@ -9,9 +10,14 @@ import Footer from '@/components/Footer/Footer'
 export default function App({ Component, pageProps }) {
   return (
     <Providers pageProps={pageProps}>
-      <div className="min-h-screen bg-[#f6f8fb]">
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="theme-color" content="#0f766e" />
+        <meta name="color-scheme" content="light" />
+      </Head>
+      <div className="flex min-h-screen flex-col">
         <Header />
-        <main className="mx-auto w-full">
+        <main id="main-content" className="w-full flex-1">
           <Component {...pageProps} />
         </main>
         <Footer />

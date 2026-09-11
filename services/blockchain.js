@@ -1,5 +1,5 @@
 import { ethers } from 'ethers'
-import { getChainConfig } from '@/config/chains'
+import { assertV3Configured, getChainConfig } from '@/config/chains'
 import { validateStayDates } from '@/utils/dates'
 
 export const BOOKING_STATUS = [
@@ -29,13 +29,20 @@ const BOOKING_ABI = [
   'function getRoomType(uint256) view returns ((uint256 id,uint256 listingId,string name,string metadataURI,uint256 pricePerNight,uint32 capacity,bool active))',
   'function getBooking(uint256) view returns ((uint256 id,uint256 listingId,uint256 roomTypeId,address host,address guest,uint32 rooms,uint32 checkInDay,uint32 checkOutDay,uint64 scheduledCheckIn,uint64 checkInDeadline,uint64 scheduledCheckout,uint256 pricePerNight,uint256 basePrice,uint256 securityDeposit,uint256 escrowedAmount,uint256 tokenId,uint256 authorizationNonce,uint8 status,bool hostAttested))',
   'function disputeDeadline(uint256) view returns (uint64)',
+  'function disputeEvidenceHash(uint256) view returns (bytes32)',
+  'function liabilityBalance() view returns (uint256)',
   'function createListing(string,string,string,uint32,int32,int32) returns (uint256)',
+  'function updateListingMetadata(uint256,string,string,string)',
+  'function updateListingSchedule(uint256,int32,int32)',
+  'function increaseListingRooms(uint256,uint32)',
   'function addRoomType(uint256,string,string,uint256,uint32) returns (uint256)',
+  'function updateRoomTypeMetadata(uint256,string,string)',
+  'function updateRoomTypePrice(uint256,uint256)',
+  'function increaseRoomTypeCapacity(uint256,uint32)',
   'function setListingActive(uint256,bool)',
   'function setRoomTypeActive(uint256,bool)',
   'function book(uint256,uint256,uint32,uint32,uint32) returns (uint256)',
   'function cancelBooking(uint256)',
-  'function checkIn(uint256)',
   'function checkInAttested(uint256,uint64,uint64,uint256,bytes)',
   'function revokeCheckInAuthorization(uint256)',
   'function settleNoShow(uint256)',
@@ -89,11 +96,7 @@ const ERC20_ABI = [
 ]
 
 function configuredContract(chainId) {
-  const chain = getChainConfig(chainId)
-  if (!chain.bookingAddress) {
-    throw new Error(`HospitalityBooking is not configured on ${chain.name}`)
-  }
-  return chain
+  return assertV3Configured(chainId)
 }
 
 function readProvider(chain) {
@@ -154,7 +157,11 @@ async function waitForTransaction(transaction, onStatus = () => {}) {
     onStatus({ state: 'finalized', hash: receipt.hash, receipt })
     return receipt
   } catch (error) {
-    if (error?.code === 'TRANSACTION_REPLACED' && !error.cancelled) {
+    if (error?.code === 'TRANSACTION_REPLACED') {
+      if (error.cancelled) {
+        onStatus({ state: 'cancelled', hash: error.replacement?.hash, error })
+        throw error
+      }
       onStatus({ state: 'replaced', hash: error.replacement?.hash })
       const receipt = error.receipt || (await error.replacement.wait())
       onStatus({ state: 'finalized', hash: receipt.hash, receipt })
@@ -177,20 +184,47 @@ async function readAllPages(contract, method, key) {
 }
 
 export async function getV3TokenInfo(chainId) {
+  const chain = configuredContract(chainId)
   const contract = getV3ReadContract(chainId)
   const tokenAddress = await contract.paymentToken()
+  if (tokenAddress.toLowerCase() !== chain.paymentToken.toLowerCase()) {
+    throw new Error('Configured payment token does not match the HospitalityBooking deployment')
+  }
   const token = new ethers.Contract(tokenAddress, ERC20_ABI, contract.runner)
-  const [decimals, symbol, securityDepositBps] = await Promise.all([
+  const [decimals, symbol, securityDepositBps, disputeBondBps] = await Promise.all([
     token.decimals(),
     token.symbol(),
     contract.securityDepositBps(),
+    contract.disputeBondBps(),
   ])
   return {
     address: tokenAddress,
     decimals: Number(decimals),
     symbol,
     securityDepositBps: Number(securityDepositBps),
+    disputeBondBps: Number(disputeBondBps),
   }
+}
+
+export async function getV3DeploymentHealth(chainId) {
+  const chain = configuredContract(chainId)
+  const provider = readProvider(chain)
+  const entries = [
+    ['HospitalityBooking', chain.bookingAddress],
+    ['ReviewRegistry', chain.reviewRegistryAddress],
+    ['BookingLens', chain.lensAddress],
+    ['payment token', chain.paymentToken],
+  ]
+  const codes = await Promise.all(entries.map(([, address]) => provider.getCode(address)))
+  const missingCode = entries.filter((_entry, index) => codes[index] === '0x').map(([name]) => name)
+  if (missingCode.length) {
+    throw new Error(`No contract code found for: ${missingCode.join(', ')}`)
+  }
+  const actualToken = await getV3ReadContract(chainId).paymentToken()
+  if (actualToken.toLowerCase() !== chain.paymentToken.toLowerCase()) {
+    throw new Error('Configured payment token does not match the deployed HospitalityBooking contract')
+  }
+  return { chain, checkedContracts: entries.length }
 }
 
 export async function getV3Listings(chainId, { includeInactive = false } = {}) {
@@ -272,6 +306,15 @@ export async function getV3PendingWithdrawal(chainId, account) {
   return getV3ReadContract(chainId).pendingWithdrawals(account)
 }
 
+export async function getV3DisputeInfo(chainId, bookingId) {
+  const contract = getV3ReadContract(chainId)
+  const [deadline, evidenceHash] = await Promise.all([
+    contract.disputeDeadline(bookingId),
+    contract.disputeEvidenceHash(bookingId),
+  ])
+  return { deadline: Number(deadline), evidenceHash }
+}
+
 export async function getV3RoleState(chainId, account) {
   if (!account) return { isPauser: false, isArbitrator: false, paused: false }
   const contract = getV3ReadContract(chainId)
@@ -305,17 +348,52 @@ export async function approveAndBook(
   const allowance = await token.allowance(owner, await contract.getAddress())
   if (allowance < total) {
     const approval = await token.approve(await contract.getAddress(), total)
-    await waitForTransaction(approval, onStatus)
+    await waitForTransaction(approval, (status) => onStatus({ ...status, action: 'approval' }))
   }
   const available = await contract.isAvailable(roomTypeId, rooms, checkInDay, checkOutDay)
   if (!available) throw new Error('The selected room range is no longer available')
   return waitForTransaction(
     await contract.book(listingId, roomTypeId, rooms, checkInDay, checkOutDay),
-    onStatus
+    (status) => onStatus({ ...status, action: 'booking' })
   )
 }
 
+export async function approveAndOpenDispute(
+  walletClient,
+  chainId,
+  bookingId,
+  evidenceHash,
+  onStatus = () => {}
+) {
+  if (!ethers.isHexString(evidenceHash, 32) || evidenceHash === ethers.ZeroHash) {
+    throw new Error('Evidence hash must be a non-zero bytes32 value')
+  }
+  const contract = await getV3WriteContract(walletClient, chainId)
+  const [booking, bondBps, tokenAddress] = await Promise.all([
+    contract.getBooking(bookingId),
+    contract.disputeBondBps(),
+    contract.paymentToken(),
+  ])
+  const bond = (booking.escrowedAmount * bondBps + 9_999n) / 10_000n
+  const token = new ethers.Contract(tokenAddress, ERC20_ABI, contract.runner)
+  const owner = await contract.runner.getAddress()
+  const bookingAddress = await contract.getAddress()
+  const allowance = await token.allowance(owner, bookingAddress)
+  if (allowance < bond) {
+    const approval = await token.approve(bookingAddress, bond)
+    await waitForTransaction(approval, (status) =>
+      onStatus({ ...status, action: 'dispute bond approval', bond })
+    )
+  }
+  const receipt = await waitForTransaction(
+    await contract.openDispute(bookingId, evidenceHash),
+    (status) => onStatus({ ...status, action: 'open dispute', bond })
+  )
+  return { receipt, bond }
+}
+
 export async function signCheckInAuthorization(walletClient, chainId, bookingId, validity = {}) {
+  assertWalletChain(walletClient, chainId)
   const contract = getV3ReadContract(chainId)
   const booking = await contract.getBooking(bookingId)
   const validAfter = BigInt(validity.validAfter ?? booking.scheduledCheckIn)
@@ -347,13 +425,13 @@ export async function signCheckInAuthorization(walletClient, chainId, bookingId,
     primaryType: 'CheckInAuthorization',
     message,
   })
-  return { ...message, signature }
-}
-
-/** Check in without a host signature — always available to the guest. */
-export async function submitSelfCheckIn(walletClient, chainId, bookingId, onStatus) {
-  const contract = await getV3WriteContract(walletClient, chainId)
-  return waitForTransaction(await contract.checkIn(bookingId), onStatus)
+  return {
+    ...message,
+    guest: booking.guest,
+    chainId: Number(chainId),
+    verifyingContract: configuredContract(chainId).bookingAddress,
+    signature,
+  }
 }
 
 export async function submitCheckIn(walletClient, chainId, authorization, onStatus) {
@@ -372,7 +450,15 @@ export async function submitCheckIn(walletClient, chainId, authorization, onStat
 
 export async function sendV3Action(walletClient, chainId, method, args = [], onStatus) {
   const contract = await getV3WriteContract(walletClient, chainId)
-  return waitForTransaction(await contract[method](...args), onStatus)
+  return waitForTransaction(await contract[method](...args), (status) =>
+    onStatus({ ...status, action: method })
+  )
+}
+
+export function hashEvidenceReference(value) {
+  const normalized = String(value || '').trim()
+  if (!normalized) throw new Error('Provide an evidence URI or reference')
+  return ethers.keccak256(ethers.toUtf8Bytes(normalized))
 }
 
 export function canonicalJSONString(value) {
