@@ -127,6 +127,18 @@ test('local chain covers booking, check-in, withdrawals, terminal paths, review,
   await (await booking.connect(guest).openDispute(4, ethers.id('evidence'))).wait()
   await (await booking.connect(admin).resolveDispute(4, 0, ethers.id('reason'))).wait()
   expect(Number((await booking.getBooking(4)).status)).toBe(6)
+
+  const directCheckInDay = disputeDay + 2
+  await (await token.connect(guest).approve(await booking.getAddress(), ethers.MaxUint256)).wait()
+  await (
+    await booking.connect(guest).book(1, 1, 1, directCheckInDay, directCheckInDay + 1)
+  ).wait()
+  const direct = await booking.getBooking(5)
+  await provider.send('evm_setNextBlockTimestamp', [Number(direct.scheduledCheckIn)])
+  await (await booking.connect(guest).checkIn(5)).wait()
+  const directCheckedIn = await booking.getBooking(5)
+  expect(Number(directCheckedIn.status)).toBe(2)
+  expect(directCheckedIn.hostAttested).toBe(false)
   expect(await token.balanceOf(await booking.getAddress())).toBeGreaterThanOrEqual(
     await booking.liabilityBalance()
   )

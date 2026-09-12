@@ -10,8 +10,8 @@ const Footer = () => {
         <div>
           <p className="font-semibold text-slate-800">HospitalityBooking</p>
           <p className="mt-1 max-w-xl leading-6">
-            Stable-token escrow with host-attested check-in. On-chain status does not independently
-            prove physical presence.
+            Stable-token escrow with guest-controlled check-in and optional host attestation.
+            On-chain status does not independently prove physical presence.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end">

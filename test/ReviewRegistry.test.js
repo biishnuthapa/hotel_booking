@@ -61,7 +61,7 @@ async function addCheapRoomType(fixture, price) {
   return Number(await fixture.booking.totalRoomTypes())
 }
 
-/** Book, host-authorize, and check in. Returns the booking id. */
+/** Book and check in through the selected proof path. Returns the booking id. */
 async function stay(fixture, options = {}) {
   const guest = options.guest || fixture.guest
   const host = options.host || fixture.host
@@ -81,34 +81,44 @@ async function stay(fixture, options = {}) {
 
   const record = await fixture.booking.getBooking(bookingId)
   const net = await ethers.provider.getNetwork()
-  const signature = await host.signTypedData(
-    {
-      name: 'HospitalityBooking',
-      version: '1',
-      chainId: net.chainId,
-      verifyingContract: await fixture.booking.getAddress(),
-    },
-    {
-      CheckInAuthorization: [
-        { name: 'bookingId', type: 'uint256' },
-        { name: 'guest', type: 'address' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'validAfter', type: 'uint64' },
-        { name: 'validUntil', type: 'uint64' },
-      ],
-    },
-    {
-      bookingId,
-      guest: record.guest,
-      nonce: record.authorizationNonce,
-      validAfter: record.scheduledCheckIn,
-      validUntil: record.checkInDeadline,
-    }
-  )
   await setNextTimestamp(record.scheduledCheckIn)
-  await fixture.booking
-    .connect(guest)
-    .checkInAttested(bookingId, record.scheduledCheckIn, record.checkInDeadline, record.authorizationNonce, signature)
+  if (options.attested === false) {
+    await fixture.booking.connect(guest).checkIn(bookingId)
+  } else {
+    const signature = await host.signTypedData(
+      {
+        name: 'HospitalityBooking',
+        version: '1',
+        chainId: net.chainId,
+        verifyingContract: await fixture.booking.getAddress(),
+      },
+      {
+        CheckInAuthorization: [
+          { name: 'bookingId', type: 'uint256' },
+          { name: 'guest', type: 'address' },
+          { name: 'nonce', type: 'uint256' },
+          { name: 'validAfter', type: 'uint64' },
+          { name: 'validUntil', type: 'uint64' },
+        ],
+      },
+      {
+        bookingId,
+        guest: record.guest,
+        nonce: record.authorizationNonce,
+        validAfter: record.scheduledCheckIn,
+        validUntil: record.checkInDeadline,
+      }
+    )
+    await fixture.booking
+      .connect(guest)
+      .checkInAttested(
+        bookingId,
+        record.scheduledCheckIn,
+        record.checkInDeadline,
+        record.authorizationNonce,
+        signature
+      )
+  }
   return bookingId
 }
 
@@ -244,6 +254,15 @@ describe('ReviewRegistry', function () {
     expect(await fixture.registry.unattestedWeightBps()).to.equal(UNATTESTED_WEIGHT_BPS)
     await fixture.registry.connect(fixture.guest).submitReview(id, 5, URI, HASH)
     expect(await weightOf(fixture, id)).to.equal(10_000n)
+  })
+
+  it('R4: guest-controlled check-in receives the configured unattested weight', async () => {
+    const fixture = await deployFixture()
+    const id = await stay(fixture, { attested: false })
+    const record = await fixture.booking.getBooking(id)
+    expect(record.hostAttested).to.equal(false)
+    await fixture.registry.connect(fixture.guest).submitReview(id, 5, URI, HASH)
+    expect(await weightOf(fixture, id)).to.equal(BigInt(UNATTESTED_WEIGHT_BPS))
   })
 
   it('only the booking guest may review, and only after a stay', async () => {

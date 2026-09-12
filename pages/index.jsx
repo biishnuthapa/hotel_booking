@@ -18,7 +18,7 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
         <title>HospitalityBooking · Verifiable stays</title>
         <meta
           name="description"
-          content="Book hospitality with stable-token escrow, canonical dates, and host-authorized check-in."
+          content="Book hospitality with stable-token escrow, canonical dates, and guest-controlled check-in with optional host attestation."
         />
       </Head>
 
@@ -46,8 +46,8 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
               A clearer way to book and settle a stay.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-              Stable-token escrow, UTC date ranges, guest-bound host authorization, and transparent
-              pull payments—built into one immutable protocol.
+              Stable-token escrow, UTC date ranges, guest-controlled arrival, optional host
+              attestation, and transparent pull payments—built into one immutable protocol.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
@@ -89,8 +89,8 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
               'The contract rejects fee-on-transfer discrepancies and accounts for every atomic token unit.',
             ],
             [
-              'Host-attested check-in',
-              'The guest submits a replay-safe authorization signed by the snapshotted host.',
+              'Check-in without suppression',
+              'Guests can check in directly; a replay-safe host signature adds stronger review provenance.',
             ],
             [
               'Recoverable disputes',

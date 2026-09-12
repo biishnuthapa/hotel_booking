@@ -11,7 +11,10 @@ dispute. Mainnet deployment is prohibited before an independent audit.
 
 - Dates are `[checkInDay, checkOutDay)` UTC epoch-day integers, limited to 90 nights.
 - Each booking snapshots host, price, schedule, dates, and escrow amount.
-- Check-in requires a guest-bound, chain-bound, single-use host EIP-712 signature.
+- The guest can check in directly during the snapshotted window, preventing a
+  host from suppressing check-in or review eligibility. A guest-bound,
+  chain-bound, single-use host EIP-712 signature remains available as the
+  stronger attested path.
 - No-show becomes callable only after the complete check-in window closes.
 - Settlement creates pull-payment credits; failed withdrawal transfers do not erase credit.
 - `activeEscrow + pendingWithdrawals` is tracked, and only provable excess is recoverable.
@@ -31,11 +34,12 @@ requests time out and provider internals are never returned.
 
 ## Proof limitations
 
-Payment proof means the configured token entered escrow. Check-in attestation
-means the snapshotted host signed and the snapshotted guest submitted the
-authorization within its window. It does not independently establish GPS,
-identity, physical presence, room access, or review truth. Sybil resistance and
-real-world enforcement remain off-chain concerns.
+Payment proof means the configured token entered escrow. Guest-controlled
+check-in means the snapshotted guest submitted during the allowed window.
+Host-attested check-in additionally means the snapshotted host signed the
+authorization. Neither path independently establishes GPS, identity, physical
+presence, room access, or review truth. Sybil resistance and real-world
+enforcement remain off-chain concerns.
 
 ## Invariants and commands
 

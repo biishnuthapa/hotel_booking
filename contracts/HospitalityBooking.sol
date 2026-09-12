@@ -14,7 +14,7 @@ import {HospitalityBookingMetadata} from './HospitalityBookingMetadata.sol';
 
 /**
  * @title HospitalityBooking
- * @notice Immutable, stable-token hospitality escrow with host-attested check-in.
+ * @notice Immutable stable-token hospitality escrow with dual-path check-in.
  * @dev Dates are UTC epoch-day identifiers. A stay covers [checkInDay, checkOutDay).
  */
 contract HospitalityBooking is
@@ -522,9 +522,22 @@ contract HospitalityBooking is
   }
 
   /**
+   * @notice Check in without a host signature.
+   * @dev The guest controls this fallback path so a host cannot suppress
+   *      check-in or later review eligibility by withholding authorization.
+   *      The booking remains explicitly marked as unattested so downstream
+   *      reputation systems can apply a lower evidentiary weight.
+   */
+  function checkIn(uint256 bookingId) external whenNotPaused {
+    Booking storage booking = _requireBooking(bookingId);
+    _requireCheckInWindow(booking);
+    _completeCheckIn(booking, bookingId, false);
+  }
+
+  /**
    * @notice Check in with the host's EIP-712 authorization.
    * @dev The authorization is single-use, guest-bound, time-bounded and
-   *      revocable. There is intentionally no guest-only check-in path.
+   *      revocable. This stronger proof receives the full attestation weight.
    */
   function checkInAttested(
     uint256 bookingId,

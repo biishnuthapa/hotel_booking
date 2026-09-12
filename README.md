@@ -1,7 +1,8 @@
 # HospitalityBooking
 
 HospitalityBooking is an immutable Polygon booking escrow. It uses a
-single USDC-style ERC-20, UTC epoch-day ranges, host-signed EIP-712 check-in,
+single USDC-style ERC-20, UTC epoch-day ranges, guest-controlled check-in with
+optional host-signed EIP-712 attestation,
 pull withdrawals, one review per booking, non-transferable booking passes, and
 multisig arbitration. The repository contains one authoritative contract and
 frontend; obsolete protocol versions and routes are intentionally absent.
@@ -56,7 +57,8 @@ The validator never prints secret values. `npm run release:check` adds the full
 application verification and production dependency audit.
 
 The suite covers canonical/exclusive date ranges, interior capacity,
-signature replay and domain binding, the complete no-show window, deactivation,
+guest-controlled and host-attested check-in, signature replay and domain binding,
+the complete no-show window, deactivation,
 odd-value accounting, failed withdrawals, disputes, pausing, metadata escaping,
 review uniqueness, non-transferability, and bounded pages. Foundry invariants
 cover liabilities, escrow accounting, capacity, terminal-settlement uniqueness,
@@ -98,7 +100,8 @@ history rewrite with every collaborator. See `docs/RELEASE.md`.
 ## Proof terminology
 
 An on-chain payment proves token transfer into escrow. A successful check-in
-proves that the snapshotted host signed an authorization which the snapshotted
-guest submitted in the allowed window. Neither fact alone proves physical
-presence. Reviews therefore have auditable booking and host-attestation
-provenance, not proof-of-personhood or guaranteed physical-stay truth.
+proves that the snapshotted guest submitted it in the allowed window. When
+`hostAttested` is true, it additionally proves that the snapshotted host signed
+the guest-bound authorization. Neither fact alone proves physical presence.
+Reviews preserve that distinction through their configured attestation weight;
+they do not prove personhood or guarantee that a physical stay occurred.

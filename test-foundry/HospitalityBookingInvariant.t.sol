@@ -123,26 +123,20 @@ contract HospitalityBookingInvariantHandler {
         block.timestamp <= record.checkInDeadline
       ) {
         if (block.timestamp < record.scheduledCheckIn) vm.warp(record.scheduledCheckIn);
-        bytes32 digest = booking.checkInAuthorizationDigest(
-          bookingId,
-          record.scheduledCheckIn,
-          record.checkInDeadline,
-          record.authorizationNonce
-        );
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(HOST_PRIVATE_KEY, digest);
-        bytes memory signature = abi.encodePacked(r, s, v);
-        bytes32 authorizationKey = keccak256(
-          abi.encode(bookingId, record.authorizationNonce, digest)
-        );
-        try booking.checkInAttested(
-          bookingId,
-          record.scheduledCheckIn,
-          record.checkInDeadline,
-          record.authorizationNonce,
-          signature
-        ) {
-          authorizationUseCount[authorizationKey] += 1;
-          if (authorizationUseCount[authorizationKey] > 1) authorizationReuseDetected = true;
+        if (seed % 2 == 0) {
+          try booking.checkIn(bookingId) {} catch {}
+        } else {
+          bytes32 digest = booking.checkInAuthorizationDigest(
+            bookingId,
+            record.scheduledCheckIn,
+            record.checkInDeadline,
+            record.authorizationNonce
+          );
+          (uint8 v, bytes32 r, bytes32 s) = vm.sign(HOST_PRIVATE_KEY, digest);
+          bytes memory signature = abi.encodePacked(r, s, v);
+          bytes32 authorizationKey = keccak256(
+            abi.encode(bookingId, record.authorizationNonce, digest)
+          );
           try booking.checkInAttested(
             bookingId,
             record.scheduledCheckIn,
@@ -150,9 +144,19 @@ contract HospitalityBookingInvariantHandler {
             record.authorizationNonce,
             signature
           ) {
-            authorizationReuseDetected = true;
+            authorizationUseCount[authorizationKey] += 1;
+            if (authorizationUseCount[authorizationKey] > 1) authorizationReuseDetected = true;
+            try booking.checkInAttested(
+              bookingId,
+              record.scheduledCheckIn,
+              record.checkInDeadline,
+              record.authorizationNonce,
+              signature
+            ) {
+              authorizationReuseDetected = true;
+            } catch {}
           } catch {}
-        } catch {}
+        }
       }
 
       HospitalityBooking.Booking memory current = booking.getBooking(bookingId);

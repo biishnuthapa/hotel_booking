@@ -305,9 +305,37 @@ describe('HospitalityBooking', () => {
     expect((await fixture.booking.getBooking(1)).status).to.equal(STATUS.NoShow)
   })
 
+  it('lets only the guest check in without host authorization during the window', async () => {
+    const fixture = await deployFixture()
+    const { cost } = await bookStay(fixture)
+    const record = await fixture.booking.getBooking(1)
+
+    await expect(fixture.booking.connect(fixture.guest).checkIn(1)).to.be.revertedWithCustomError(
+      fixture.booking,
+      'InvalidTiming'
+    )
+    await fixture.booking.connect(fixture.host).revokeCheckInAuthorization(1)
+    await setNextTimestamp(record.scheduledCheckIn)
+    await expect(fixture.booking.connect(fixture.stranger).checkIn(1)).to.be.revertedWithCustomError(
+      fixture.booking,
+      'Unauthorized'
+    )
+    await fixture.booking.connect(fixture.guest).checkIn(1)
+
+    const checkedIn = await fixture.booking.getBooking(1)
+    expect(checkedIn.status).to.equal(STATUS.CheckedIn)
+    expect(checkedIn.hostAttested).to.equal(false)
+    expect(await fixture.booking.totalActiveEscrow()).to.equal(cost.base)
+    expect(await fixture.booking.pendingWithdrawals(fixture.guest.address)).to.equal(cost.deposit)
+    await expectExactLiability(fixture)
+    await expect(fixture.booking.connect(fixture.guest).checkIn(1)).to.be.revertedWithCustomError(
+      fixture.booking,
+      'InvalidState'
+    )
+  })
+
   it('accepts one guest-bound host EIP-712 authorization and rejects replay', async () => {
     const fixture = await deployFixture()
-    expect(fixture.booking.interface.getFunction('checkIn(uint256)')).to.equal(null)
     const { cost } = await bookStay(fixture)
     const auth = await signAuthorization(fixture, 1n)
     await setNextTimestamp(auth.validAfter)

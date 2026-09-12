@@ -30,7 +30,7 @@ contract HospitalityBookingMetadata {
     bytes memory json = abi.encodePacked(
       '{"name":"Hospitality Stay #',
       data.bookingId.toString(),
-      '","description":"Host-attested hospitality booking credential.","image":"',
+      '","description":"Hospitality booking credential with auditable check-in provenance.","image":"',
       _escapeJSON(data.imageURI),
       '","external_url":"',
       _escapeJSON(data.listingURI),

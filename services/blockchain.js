@@ -43,6 +43,7 @@ const BOOKING_ABI = [
   'function setRoomTypeActive(uint256,bool)',
   'function book(uint256,uint256,uint32,uint32,uint32) returns (uint256)',
   'function cancelBooking(uint256)',
+  'function checkIn(uint256)',
   'function checkInAttested(uint256,uint64,uint64,uint256,bytes)',
   'function revokeCheckInAuthorization(uint256)',
   'function settleNoShow(uint256)',

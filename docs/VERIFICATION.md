@@ -7,7 +7,7 @@ mainnet is not approved and no independent audit has been completed.
 
 | Layer                  | Coverage                                                                                                                                                                             |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Solidity units         | Dates, capacity, deactivation, EIP-712 domain/guest/host/nonce/time failures, no-show boundary, completion, accounting, withdrawal failure, disputes, NFT/review/pause/page behavior |
+| Solidity units         | Dates, capacity, deactivation, direct and EIP-712 check-in, signature failures, no-show boundary, completion, accounting, withdrawal failure, disputes, NFT/review/pause/page behavior |
 | Foundry                | Liability, active-escrow, capacity, single terminal settlement, authorization/review single-use, and bounded-pagination invariants under handler actions                             |
 | API units              | Missing SIWE, origin, MIME spoofing, sizes, quotas, Redis failure, Pinata failure/timeout                                                                                            |
 | React/utilities        | UTC date conversion, exclusive range construction, authorization parsing, deployment configuration, canonical review hash, and role controls                                         |
@@ -19,7 +19,7 @@ release address is missing, duplicated, empty, on the wrong chain, or has no
 bytecode; it also verifies the booking token and registry/lens dependencies.
 
 Current local result on Node 22: ESLint and type checking pass; 26 Vitest tests,
-37 Hardhat tests, three Playwright lifecycle tests, and six Foundry invariants pass.
+39 Hardhat tests, three Playwright lifecycle tests, and six Foundry invariants pass.
 The production dependency audit reports zero vulnerabilities, the production
 Next.js build succeeds, and Slither reports no high-severity findings.
 The full development dependency tree has no critical, high, or moderate findings;
@@ -52,8 +52,9 @@ requires access to their provider accounts.
 ## Semantics verified
 
 - A booking payment proves exact receipt of the configured ERC-20 amount.
-- A checked-in status proves a valid host EIP-712 attestation was submitted by
-  the bound guest during the snapshotted window.
+- A checked-in status proves that the bound guest submitted during the
+  snapshotted window. The booking's `hostAttested` field distinguishes a valid
+  host EIP-712 authorization from guest-controlled fallback check-in.
 - Neither state proves physical presence. The UI must not describe it
   as unconditional physical proof.
 - Checkout is the exclusive end date; consecutive ranges do not overlap.

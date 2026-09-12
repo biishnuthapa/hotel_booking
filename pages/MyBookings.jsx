@@ -141,8 +141,8 @@ export default function MyBookings() {
     }
   }
 
-  const checkIn = async (bookingId) => {
-    const key = `check-in-${bookingId}`
+  const checkInAttested = async (bookingId) => {
+    const key = `check-in-attested-${bookingId}`
     setBusyAction(key)
     setTransactionState(null)
     try {
@@ -387,10 +387,11 @@ export default function MyBookings() {
                     <section className="rounded-2xl border border-slate-200 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h3 className="font-semibold text-slate-950">Host-authorized check-in</h3>
+                          <h3 className="font-semibold text-slate-950">Check-in options</h3>
                           <p className="mt-1 text-xs leading-5 text-slate-500">
-                            Submission is available from {formatTimestamp(checkIn)} through{' '}
-                            {formatTimestamp(checkInDeadline)}.
+                            Check in from {formatTimestamp(checkIn)} through{' '}
+                            {formatTimestamp(checkInDeadline)}. A host signature provides stronger
+                            review provenance but is not required.
                           </p>
                         </div>
                         <Link
@@ -400,6 +401,37 @@ export default function MyBookings() {
                           Open dedicated page →
                         </Link>
                       </div>
+                      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-3">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">
+                            Guest-controlled fallback
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            Prevents a host from blocking check-in; reviews receive the configured
+                            unattested weight.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={!canCheckIn || Boolean(busyAction)}
+                          onClick={() =>
+                            run(
+                              'checkIn',
+                              [booking.id],
+                              'Guest-controlled check-in finalized.',
+                              `check-in-direct-${id}`
+                            )
+                          }
+                          className="button-secondary inline-flex"
+                        >
+                          {busyAction === `check-in-direct-${id}`
+                            ? 'Checking in…'
+                            : 'Check in without signature'}
+                        </button>
+                      </div>
+                      <label className="mt-4 block text-sm font-medium text-slate-800">
+                        Host authorization JSON
+                      </label>
                       <textarea
                         value={authorization[id] || ''}
                         onChange={(event) =>
@@ -412,10 +444,12 @@ export default function MyBookings() {
                         <button
                           type="button"
                           disabled={!canCheckIn || Boolean(busyAction) || !authorization[id]}
-                          onClick={() => checkIn(id)}
+                          onClick={() => checkInAttested(id)}
                           className="button-primary inline-flex"
                         >
-                          {busyAction === `check-in-${id}` ? 'Checking in…' : 'Submit check-in'}
+                          {busyAction === `check-in-attested-${id}`
+                            ? 'Checking in…'
+                            : 'Submit host-authorized check-in'}
                         </button>
                         {canCancel && (
                           <button
