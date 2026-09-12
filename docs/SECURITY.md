@@ -1,4 +1,4 @@
-# V3 security model
+# Security model
 
 ## Trust and release boundary
 
@@ -7,12 +7,7 @@ assigned at construction and must be production multisigs. The arbitrator can
 select only a full guest refund or the predefined host payout for an unsettled
 dispute. Mainnet deployment is prohibited before an independent audit.
 
-The V1 and V2 contracts remain historical artifacts. Their native-token push
-payments, host/guest timing races, arbitrary timestamp inventory, transferable
-NFT semantics, review model, deletion behavior, and sparse pagination are not
-claims about V3 safety and are not used for new writes.
-
-## V3 controls
+## Protocol controls
 
 - Dates are `[checkInDay, checkOutDay)` UTC epoch-day integers, limited to 90 nights.
 - Each booking snapshots host, price, schedule, dates, and escrow amount.
@@ -31,7 +26,7 @@ claims about V3 safety and are not used for new writes.
 `pages/api/pinata/pin.js` requires a verified SIWE JWT session, exact same
 origin, a CSRF header, and Redis wallet/IP quotas. Production fails closed when
 Redis is unavailable. Images are limited to 8 MB and JPEG/PNG/WebP/AVIF with
-signature validation; canonical V3 JSON schemas are limited to 64 KB. Provider
+signature validation; canonical protocol JSON schemas are limited to 64 KB. Provider
 requests time out and provider internals are never returned.
 
 ## Proof limitations
@@ -54,7 +49,7 @@ npm run test:slither
 
 Required invariants:
 
-1. `paymentToken.balanceOf(V3) >= totalActiveEscrow + totalPendingWithdrawals`.
+1. `paymentToken.balanceOf(HospitalityBooking) >= totalActiveEscrow + totalPendingWithdrawals`.
 2. Per-day occupied rooms never exceed the snapshotted room-type capacity rule.
 3. Escrow is removed exactly once, at one terminal settlement path.
 4. Check-in nonces and booking review flags are consumed at most once.

@@ -1,5 +1,5 @@
 {
-  "name": "hospitality-booking-v3",
+  "name": "hospitality-booking",
   "version": "3.0.0",
   "private": true,
   "packageManager": "npm@10.9.4",
@@ -24,6 +24,8 @@
     "test:slither": "slither . --exclude-dependencies --fail-high",
     "audit:prod": "npm audit --omit=dev --audit-level=moderate",
     "audit:freeze": "hardhat run scripts/create-audit-manifest.js",
+    "validate:frontend": "node scripts/validate-frontend-config.js",
+    "release:check": "npm run validate:frontend && npm run verify && npm run audit:prod",
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "verify": "npm run lint && npm run typecheck && npm run test && npm run build",
     "deploy:amoy": "hardhat run scripts/deploy.js --network amoy",

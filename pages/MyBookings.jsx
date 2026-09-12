@@ -11,22 +11,23 @@ import {
   TransactionStatus,
   WalletPrompt,
 } from '@/components/AppUI'
-import { ACTIVE_CHAIN_ID, getChainConfig, isV3Configured } from '@/config/chains'
+import { ACTIVE_CHAIN_ID, getChainConfig, isDeploymentConfigured } from '@/config/chains'
 import {
   BOOKING_STATUS,
   approveAndOpenDispute,
-  getV3DisputeInfo,
-  getV3GuestBookings,
-  getV3PendingWithdrawal,
-  getV3TokenInfo,
+  getDisputeInfo,
+  getGuestBookings,
+  getPendingWithdrawal,
+  getPaymentTokenInfo,
   hasReviewed,
   hashEvidenceReference,
   reviewContentHash,
-  sendV3Action,
+  sendBookingAction,
   submitCheckIn,
   submitReview as submitReviewToRegistry,
 } from '@/services/blockchain'
 import { formatEpochDay } from '@/utils/dates'
+import { parseCheckInAuthorization } from '@/utils/checkInAuthorization'
 import { formatTokenAmount } from '@/utils/token'
 
 const POST_CHECKOUT_DISPUTE_WINDOW = 86_400
@@ -40,23 +41,9 @@ function formatTimestamp(seconds) {
   }).format(new Date(Number(seconds) * 1000))
 }
 
-function parseAuthorization(value) {
-  const parsed = JSON.parse(value || '')
-  if (!parsed.signature || !/^0x[0-9a-fA-F]{130}$/.test(parsed.signature)) {
-    throw new Error('Authorization signature is missing or invalid')
-  }
-  return {
-    bookingId: BigInt(parsed.bookingId),
-    validAfter: BigInt(parsed.validAfter),
-    validUntil: BigInt(parsed.validUntil),
-    nonce: BigInt(parsed.nonce),
-    signature: parsed.signature,
-  }
-}
-
 export default function MyBookings() {
   const chain = getChainConfig(ACTIVE_CHAIN_ID)
-  const configured = isV3Configured(ACTIVE_CHAIN_ID)
+  const configured = isDeploymentConfigured(ACTIVE_CHAIN_ID)
   const { address } = useAccount()
   const activeChainId = useChainId()
   const { data: walletClient } = useWalletClient()
@@ -87,7 +74,8 @@ export default function MyBookings() {
 
   const ensureWriteReady = () => {
     if (!walletClient) throw new Error('Connect your wallet first')
-    if (Number(activeChainId) !== ACTIVE_CHAIN_ID) throw new Error(`Switch your wallet to ${chain.name}`)
+    if (Number(activeChainId) !== ACTIVE_CHAIN_ID)
+      throw new Error(`Switch your wallet to ${chain.name}`)
   }
 
   const refresh = useCallback(async () => {
@@ -101,16 +89,24 @@ export default function MyBookings() {
     setLoadError(null)
     try {
       const [nextBookings, tokenInfo, withdrawal] = await Promise.all([
-        getV3GuestBookings(ACTIVE_CHAIN_ID, address),
-        getV3TokenInfo(ACTIVE_CHAIN_ID),
-        getV3PendingWithdrawal(ACTIVE_CHAIN_ID, address),
+        getGuestBookings(ACTIVE_CHAIN_ID, address),
+        getPaymentTokenInfo(ACTIVE_CHAIN_ID),
+        getPendingWithdrawal(ACTIVE_CHAIN_ID, address),
       ])
       const [reviewStates, disputeStates] = await Promise.all([
-        Promise.all(nextBookings.map(async (booking) => [booking.id.toString(), await hasReviewed(ACTIVE_CHAIN_ID, booking.id)])),
+        Promise.all(
+          nextBookings.map(async (booking) => [
+            booking.id.toString(),
+            await hasReviewed(ACTIVE_CHAIN_ID, booking.id),
+          ])
+        ),
         Promise.all(
           nextBookings
             .filter((booking) => Number(booking.status) === 5)
-            .map(async (booking) => [booking.id.toString(), await getV3DisputeInfo(ACTIVE_CHAIN_ID, booking.id)])
+            .map(async (booking) => [
+              booking.id.toString(),
+              await getDisputeInfo(ACTIVE_CHAIN_ID, booking.id),
+            ])
         ),
       ])
       setBookings([...nextBookings].reverse())
@@ -135,7 +131,7 @@ export default function MyBookings() {
     setTransactionState(null)
     try {
       ensureWriteReady()
-      await sendV3Action(walletClient, ACTIVE_CHAIN_ID, method, args, setTransactionState)
+      await sendBookingAction(walletClient, ACTIVE_CHAIN_ID, method, args, setTransactionState)
       toast.success(success)
       await refresh()
     } catch (error) {
@@ -151,8 +147,13 @@ export default function MyBookings() {
     setTransactionState(null)
     try {
       ensureWriteReady()
-      const parsed = parseAuthorization(authorization[bookingId])
-      if (parsed.bookingId !== BigInt(bookingId)) throw new Error('Authorization belongs to another booking')
+      const parsed = parseCheckInAuthorization(authorization[bookingId], {
+        chainId: ACTIVE_CHAIN_ID,
+        verifyingContract: chain.bookingAddress,
+        guest: address,
+      })
+      if (parsed.bookingId !== BigInt(bookingId))
+        throw new Error('Authorization belongs to another booking')
       await submitCheckIn(walletClient, ACTIVE_CHAIN_ID, parsed, setTransactionState)
       toast.success('Host-authorized check-in finalized.')
       await refresh()
@@ -170,7 +171,13 @@ export default function MyBookings() {
     try {
       ensureWriteReady()
       const evidenceHash = hashEvidenceReference(evidence[booking.id])
-      await approveAndOpenDispute(walletClient, ACTIVE_CHAIN_ID, booking.id, evidenceHash, setTransactionState)
+      await approveAndOpenDispute(
+        walletClient,
+        ACTIVE_CHAIN_ID,
+        booking.id,
+        evidenceHash,
+        setTransactionState
+      )
       toast.success('Dispute opened. The bond is held until resolution.')
       await refresh()
     } catch (error) {
@@ -190,7 +197,7 @@ export default function MyBookings() {
   const previewReviewHash = (booking) => {
     const draft = reviews[booking.id] || { rating: 5, text: '' }
     const content = {
-      schema: 'hospitality-booking-v3/review/1',
+      schema: 'hospitality-booking/review/1',
       bookingId: booking.id.toString(),
       listingId: booking.listingId.toString(),
       rating: Number(draft.rating),
@@ -213,14 +220,23 @@ export default function MyBookings() {
       const response = await fetch('/api/pinata/pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Hospitality-CSRF': '1' },
-        body: JSON.stringify({ type: 'json', content, pinName: `review-booking-${booking.id}.json` }),
+        body: JSON.stringify({
+          type: 'json',
+          content,
+          pinName: `review-booking-${booking.id}.json`,
+        }),
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Review pinning failed')
       await submitReviewToRegistry(
         walletClient,
         ACTIVE_CHAIN_ID,
-        { bookingId: booking.id, rating: Number(content.rating), uri: result.uri, contentHash: hash },
+        {
+          bookingId: booking.id,
+          rating: Number(content.rating),
+          uri: result.uri,
+          contentHash: hash,
+        },
         setTransactionState
       )
       toast.success('Review pinned and recorded on-chain.')
@@ -234,28 +250,56 @@ export default function MyBookings() {
 
   return (
     <>
-      <Head><title>My trips · HospitalityBooking V3</title></Head>
+      <Head>
+        <title>My trips · HospitalityBooking</title>
+      </Head>
       <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12">
         <PageHeader
-          eyebrow="Guest dashboard · V3"
+          eyebrow="Guest dashboard"
           title="Trips, passes, and settlements"
-          description="Manage guest actions against the finalized V3 lifecycle. Every write is confirmed before this page refreshes its on-chain state."
-          actions={<Link href="/" className="button-secondary inline-flex">Explore stays</Link>}
+          description="Manage guest actions against the finalized booking lifecycle. Every write is confirmed before this page refreshes its on-chain state."
+          actions={
+            <Link href="/" className="button-secondary inline-flex">
+              Explore stays
+            </Link>
+          }
         />
 
-        {!configured && <EmptyState title="V3 deployment not configured" description={`Add the finalized ${chain.name} addresses before loading guest records.`} />}
-        {configured && !address && <WalletPrompt description="Connect the guest wallet that created the bookings." />}
-        {loadError && <p className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{loadError}</p>}
+        {!configured && (
+          <EmptyState
+            title="Deployment not configured"
+            description={`Add the finalized ${chain.name} addresses before loading guest records.`}
+          />
+        )}
+        {configured && !address && (
+          <WalletPrompt description="Connect the guest wallet that created the bookings." />
+        )}
+        {loadError && (
+          <p className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            {loadError}
+          </p>
+        )}
 
         {address && token && (
           <section className="mb-7 overflow-hidden rounded-3xl bg-slate-950 p-6 text-white shadow-lg shadow-slate-900/10">
             <div className="flex flex-wrap items-center justify-between gap-5">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-300">Available to withdraw</p>
-                <p className="mt-2 text-3xl font-semibold">{formatTokenAmount(pendingWithdrawal, token.decimals, token.symbol)}</p>
-                <p className="mt-2 text-sm text-slate-400">Credits stay on-chain until this wallet pulls them.</p>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-300">
+                  Available to withdraw
+                </p>
+                <p className="mt-2 text-3xl font-semibold">
+                  {formatTokenAmount(pendingWithdrawal, token.decimals, token.symbol)}
+                </p>
+                <p className="mt-2 text-sm text-slate-400">
+                  Credits stay on-chain until this wallet pulls them.
+                </p>
               </div>
-              <button type="button" disabled={pendingWithdrawal === 0n || Boolean(busyAction)} onClick={() => run('withdraw', [], 'Withdrawal finalized.', 'withdraw')} className="inline-flex rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-slate-950 disabled:opacity-40">
+              <button
+                type="button"
+                disabled={pendingWithdrawal === 0n || Boolean(busyAction)}
+                onClick={() => run('withdraw', [], 'Withdrawal finalized.', 'withdraw')}
+                className="inline-flex rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-slate-950 disabled:opacity-40"
+              >
                 {busyAction === 'withdraw' ? 'Withdrawing…' : 'Withdraw balance'}
               </button>
             </div>
@@ -265,7 +309,12 @@ export default function MyBookings() {
         <TransactionStatus transaction={transactionState} chainId={chain.id} />
         {loading && <LoadingState label="Loading guest bookings…" />}
         {!loading && configured && address && bookings.length === 0 && (
-          <EmptyState title="No V3 trips yet" description="Your future and historical V3 bookings will appear here." actionHref="/" actionLabel="Find a property" />
+          <EmptyState
+            title="No trips yet"
+            description="Your future and historical bookings will appear here."
+            actionHref="/"
+            actionLabel="Find a property"
+          />
         )}
 
         <div className="mt-6 grid gap-5">
@@ -275,15 +324,20 @@ export default function MyBookings() {
             const now = currentTimestamp
             const checkIn = Number(booking.scheduledCheckIn)
             const checkInDeadline = Number(booking.checkInDeadline)
-            const disputeWindowEnd = Number(booking.scheduledCheckout) + POST_CHECKOUT_DISPUTE_WINDOW
+            const disputeWindowEnd =
+              Number(booking.scheduledCheckout) + POST_CHECKOUT_DISPUTE_WINDOW
             const dispute = disputes[id]
             const canCancel = status === 'Booked' && now < checkIn
             const canCheckIn = status === 'Booked' && now >= checkIn && now <= checkInDeadline
             const canNoShow = status === 'Booked' && now > checkInDeadline
-            const canOpenDispute = status === 'Booked' || (status === 'CheckedIn' && now <= disputeWindowEnd)
+            const canOpenDispute =
+              status === 'Booked' || (status === 'CheckedIn' && now <= disputeWindowEnd)
             const canComplete = status === 'CheckedIn' && now > disputeWindowEnd
-            const canTimeout = status === 'Disputed' && dispute?.deadline > 0 && now > dispute.deadline
-            const canReview = ['CheckedIn', 'Completed', 'ResolvedGuest', 'ResolvedHost'].includes(status)
+            const canTimeout =
+              status === 'Disputed' && dispute?.deadline > 0 && now > dispute.deadline
+            const canReview = ['CheckedIn', 'Completed', 'ResolvedGuest', 'ResolvedHost'].includes(
+              status
+            )
             const reviewDraft = reviews[id] || { rating: 5, text: '' }
             const bond = token
               ? (booking.escrowedAmount * BigInt(token.disputeBondBps) + 9_999n) / 10_000n
@@ -294,61 +348,203 @@ export default function MyBookings() {
                 <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
                   <div>
                     <p className="eyebrow">Booking #{id}</p>
-                    <h2 className="mt-2 text-xl font-semibold text-slate-950">Listing #{booking.listingId.toString()}</h2>
-                    <p className="mt-2 text-sm text-slate-600">{formatEpochDay(booking.checkInDay)} → {formatEpochDay(booking.checkOutDay)} <span className="text-slate-400">(exclusive)</span></p>
+                    <h2 className="mt-2 text-xl font-semibold text-slate-950">
+                      Listing #{booking.listingId.toString()}
+                    </h2>
+                    <p className="mt-2 text-sm text-slate-600">
+                      {formatEpochDay(booking.checkInDay)} → {formatEpochDay(booking.checkOutDay)}{' '}
+                      <span className="text-slate-400">(exclusive)</span>
+                    </p>
                   </div>
                   <StatusBadge status={status} />
                 </div>
 
                 <div className="grid gap-4 bg-slate-50/70 px-5 py-4 text-sm sm:grid-cols-3 sm:px-6">
-                  <div><p className="text-xs uppercase tracking-wide text-slate-500">Escrowed</p><p className="mt-1 font-semibold text-slate-900">{token ? formatTokenAmount(booking.escrowedAmount, token.decimals, token.symbol) : '—'}</p></div>
-                  <div><p className="text-xs uppercase tracking-wide text-slate-500">Check-in opens</p><p className="mt-1 font-semibold text-slate-900">{formatTimestamp(checkIn)}</p></div>
-                  <div><p className="text-xs uppercase tracking-wide text-slate-500">Scheduled checkout</p><p className="mt-1 font-semibold text-slate-900">{formatTimestamp(booking.scheduledCheckout)}</p></div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Escrowed</p>
+                    <p className="mt-1 font-semibold text-slate-900">
+                      {token
+                        ? formatTokenAmount(booking.escrowedAmount, token.decimals, token.symbol)
+                        : '—'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Check-in opens</p>
+                    <p className="mt-1 font-semibold text-slate-900">{formatTimestamp(checkIn)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Scheduled checkout
+                    </p>
+                    <p className="mt-1 font-semibold text-slate-900">
+                      {formatTimestamp(booking.scheduledCheckout)}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="p-5 sm:p-6">
                   {status === 'Booked' && (
                     <section className="rounded-2xl border border-slate-200 p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div><h3 className="font-semibold text-slate-950">Host-authorized check-in</h3><p className="mt-1 text-xs leading-5 text-slate-500">Submission is available from {formatTimestamp(checkIn)} through {formatTimestamp(checkInDeadline)}.</p></div>
-                        <Link href="/check-in" className="text-xs font-semibold text-teal-700 hover:underline">Open dedicated page →</Link>
+                        <div>
+                          <h3 className="font-semibold text-slate-950">Host-authorized check-in</h3>
+                          <p className="mt-1 text-xs leading-5 text-slate-500">
+                            Submission is available from {formatTimestamp(checkIn)} through{' '}
+                            {formatTimestamp(checkInDeadline)}.
+                          </p>
+                        </div>
+                        <Link
+                          href="/check-in"
+                          className="text-xs font-semibold text-teal-700 hover:underline"
+                        >
+                          Open dedicated page →
+                        </Link>
                       </div>
-                      <textarea value={authorization[id] || ''} onChange={(event) => setAuthorization((current) => ({ ...current, [id]: event.target.value }))} placeholder="Paste the guest-bound authorization JSON from the host" className="field mt-4 min-h-24 font-mono text-xs" />
+                      <textarea
+                        value={authorization[id] || ''}
+                        onChange={(event) =>
+                          setAuthorization((current) => ({ ...current, [id]: event.target.value }))
+                        }
+                        placeholder="Paste the guest-bound authorization JSON from the host"
+                        className="field mt-4 min-h-24 font-mono text-xs"
+                      />
                       <div className="mt-3 flex flex-wrap gap-2">
-                        <button type="button" disabled={!canCheckIn || Boolean(busyAction) || !authorization[id]} onClick={() => checkIn(id)} className="button-primary inline-flex">{busyAction === `check-in-${id}` ? 'Checking in…' : 'Submit check-in'}</button>
-                        {canCancel && <button type="button" disabled={Boolean(busyAction)} onClick={() => run('cancelBooking', [booking.id], 'Booking cancelled.', `cancel-${id}`)} className="button-secondary inline-flex">Cancel booking</button>}
-                        {canNoShow && <button type="button" disabled={Boolean(busyAction)} onClick={() => run('settleNoShow', [booking.id], 'No-show settled.', `no-show-${id}`)} className="button-secondary inline-flex">Settle no-show</button>}
+                        <button
+                          type="button"
+                          disabled={!canCheckIn || Boolean(busyAction) || !authorization[id]}
+                          onClick={() => checkIn(id)}
+                          className="button-primary inline-flex"
+                        >
+                          {busyAction === `check-in-${id}` ? 'Checking in…' : 'Submit check-in'}
+                        </button>
+                        {canCancel && (
+                          <button
+                            type="button"
+                            disabled={Boolean(busyAction)}
+                            onClick={() =>
+                              run(
+                                'cancelBooking',
+                                [booking.id],
+                                'Booking cancelled.',
+                                `cancel-${id}`
+                              )
+                            }
+                            className="button-secondary inline-flex"
+                          >
+                            Cancel booking
+                          </button>
+                        )}
+                        {canNoShow && (
+                          <button
+                            type="button"
+                            disabled={Boolean(busyAction)}
+                            onClick={() =>
+                              run('settleNoShow', [booking.id], 'No-show settled.', `no-show-${id}`)
+                            }
+                            className="button-secondary inline-flex"
+                          >
+                            Settle no-show
+                          </button>
+                        )}
                       </div>
                     </section>
                   )}
 
                   {status === 'CheckedIn' && (
                     <div className="rounded-2xl border border-teal-200 bg-teal-50 p-4 text-sm text-teal-950">
-                      <p className="font-semibold">Security deposit returned; stay payout remains escrowed.</p>
-                      <p className="mt-1 text-xs leading-5">A dispute may be opened through {formatTimestamp(disputeWindowEnd)}. If none is opened, anyone may complete the stay after that time.</p>
-                      {canComplete && <button type="button" disabled={Boolean(busyAction)} onClick={() => run('completeStay', [booking.id], 'Stay completed.', `complete-${id}`)} className="button-primary mt-3 inline-flex">Complete stay</button>}
+                      <p className="font-semibold">
+                        Security deposit returned; stay payout remains escrowed.
+                      </p>
+                      <p className="mt-1 text-xs leading-5">
+                        A dispute may be opened through {formatTimestamp(disputeWindowEnd)}. If none
+                        is opened, anyone may complete the stay after that time.
+                      </p>
+                      {canComplete && (
+                        <button
+                          type="button"
+                          disabled={Boolean(busyAction)}
+                          onClick={() =>
+                            run('completeStay', [booking.id], 'Stay completed.', `complete-${id}`)
+                          }
+                          className="button-primary mt-3 inline-flex"
+                        >
+                          Complete stay
+                        </button>
+                      )}
                     </div>
                   )}
 
                   {canOpenDispute && (
                     <details className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                      <summary className="cursor-pointer font-semibold text-amber-950">Open a bonded dispute</summary>
-                      <p className="mt-2 text-xs leading-5 text-amber-900">The opener deposits {token ? formatTokenAmount(bond, token.decimals, token.symbol) : 'a configured bond'}. It is refunded if the opener wins and forfeited to the other party if the opener loses or misses the resolution deadline.</p>
-                      <label className="mt-3 block text-sm font-medium text-amber-950">Evidence URI or public reference<input value={evidence[id] || ''} onChange={(event) => setEvidence((current) => ({ ...current, [id]: event.target.value }))} placeholder="ipfs://… or another immutable reference" className="field" /></label>
-                      {evidence[id] && <code className="mt-2 block break-all text-[10px] text-amber-900">Hash: {hashEvidenceReference(evidence[id])}</code>}
-                      <button type="button" disabled={!evidence[id]?.trim() || Boolean(busyAction)} onClick={() => openDispute(booking)} className="button-danger mt-3 inline-flex">{busyAction === `dispute-${id}` ? 'Opening dispute…' : 'Approve bond and open'}</button>
+                      <summary className="cursor-pointer font-semibold text-amber-950">
+                        Open a bonded dispute
+                      </summary>
+                      <p className="mt-2 text-xs leading-5 text-amber-900">
+                        The opener deposits{' '}
+                        {token
+                          ? formatTokenAmount(bond, token.decimals, token.symbol)
+                          : 'a configured bond'}
+                        . It is refunded if the opener wins and forfeited to the other party if the
+                        opener loses or misses the resolution deadline.
+                      </p>
+                      <label className="mt-3 block text-sm font-medium text-amber-950">
+                        Evidence URI or public reference
+                        <input
+                          value={evidence[id] || ''}
+                          onChange={(event) =>
+                            setEvidence((current) => ({ ...current, [id]: event.target.value }))
+                          }
+                          placeholder="ipfs://… or another immutable reference"
+                          className="field"
+                        />
+                      </label>
+                      {evidence[id] && (
+                        <code className="mt-2 block break-all text-[10px] text-amber-900">
+                          Hash: {hashEvidenceReference(evidence[id])}
+                        </code>
+                      )}
+                      <button
+                        type="button"
+                        disabled={!evidence[id]?.trim() || Boolean(busyAction)}
+                        onClick={() => openDispute(booking)}
+                        className="button-danger mt-3 inline-flex"
+                      >
+                        {busyAction === `dispute-${id}`
+                          ? 'Opening dispute…'
+                          : 'Approve bond and open'}
+                      </button>
                     </details>
                   )}
 
                   {status === 'Disputed' && dispute && (
                     <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
                       <h3 className="font-semibold">Settlement is frozen</h3>
-                      <p className="mt-1 text-xs">Arbitrator deadline: {formatTimestamp(dispute.deadline)}</p>
-                      <code className="mt-2 block break-all text-[10px]">Evidence hash: {dispute.evidenceHash}</code>
+                      <p className="mt-1 text-xs">
+                        Arbitrator deadline: {formatTimestamp(dispute.deadline)}
+                      </p>
+                      <code className="mt-2 block break-all text-[10px]">
+                        Evidence hash: {dispute.evidenceHash}
+                      </code>
                       {canTimeout ? (
-                        <button type="button" disabled={Boolean(busyAction)} onClick={() => run('resolveDisputeAfterDeadline', [booking.id], 'Timed-out dispute resolved in the non-opener’s favor.', `timeout-${id}`)} className="button-danger mt-3 inline-flex">Resolve expired dispute</button>
+                        <button
+                          type="button"
+                          disabled={Boolean(busyAction)}
+                          onClick={() =>
+                            run(
+                              'resolveDisputeAfterDeadline',
+                              [booking.id],
+                              'Timed-out dispute resolved in the non-opener’s favor.',
+                              `timeout-${id}`
+                            )
+                          }
+                          className="button-danger mt-3 inline-flex"
+                        >
+                          Resolve expired dispute
+                        </button>
                       ) : (
-                        <p className="mt-2 text-xs">Permissionless timeout resolution becomes available after the deadline.</p>
+                        <p className="mt-2 text-xs">
+                          Permissionless timeout resolution becomes available after the deadline.
+                        </p>
                       )}
                     </section>
                   )}
@@ -356,20 +552,61 @@ export default function MyBookings() {
                   {canReview && !reviewedBookings[id] && (
                     <section className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                       <h3 className="font-semibold text-slate-950">Publish your one review</h3>
-                      <p className="mt-1 text-xs leading-5 text-slate-500">The canonical JSON is pinned first; its exact keccak256 hash is then recorded on-chain.</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        The canonical JSON is pinned first; its exact keccak256 hash is then
+                        recorded on-chain.
+                      </p>
                       <div className="mt-3 grid gap-3 sm:grid-cols-[110px_1fr]">
-                        <select aria-label={`Rating for booking ${id}`} value={reviewDraft.rating} onChange={(event) => updateReview(id, 'rating', event.target.value)} className="field mt-0">{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} / 5</option>)}</select>
-                        <textarea value={reviewDraft.text} onChange={(event) => updateReview(id, 'text', event.target.value)} placeholder="Describe the stay" maxLength={5000} className="field mt-0 min-h-24" />
+                        <select
+                          aria-label={`Rating for booking ${id}`}
+                          value={reviewDraft.rating}
+                          onChange={(event) => updateReview(id, 'rating', event.target.value)}
+                          className="field mt-0"
+                        >
+                          {[5, 4, 3, 2, 1].map((rating) => (
+                            <option key={rating} value={rating}>
+                              {rating} / 5
+                            </option>
+                          ))}
+                        </select>
+                        <textarea
+                          value={reviewDraft.text}
+                          onChange={(event) => updateReview(id, 'text', event.target.value)}
+                          placeholder="Describe the stay"
+                          maxLength={5000}
+                          className="field mt-0 min-h-24"
+                        />
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <button type="button" onClick={() => previewReviewHash(booking)} className="button-secondary inline-flex">Calculate hash</button>
-                        <button type="button" disabled={!reviewDraft.text.trim() || Boolean(busyAction)} onClick={() => submitReview(booking)} className="button-primary inline-flex">{busyAction === `review-${id}` ? 'Publishing…' : 'Pin and submit'}</button>
+                        <button
+                          type="button"
+                          onClick={() => previewReviewHash(booking)}
+                          className="button-secondary inline-flex"
+                        >
+                          Calculate hash
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!reviewDraft.text.trim() || Boolean(busyAction)}
+                          onClick={() => submitReview(booking)}
+                          className="button-primary inline-flex"
+                        >
+                          {busyAction === `review-${id}` ? 'Publishing…' : 'Pin and submit'}
+                        </button>
                       </div>
-                      {reviewHashes[id] && <code className="mt-3 block break-all rounded-lg bg-white p-2 text-[10px]">{reviewHashes[id]}</code>}
+                      {reviewHashes[id] && (
+                        <code className="mt-3 block break-all rounded-lg bg-white p-2 text-[10px]">
+                          {reviewHashes[id]}
+                        </code>
+                      )}
                     </section>
                   )}
 
-                  {reviewedBookings[id] && <p className="mt-4 text-sm font-medium text-emerald-700">Review recorded for this booking.</p>}
+                  {reviewedBookings[id] && (
+                    <p className="mt-4 text-sm font-medium text-emerald-700">
+                      Review recorded for this booking.
+                    </p>
+                  )}
                 </div>
               </article>
             )

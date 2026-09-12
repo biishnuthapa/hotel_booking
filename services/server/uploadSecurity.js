@@ -192,8 +192,8 @@ export function validateJSONPayload(content) {
   }
   const schema = content.schema
   const valid =
-    (schema === 'hospitality-booking-v3/listing/1' && validateListing(content)) ||
-    (schema === 'hospitality-booking-v3/review/1' && validateReview(content))
+    (schema === 'hospitality-booking/listing/1' && validateListing(content)) ||
+    (schema === 'hospitality-booking/review/1' && validateReview(content))
   if (!valid) throw Object.assign(new Error('JSON does not match a supported schema'), { status: 400 })
   return json
 }

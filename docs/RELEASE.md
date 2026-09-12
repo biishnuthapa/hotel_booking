@@ -1,4 +1,4 @@
-# V3 release runbook
+# Release runbook
 
 ## Credential incident response
 
@@ -22,10 +22,14 @@ not performed by application code.
 4. Run `npm run verify:amoy`. Sourcify verification is keyless; PolygonScan
    verification additionally requires `POLYGONSCAN_API_KEY`.
 5. Publish explorer links, constructor roles, artifact hash, and deployment block.
-6. Copy the generated V3 addresses and deployment block into the Amoy
-   `NEXT_PUBLIC_*` variables and rebuild the frontend. Never reuse a superseded
+6. Copy the generated addresses and deployment block into the Amoy
+   `NEXT_PUBLIC_*` variables and rebuild the frontend. Never reuse an outdated
    address from git history.
-7. Run `npm run soak:start:amoy` once, then `npm run soak:amoy` at least daily
+7. Set production SIWE, WalletConnect, Pinata, and Redis configuration, then run
+   `npm run validate:frontend`. This checks RPC chain identity, bytecode at every
+   address, token/registry/lens relationships, the deployment block, and any
+   available deployment-record hashes without printing secrets.
+8. Run `npm run soak:start:amoy` once, then `npm run soak:amoy` at least daily
    for 14 days while monitoring RPC failures,
    upload abuse, withdrawals, disputes, pauses, and the liability invariant.
 

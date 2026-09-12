@@ -1,10 +1,10 @@
-# HospitalityBooking V3
+# HospitalityBooking
 
-HospitalityBooking V3 is an immutable Polygon booking escrow. New writes use a
+HospitalityBooking is an immutable Polygon booking escrow. It uses a
 single USDC-style ERC-20, UTC epoch-day ranges, host-signed EIP-712 check-in,
 pull withdrawals, one review per booking, non-transferable booking passes, and
-multisig arbitration. The original V1 deployment is displayed separately and
-read-only; its records are not migrated.
+multisig arbitration. The repository contains one authoritative contract and
+frontend; obsolete protocol versions and routes are intentionally absent.
 
 ## Local development
 
@@ -19,7 +19,7 @@ npx hardhat node
 npm run deploy:local
 ```
 
-Copy the V3 and mock-token addresses from
+Copy the contract and mock-token addresses from
 `contracts/deployments/31337.json` into the local public environment variables,
 then run:
 
@@ -44,7 +44,18 @@ npm run test:e2e
 forge test -vvv
 ```
 
-The V3 suite covers canonical/exclusive date ranges, interior capacity,
+After filling the public contract addresses and production service variables,
+validate the selected RPC, deployed bytecode, contract relationships, deployment
+block, SIWE configuration, and upload-service configuration with:
+
+```bash
+npm run validate:frontend
+```
+
+The validator never prints secret values. `npm run release:check` adds the full
+application verification and production dependency audit.
+
+The suite covers canonical/exclusive date ranges, interior capacity,
 signature replay and domain binding, the complete no-show window, deactivation,
 odd-value accounting, failed withdrawals, disputes, pausing, metadata escaping,
 review uniqueness, non-transferability, and bounded pages. Foundry invariants
@@ -71,11 +82,10 @@ critical/high findings, documentation of accepted medium findings, a frozen
 commit, and a 14-day multi-wallet Amoy soak test. Privileged roles must be
 multisigs.
 
-The final contract revision has not yet been deployed. The prior Amoy addresses
-were produced before the latest review/dispute changes and must not be used for
-V3 writes. After manually deploying this commit, copy the generated addresses
-and deployment block into the matching `NEXT_PUBLIC_*` variables, then rebuild
-the frontend. Release-gate status is recorded in `docs/VERIFICATION.md`.
+The final contract revision has not yet been deployed. After manually deploying
+this commit, copy the generated addresses and deployment block into the matching
+`NEXT_PUBLIC_*` variables, validate them, and rebuild the frontend. Release-gate
+status is recorded in `docs/VERIFICATION.md`.
 
 ## Security operations still requiring human coordination
 
@@ -87,7 +97,7 @@ history rewrite with every collaborator. See `docs/RELEASE.md`.
 
 ## Proof terminology
 
-An on-chain payment proves token transfer into escrow. A successful V3 check-in
+An on-chain payment proves token transfer into escrow. A successful check-in
 proves that the snapshotted host signed an authorization which the snapshotted
 guest submitted in the allowed window. Neither fact alone proves physical
 presence. Reviews therefore have auditable booking and host-attestation

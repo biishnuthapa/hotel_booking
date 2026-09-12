@@ -82,7 +82,7 @@ describe('pinning security boundary', () => {
     ).toThrow('8 MB')
     expect(() =>
       validateJSONPayload({
-        schema: 'hospitality-booking-v3/listing/1',
+        schema: 'hospitality-booking/listing/1',
         name: 'Hotel',
         description: 'Valid',
         image: 'ipfs://image',
@@ -122,7 +122,7 @@ describe('pinning security boundary', () => {
 
   it('hides Pinata failures and timeouts behind a generic response', async () => {
     const content = {
-      schema: 'hospitality-booking-v3/review/1',
+      schema: 'hospitality-booking/review/1',
       bookingId: '1',
       listingId: '1',
       rating: 5,

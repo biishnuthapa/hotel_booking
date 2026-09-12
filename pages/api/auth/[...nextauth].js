@@ -30,7 +30,8 @@ export default async function auth(req, res) {
             nonce: await getCsrfToken({ req }),
           })
 
-          if (result.success) {
+          const configuredChainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || 80002)
+          if (result.success && Number(siwe.chainId) === configuredChainId) {
             return {
               id: siwe.address,
             }
@@ -63,8 +64,9 @@ export default async function auth(req, res) {
     callbacks: {
       async session({ session, token }) {
         session.address = token.sub
+        session.user = session.user || {}
         session.user.name = token.sub
-        session.user.image = 'https://www.fillmurray.com/128/128'
+        session.user.image = null
         return session
       },
     },

@@ -14,7 +14,7 @@ describe('multisig role controls', () => {
         onResolve={onResolve}
       />
     )
-    expect(screen.getByRole('button', { name: 'Pause V3' }).disabled).toBe(true)
+    expect(screen.getByRole('button', { name: 'Pause protocol' }).disabled).toBe(true)
     expect(screen.getByRole('button', { name: 'Resolve dispute' }).disabled).toBe(true)
 
     rerender(
@@ -24,7 +24,7 @@ describe('multisig role controls', () => {
         onResolve={onResolve}
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Pause V3' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pause protocol' }))
     expect(onPause).toHaveBeenCalledWith('pause')
   })
 })

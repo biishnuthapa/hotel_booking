@@ -36,7 +36,9 @@ const AUDITED_CONTRACTS = [
 async function assertAuditedBuild() {
   const manifestPath = process.env.AUDITED_MANIFEST_PATH
   if (!manifestPath) {
-    throw new Error('Refusing mainnet deploy: set AUDITED_MANIFEST_PATH to the reviewed audit manifest.')
+    throw new Error(
+      'Refusing mainnet deploy: set AUDITED_MANIFEST_PATH to the reviewed audit manifest.'
+    )
   }
   const absolutePath = path.resolve(manifestPath)
   if (!fs.existsSync(absolutePath)) throw new Error(`Audit manifest not found: ${absolutePath}`)
@@ -47,10 +49,14 @@ async function assertAuditedBuild() {
   }).trim()
   if (dirty) throw new Error('Refusing mainnet deploy: tracked working tree is not clean.')
   if (manifest.commit !== head) {
-    throw new Error(`Refusing mainnet deploy: audited commit ${manifest.commit} does not match ${head}.`)
+    throw new Error(
+      `Refusing mainnet deploy: audited commit ${manifest.commit} does not match ${head}.`
+    )
   }
   if (manifest.compiler !== '0.8.30') {
-    throw new Error(`Refusing mainnet deploy: audited compiler is ${manifest.compiler}, expected 0.8.30.`)
+    throw new Error(
+      `Refusing mainnet deploy: audited compiler is ${manifest.compiler}, expected 0.8.30.`
+    )
   }
   for (const name of AUDITED_CONTRACTS) {
     const artifact = await artifacts.readArtifact(name)
@@ -80,12 +86,16 @@ async function main() {
   if (isMainnet) {
     for (const [label, value] of Object.entries({ treasury, admin, pauser, arbitrator })) {
       if (value === deployer.address) {
-        throw new Error(`Refusing mainnet deploy: ${label} must be a multisig, not the deployer EOA.`)
+        throw new Error(
+          `Refusing mainnet deploy: ${label} must be a multisig, not the deployer EOA.`
+        )
       }
     }
     if (!process.env.PAYMENT_TOKEN) throw new Error('Refusing mainnet deploy: set PAYMENT_TOKEN.')
     if (process.env.AUDIT_COMPLETE !== 'true') {
-      throw new Error('Refusing mainnet deploy: set AUDIT_COMPLETE=true only after an independent audit.')
+      throw new Error(
+        'Refusing mainnet deploy: set AUDIT_COMPLETE=true only after an independent audit.'
+      )
     }
     await assertAuditedBuild()
   }
@@ -104,7 +114,14 @@ async function main() {
   }
 
   const booking = await ethers.deployContract('HospitalityBooking', [
-    paymentToken, treasury, TAX_BPS, DEPOSIT_BPS, DISPUTE_BOND_BPS, admin, pauser, arbitrator,
+    paymentToken,
+    treasury,
+    TAX_BPS,
+    DEPOSIT_BPS,
+    DISPUTE_BOND_BPS,
+    admin,
+    pauser,
+    arbitrator,
   ])
   await booking.waitForDeployment()
   const bookingReceipt = await booking.deploymentTransaction().wait()
@@ -112,7 +129,11 @@ async function main() {
   console.log(`Booking      ${bookingAddress}`)
 
   const registry = await ethers.deployContract('ReviewRegistry', [
-    bookingAddress, ELIGIBILITY_BPS, SATURATION_BPS, REPEAT_WEIGHT_BPS, UNATTESTED_WEIGHT_BPS,
+    bookingAddress,
+    ELIGIBILITY_BPS,
+    SATURATION_BPS,
+    REPEAT_WEIGHT_BPS,
+    UNATTESTED_WEIGHT_BPS,
   ])
   await registry.waitForDeployment()
   const registryReceipt = await registry.deploymentTransaction().wait()
@@ -152,11 +173,21 @@ async function main() {
     },
     constructorArguments: {
       HospitalityBooking: [
-        paymentToken, treasury, TAX_BPS, DEPOSIT_BPS, DISPUTE_BOND_BPS,
-        admin, pauser, arbitrator,
+        paymentToken,
+        treasury,
+        TAX_BPS,
+        DEPOSIT_BPS,
+        DISPUTE_BOND_BPS,
+        admin,
+        pauser,
+        arbitrator,
       ],
       ReviewRegistry: [
-        bookingAddress, ELIGIBILITY_BPS, SATURATION_BPS, REPEAT_WEIGHT_BPS, UNATTESTED_WEIGHT_BPS,
+        bookingAddress,
+        ELIGIBILITY_BPS,
+        SATURATION_BPS,
+        REPEAT_WEIGHT_BPS,
+        UNATTESTED_WEIGHT_BPS,
       ],
       BookingLens: [bookingAddress, registryAddress],
       HospitalityBookingMetadata: [],
@@ -184,12 +215,27 @@ async function main() {
 
   const dir = path.join(__dirname, '..', 'contracts', 'deployments')
   fs.mkdirSync(dir, { recursive: true })
-  fs.writeFileSync(path.join(dir, `${deployment.chainId}.json`), JSON.stringify(deployment, null, 2))
   fs.writeFileSync(
-    path.join(__dirname, '..', 'contracts', 'contractAddress.json'),
-    JSON.stringify(deployment.contracts, null, 2)
+    path.join(dir, `${deployment.chainId}.json`),
+    JSON.stringify(deployment, null, 2)
   )
   console.log(`\nSaved contracts/deployments/${deployment.chainId}.json`)
+
+  const frontendPrefixes = {
+    31337: 'NEXT_PUBLIC_LOCAL',
+    80002: 'NEXT_PUBLIC_AMOY',
+    137: 'NEXT_PUBLIC_POLYGON',
+  }
+  const frontendPrefix = frontendPrefixes[deployment.chainId]
+  if (frontendPrefix) {
+    console.log('\nFrontend public configuration:')
+    console.log(`NEXT_PUBLIC_CHAIN_ID=${deployment.chainId}`)
+    console.log(`${frontendPrefix}_BOOKING_ADDRESS=${bookingAddress}`)
+    console.log(`${frontendPrefix}_REVIEW_REGISTRY=${registryAddress}`)
+    console.log(`${frontendPrefix}_LENS_ADDRESS=${lensAddress}`)
+    console.log(`${frontendPrefix}_PAYMENT_TOKEN=${paymentToken}`)
+    console.log(`${frontendPrefix}_DEPLOYMENT_BLOCK=${deployment.deploymentBlock}`)
+  }
 
   if (!['hardhat', 'localhost'].includes(network.name)) {
     console.log(`\nVerify all deployed contracts with:`)
@@ -197,4 +243,7 @@ async function main() {
   }
 }
 
-main().catch((e) => { console.error(e); process.exit(1) })
+main().catch((e) => {
+  console.error(e)
+  process.exit(1)
+})

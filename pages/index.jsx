@@ -5,17 +5,17 @@ import { AddressLink, DeploymentNotice, EmptyState } from '@/components/AppUI'
 import {
   ACTIVE_CHAIN_ID,
   getChainConfig,
-  getMissingV3Configuration,
-  isV3Configured,
+  getMissingDeploymentConfiguration,
+  isDeploymentConfigured,
 } from '@/config/chains'
-import { getV3Listings, getV3TokenInfo } from '@/services/blockchain'
+import { getListings, getPaymentTokenInfo } from '@/services/blockchain'
 import { normalizeIpfsUrl } from '@/utils/helper'
 
 export default function Home({ listings, token, chain, deploymentReady, missing, loadError }) {
   return (
     <>
       <Head>
-        <title>HospitalityBooking V3 · Verifiable stays</title>
+        <title>HospitalityBooking · Verifiable stays</title>
         <meta
           name="description"
           content="Book hospitality with stable-token escrow, canonical dates, and host-authorized check-in."
@@ -38,7 +38,7 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
           <div className="relative z-10 max-w-3xl px-6 py-12 sm:px-10 sm:py-16 lg:py-20">
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-teal-200">
               <span className="rounded-full border border-teal-300/20 bg-teal-300/10 px-3 py-1.5">
-                HospitalityBooking V3
+                HospitalityBooking
               </span>
               <span>{chain.name}</span>
             </div>
@@ -46,20 +46,36 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
               A clearer way to book and settle a stay.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-300 sm:text-lg">
-              Stable-token escrow, UTC date ranges, guest-bound host authorization, and transparent pull payments—built into one immutable protocol.
+              Stable-token escrow, UTC date ranges, guest-bound host authorization, and transparent
+              pull payments—built into one immutable protocol.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="#properties" className="inline-flex items-center rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-teal-300">
+              <Link
+                href="#properties"
+                className="inline-flex items-center rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-teal-300"
+              >
                 Explore properties
               </Link>
-              <Link href="/MyBookings" className="inline-flex items-center rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15">
+              <Link
+                href="/MyBookings"
+                className="inline-flex items-center rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/15"
+              >
                 View my trips
               </Link>
             </div>
             <div className="mt-10 grid max-w-2xl gap-3 sm:grid-cols-3">
-              <div className="metric-card"><p className="text-2xl font-semibold">90</p><p className="mt-1 text-xs text-slate-300">night maximum</p></div>
-              <div className="metric-card"><p className="text-2xl font-semibold">UTC</p><p className="mt-1 text-xs text-slate-300">canonical dates</p></div>
-              <div className="metric-card"><p className="text-2xl font-semibold">1:1</p><p className="mt-1 text-xs text-slate-300">booking pass</p></div>
+              <div className="metric-card">
+                <p className="text-2xl font-semibold">90</p>
+                <p className="mt-1 text-xs text-slate-300">night maximum</p>
+              </div>
+              <div className="metric-card">
+                <p className="text-2xl font-semibold">UTC</p>
+                <p className="mt-1 text-xs text-slate-300">canonical dates</p>
+              </div>
+              <div className="metric-card">
+                <p className="text-2xl font-semibold">1:1</p>
+                <p className="mt-1 text-xs text-slate-300">booking pass</p>
+              </div>
             </div>
           </div>
         </div>
@@ -68,12 +84,23 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
       <section className="mx-auto max-w-7xl px-4 pb-6 sm:px-6">
         <div className="grid gap-4 md:grid-cols-3">
           {[
-            ['Exact-value escrow', 'The contract rejects fee-on-transfer discrepancies and accounts for every atomic token unit.'],
-            ['Host-attested check-in', 'The guest submits a replay-safe authorization signed by the snapshotted host.'],
-            ['Recoverable disputes', 'Opening requires a bond, and unresolved cases time out in the non-opener’s favor.'],
+            [
+              'Exact-value escrow',
+              'The contract rejects fee-on-transfer discrepancies and accounts for every atomic token unit.',
+            ],
+            [
+              'Host-attested check-in',
+              'The guest submits a replay-safe authorization signed by the snapshotted host.',
+            ],
+            [
+              'Recoverable disputes',
+              'Opening requires a bond, and unresolved cases time out in the non-opener’s favor.',
+            ],
           ].map(([title, description], index) => (
             <article key={title} className="app-card p-5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-800">0{index + 1}</span>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-50 text-sm font-bold text-teal-800">
+                0{index + 1}
+              </span>
               <h2 className="mt-4 font-semibold text-slate-950">{title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p>
             </article>
@@ -85,7 +112,9 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
         <div className="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="eyebrow">Live inventory</p>
-            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Active V3 properties</h2>
+            <h2 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+              Active properties
+            </h2>
             {token && (
               <p className="mt-2 text-sm text-slate-600">
                 Prices settle in {token.symbol}. Payment token{' '}
@@ -107,7 +136,7 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
         {deploymentReady && listings.length === 0 && (
           <EmptyState
             title="No active properties yet"
-            description="The V3 deployment is ready. A connected host can create the first property."
+            description="The deployment is ready. A connected host can create the first property."
             actionHref="/manage/new"
             actionLabel="Create a property"
           />
@@ -115,44 +144,47 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => (
-            <Link
+            <article
               key={listing.id}
-              href={`/stay/${listing.id}`}
               className="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-900/10"
             >
-              <div className="relative h-56 overflow-hidden bg-slate-100">
-                <img
-                  src={normalizeIpfsUrl(listing.imageURI)}
-                  alt={`${listing.name} property`}
-                  loading="lazy"
-                  className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                />
-                <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-teal-800 shadow-sm backdrop-blur">
-                  V3 verified listing
-                </span>
-              </div>
-              <div className="p-5">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-slate-950">{listing.name}</h3>
-                    <p className="mt-1 text-sm text-slate-500">Listing #{listing.id}</p>
-                  </div>
-                  <span className="rounded-xl bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-                    {listing.totalRooms} rooms
+              <Link href={`/stay/${listing.id}`} className="block">
+                <div className="relative h-56 overflow-hidden bg-slate-100">
+                  <img
+                    src={normalizeIpfsUrl(listing.imageURI)}
+                    alt={`${listing.name} property`}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                  />
+                  <span className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-teal-800 shadow-sm backdrop-blur">
+                    Verified listing
                   </span>
                 </div>
-                <p className="mt-4 text-xs text-slate-500">
-                  Hosted by <AddressLink chainId={chain.id} address={listing.owner} />
-                </p>
-              </div>
-            </Link>
+                <div className="p-5 pb-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-slate-950">{listing.name}</h3>
+                      <p className="mt-1 text-sm text-slate-500">Listing #{listing.id}</p>
+                    </div>
+                    <span className="rounded-xl bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                      {listing.totalRooms} rooms
+                    </span>
+                  </div>
+                </div>
+              </Link>
+              <p className="px-5 pb-5 text-xs text-slate-500">
+                Hosted by <AddressLink chainId={chain.id} address={listing.owner} />
+              </p>
+            </article>
           ))}
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6">
         <div className="rounded-3xl border border-amber-200 bg-amber-50 px-6 py-5 text-sm leading-6 text-amber-950">
-          <strong>What check-in proves:</strong> a valid host authorization was submitted by the booked guest in the permitted window. It does not independently prove physical presence or room quality.
+          <strong>What check-in proves:</strong> a valid host authorization was submitted by the
+          booked guest in the permitted window. It does not independently prove physical presence or
+          room quality.
         </div>
       </section>
     </>
@@ -162,8 +194,8 @@ export default function Home({ listings, token, chain, deploymentReady, missing,
 export async function getServerSideProps() {
   const chain = getChainConfig(ACTIVE_CHAIN_ID)
   const chainProps = { id: chain.id, name: chain.name, testnet: chain.testnet }
-  const missing = getMissingV3Configuration(ACTIVE_CHAIN_ID)
-  if (!isV3Configured(ACTIVE_CHAIN_ID)) {
+  const missing = getMissingDeploymentConfiguration(ACTIVE_CHAIN_ID)
+  if (!isDeploymentConfigured(ACTIVE_CHAIN_ID)) {
     return {
       props: {
         listings: [],
@@ -171,15 +203,15 @@ export async function getServerSideProps() {
         chain: chainProps,
         deploymentReady: false,
         missing,
-        loadError: `${chain.name} is awaiting the finalized V3 deployment addresses.`,
+        loadError: `${chain.name} is awaiting the finalized deployment addresses.`,
       },
     }
   }
 
   try {
     const [rawListings, token] = await Promise.all([
-      getV3Listings(ACTIVE_CHAIN_ID),
-      getV3TokenInfo(ACTIVE_CHAIN_ID),
+      getListings(ACTIVE_CHAIN_ID),
+      getPaymentTokenInfo(ACTIVE_CHAIN_ID),
     ])
     const listings = rawListings.map((listing) => ({
       id: listing.id.toString(),
@@ -190,7 +222,14 @@ export async function getServerSideProps() {
       totalRooms: Number(listing.totalRooms),
     }))
     return {
-      props: { listings, token, chain: chainProps, deploymentReady: true, missing: [], loadError: null },
+      props: {
+        listings,
+        token,
+        chain: chainProps,
+        deploymentReady: true,
+        missing: [],
+        loadError: null,
+      },
     }
   } catch (error) {
     return {
@@ -200,7 +239,7 @@ export async function getServerSideProps() {
         chain: chainProps,
         deploymentReady: false,
         missing: [],
-        loadError: error?.shortMessage || error?.message || 'Unable to verify the V3 deployment.',
+        loadError: error?.shortMessage || error?.message || 'Unable to verify the deployment.',
       },
     }
   }

@@ -34,7 +34,7 @@ export const wagmiConfig = getDefaultConfig({
 const enableSiwe =
   process.env.NODE_ENV === 'production' || process.env.NEXT_PUBLIC_ENABLE_SIWE === 'true'
 const siweOptions = () => ({
-  statement: 'Sign in to manage HospitalityBooking V3 records and authenticated IPFS uploads.',
+  statement: 'Sign in to manage HospitalityBooking records and authenticated IPFS uploads.',
 })
 
 export default function Providers({ children, pageProps }) {

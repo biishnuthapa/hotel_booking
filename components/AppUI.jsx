@@ -20,7 +20,9 @@ export function PageHeader({ eyebrow, title, description, actions, children }) {
         <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
           {title}
         </h1>
-        {description && <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">{description}</p>}
+        {description && (
+          <p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">{description}</p>
+        )}
         {children}
       </div>
       {actions && <div className="flex flex-wrap gap-3">{actions}</div>}
@@ -40,14 +42,17 @@ export function StatusBadge({ status }) {
   )
 }
 
-export function EmptyState({ title, description, actionHref, actionLabel }) {
+export function EmptyState({ title, description, actionHref, actionLabel, headingLevel = 'h2' }) {
+  const Heading = headingLevel === 'h1' ? 'h1' : 'h2'
   return (
     <div className="rounded-3xl border border-dashed border-slate-300 bg-white/60 px-6 py-12 text-center">
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 text-xl text-teal-800">
         ◇
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-slate-900">{title}</h2>
-      {description && <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">{description}</p>}
+      <Heading className="mt-4 text-lg font-semibold text-slate-900">{title}</Heading>
+      {description && (
+        <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">{description}</p>
+      )}
       {actionHref && actionLabel && (
         <Link href={actionHref} className="button-primary mt-5 inline-flex">
           {actionLabel}
@@ -69,11 +74,15 @@ export function LoadingState({ label = 'Loading records…' }) {
 export function DeploymentNotice({ chainId, missing = [], message }) {
   const chain = getChainConfig(chainId)
   return (
-    <div className="rounded-3xl border border-amber-300 bg-amber-50 p-6 text-amber-950" role="status">
+    <div
+      className="rounded-3xl border border-amber-300 bg-amber-50 p-6 text-amber-950"
+      role="status"
+    >
       <p className="text-xs font-bold uppercase tracking-[0.18em]">Configuration required</p>
-      <h2 className="mt-2 text-xl font-semibold">Connect the finalized V3 deployment.</h2>
+      <h2 className="mt-2 text-xl font-semibold">Connect the finalized deployment.</h2>
       <p className="mt-2 max-w-3xl text-sm leading-6">
-        {message || `${chain.name} is selected, but its V3 public configuration is incomplete.`}
+        {message ||
+          `${chain.name} is selected, but its public contract configuration is incomplete.`}
       </p>
       {missing.length > 0 && (
         <p className="mt-3 text-sm">
@@ -101,7 +110,9 @@ export function TransactionStatus({ transaction, chainId }) {
   return (
     <div
       className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-        isError ? 'border-red-200 bg-red-50 text-red-800' : 'border-teal-200 bg-teal-50 text-teal-900'
+        isError
+          ? 'border-red-200 bg-red-50 text-red-800'
+          : 'border-teal-200 bg-teal-50 text-teal-900'
       }`}
       aria-live="polite"
     >
@@ -126,7 +137,13 @@ export function AddressLink({ chainId, address, label }) {
   const short = `${address.slice(0, 6)}…${address.slice(-4)}`
   if (!href) return <span title={address}>{label || short}</span>
   return (
-    <a href={href} target="_blank" rel="noreferrer" title={address} className="font-medium hover:underline">
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={address}
+      className="font-medium hover:underline"
+    >
       {label || short} ↗
     </a>
   )
@@ -136,7 +153,7 @@ export function WalletPrompt({ role = 'wallet', description }) {
   return (
     <EmptyState
       title={`Connect your ${role}`}
-      description={description || 'Connect through the wallet control above to load your V3 records.'}
+      description={description || 'Connect through the wallet control above to load your records.'}
     />
   )
 }

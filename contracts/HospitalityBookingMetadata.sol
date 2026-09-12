@@ -6,7 +6,7 @@ import {Strings} from '@openzeppelin/contracts/utils/Strings.sol';
 
 /**
  * @notice Stateless renderer deployed once by HospitalityBooking.
- * @dev Keeping rendering outside the escrow contract reduces the V3 runtime
+ * @dev Keeping rendering outside the escrow contract reduces protocol runtime
  *      bytecode without introducing an upgrade or administration surface.
  */
 contract HospitalityBookingMetadata {

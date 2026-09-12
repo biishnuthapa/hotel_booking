@@ -19,7 +19,7 @@ module.exports = {
       evmVersion: 'shanghai',
       optimizer: {
         enabled: true,
-        // V3 favors deployment/runtime size; booking writes are not high-frequency loops.
+        // Favor deployment/runtime size; booking writes are not high-frequency loops.
         runs: 1,
       },
       viaIR: true,

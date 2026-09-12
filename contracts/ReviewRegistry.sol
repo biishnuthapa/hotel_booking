@@ -29,7 +29,7 @@ import {HospitalityBooking} from './HospitalityBooking.sol';
  *      R4 — Attestation weight.
  *      The registry retains an explicit attestation factor. A record carrying
  *      a host attestation receives full weight; an unattested record receives
- *      `unattestedWeightBps`. V3 currently exposes only host-attested check-in,
+ *      `unattestedWeightBps`. The protocol currently exposes only host-attested check-in,
  *      but preserving this rule keeps the review mechanism and stored-booking
  *      provenance explicit.
  *

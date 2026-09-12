@@ -8,20 +8,22 @@ const Footer = () => {
     <footer className="mt-auto border-t border-slate-200 bg-white/80">
       <div className="mx-auto grid max-w-7xl gap-5 px-4 py-8 text-sm text-slate-500 sm:px-6 md:grid-cols-[1fr_auto] md:items-end">
         <div>
-          <p className="font-semibold text-slate-800">HospitalityBooking V3</p>
+          <p className="font-semibold text-slate-800">HospitalityBooking</p>
           <p className="mt-1 max-w-xl leading-6">
-            Stable-token escrow with host-attested check-in. On-chain status does not independently prove physical presence.
+            Stable-token escrow with host-attested check-in. On-chain status does not independently
+            prove physical presence.
           </p>
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-2 md:justify-end">
-          <Link href="/legacy" className="hover:text-slate-900">Legacy V1</Link>
-          <Link href="/admin" className="hover:text-slate-900">Protocol roles</Link>
+          <Link href="/admin" className="hover:text-slate-900">
+            Protocol roles
+          </Link>
           {contractUrl && (
             <a href={contractUrl} target="_blank" rel="noreferrer" className="hover:text-slate-900">
               {chain.shortName} contract ↗
             </a>
           )}
-          <span>&copy; {new Date().getFullYear()}</span>
+          <span>&copy; HospitalityBooking</span>
         </div>
       </div>
     </footer>

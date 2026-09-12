@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import {ERC20} from '@openzeppelin/contracts/token/ERC20/ERC20.sol';
 
-/** @notice Test-only token used to prove V3 rejects transfer-fee assets. */
+/** @notice Test-only token used to prove the protocol rejects transfer-fee assets. */
 contract FeeOnTransferUSDC is ERC20 {
   constructor() ERC20('Fee USD Coin', 'fUSDC') {}
 
